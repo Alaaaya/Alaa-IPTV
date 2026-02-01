@@ -1,0 +1,81 @@
+<resources>
+    <!-- App Name -->
+    <string name="app_name">Alaa IPTV</string>
+
+    <!-- Login Screen -->
+    <string name="login_title">Welcome to Alaa IPTV</string>
+    <string name="login_subtitle">Please enter your credentials</string>
+    <string name="server_url">Server URL</string>
+    <string name="server_url_hint">http://example.com:8080</string>
+    <string name="username">Username</string>
+    <string name="username_hint">Enter username</string>
+    <string name="password">Password</string>
+    <string name="password_hint">Enter password</string>
+    <string name="login_button">Login</string>
+    <string name="logging_in">Logging in…</string>
+    <string name="login_success">Login successful</string>
+    <string name="login_failed">Login failed. Please check your credentials.</string>
+    <string name="login_error">An error occurred. Please try again.</string>
+    <string name="empty_fields">Please fill all fields</string>
+
+    <!-- Main Screen -->
+    <string name="main_title">Alaa IPTV</string>
+    <string name="live_tv">Live TV</string>
+    <string name="movies">Movies</string>
+    <string name="series">Series</string>
+    <string name="favorites">Favorites</string>
+    <string name="search">Search</string>
+    <string name="settings">Settings</string>
+    <string name="all_channels">All Channels</string>
+    <string name="no_channels">No channels available</string>
+    <string name="no_movies">No movies available</string>
+    <string name="no_series">No series available</string>
+    <string name="loading">Loading…</string>
+    <string name="error_loading">Error loading data</string>
+
+    <!-- Player Screen -->
+    <string name="player_loading">Loading stream…</string>
+    <string name="player_error">Error playing stream</string>
+    <string name="player_buffering">Buffering…</string>
+
+    <!-- Category -->
+    <string name="category_all">All</string>
+    <string name="category_sports">Sports</string>
+    <string name="category_news">News</string>
+    <string name="category_entertainment">Entertainment</string>
+    <string name="category_movies">Movies</string>
+
+    <!-- Actions -->
+    <string name="add_to_favorites">Add to Favorites</string>
+    <string name="remove_from_favorites">Remove from Favorites</string>
+    <string name="play">Play</string>
+    <string name="pause">Pause</string>
+    <string name="stop">Stop</string>
+    <string name="back">Back</string>
+    <string name="exit">Exit</string>
+    <string name="refresh">Refresh</string>
+    <string name="logout">Logout</string>
+
+    <!-- Messages -->
+    <string name="added_to_favorites">Added to favorites</string>
+    <string name="removed_from_favorites">Removed from favorites</string>
+    <string name="no_connection">No internet connection</string>
+    <string name="try_again">Try again</string>
+
+    <!-- Long Press Actions -->
+    <string name="long_press_to_reorder">Long press OK to reorder</string>
+    <string name="reorder_mode">Reorder Mode</string>
+    <string name="reorder_hint">Use arrow keys to move, press OK to confirm</string>
+
+    <!-- EPG -->
+    <string name="epg_now">Now</string>
+    <string name="epg_next">Next</string>
+    <string name="epg_no_info">No program information</string>
+
+    <!-- Common -->
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="confirm">Confirm</string>
+</resources>
