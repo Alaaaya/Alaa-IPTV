@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/dark_background"
+    android:padding="48dp">
+
+    <LinearLayout
+        android:id="@+id/loginContainer"
+        android:layout_width="600dp"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:orientation="vertical"
+        android:background="@drawable/glassmorphism_background"
+        android:padding="48dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/login_title"
+            android:textColor="@color/text_primary"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="32dp" />
+
+        <EditText
+            android:id="@+id/serverUrlInput"
+            style="@style/InputField"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/server_url"
+            android:inputType="textUri"
+            android:layout_marginBottom="16dp"
+            android:nextFocusDown="@id/usernameInput" />
+
+        <EditText
+            android:id="@+id/usernameInput"
+            style="@style/InputField"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/username"
+            android:inputType="text"
+            android:layout_marginBottom="16dp"
+            android:nextFocusUp="@id/serverUrlInput"
+            android:nextFocusDown="@id/passwordInput" />
+
+        <EditText
+            android:id="@+id/passwordInput"
+            style="@style/InputField"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/password"
+            android:inputType="textPassword"
+            android:layout_marginBottom="24dp"
+            android:nextFocusUp="@id/usernameInput"
+            android:nextFocusDown="@id/loginButton" />
+
+        <Button
+            android:id="@+id/loginButton"
+            style="@style/PrimaryButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/login"
+            android:nextFocusUp="@id/passwordInput" />
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="16dp"
+            android:visibility="gone"
+            android:indeterminateTint="@color/accent_blue" />
+
+        <TextView
+            android:id="@+id/errorText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="16dp"
+            android:textColor="@color/error_color"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+    </LinearLayout>
+
+</RelativeLayout>

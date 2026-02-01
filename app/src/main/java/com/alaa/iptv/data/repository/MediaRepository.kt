@@ -1,0 +1,240 @@
+package com.alaa.iptv.data.repository
+
+import com.alaa.iptv.data.api.ApiClient
+import com.alaa.iptv.data.models.*
+import com.alaa.iptv.data.preferences.AppPreferences
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
+class MediaRepository(private val prefs: AppPreferences) {
+    
+    private val apiService by lazy {
+        ApiClient.getXtreamApiService(prefs.serverUrl)
+    }
+    
+    suspend fun authenticate(serverUrl: String, username: String, password: String): Result<XtreamAuthResponse> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val service = ApiClient.getXtreamApiService(serverUrl)
+                val response = service.authenticate(username, password)
+                if (response.isSuccessful && response.body() != null) {
+                    Result.success(response.body()!!)
+                } else {
+                    Result.failure(Exception("Authentication failed"))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+    
+    suspend fun getLiveCategories(): Result<List<Category>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = apiService.getLiveCategories(prefs.username, prefs.password)
+                if (response.isSuccessful && response.body() != null) {
+                    val categories = response.body()!!.map { 
+                        Category(it.categoryId, it.categoryName, it.parentId)
+                    }
+                    Result.success(categories)
+                } else {
+                    Result.failure(Exception("Failed to load categories"))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+    
+    suspend fun getLiveStreams(categoryId: String? = null): Result<List<Channel>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = if (categoryId != null) {
+                    apiService.getLiveStreamsByCategory(prefs.username, prefs.password, categoryId = categoryId)
+                } else {
+                    apiService.getLiveStreams(prefs.username, prefs.password)
+                }
+                
+                if (response.isSuccessful && response.body() != null) {
+                    val favorites = prefs.getFavorites()
+                    val channels = response.body()!!.mapNotNull { stream ->
+                        stream.streamId?.let { id ->
+                            Channel(
+                                streamId = id.toString(),
+                                num = (stream.num ?: id).toString(),
+                                name = stream.name ?: "Unknown",
+                                streamType = stream.streamType ?: "live",
+                                streamIcon = stream.streamIcon,
+                                epgChannelId = stream.epgChannelId,
+                                added = stream.added,
+                                categoryId = stream.categoryId,
+                                categoryName = null,
+                                customSid = stream.customSid,
+                                tvArchive = stream.tvArchive ?: 0,
+                                directSource = stream.directSource,
+                                tvArchiveDuration = stream.tvArchiveDuration ?: 0,
+                                isFavorite = favorites.contains(id.toString())
+                            )
+                        }
+                    }
+                    Result.success(channels)
+                } else {
+                    Result.failure(Exception("Failed to load channels"))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+    
+    suspend fun getMovieCategories(): Result<List<Category>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = apiService.getVodCategories(prefs.username, prefs.password)
+                if (response.isSuccessful && response.body() != null) {
+                    val categories = response.body()!!.map { 
+                        Category(it.categoryId, it.categoryName, it.parentId)
+                    }
+                    Result.success(categories)
+                } else {
+                    Result.failure(Exception("Failed to load categories"))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+    
+    suspend fun getMovies(categoryId: String? = null): Result<List<Movie>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = if (categoryId != null) {
+                    apiService.getVodStreamsByCategory(prefs.username, prefs.password, categoryId = categoryId)
+                } else {
+                    apiService.getVodStreams(prefs.username, prefs.password)
+                }
+                
+                if (response.isSuccessful && response.body() != null) {
+                    val favorites = prefs.getFavorites()
+                    val movies = response.body()!!.mapNotNull { movie ->
+                        movie.streamId?.let { id ->
+                            Movie(
+                                streamId = id.toString(),
+                                name = movie.name ?: "Unknown",
+                                streamIcon = movie.streamIcon,
+                                rating = movie.rating,
+                                year = movie.year,
+                                plot = movie.plot,
+                                cast = movie.cast,
+                                director = movie.director,
+                                genre = movie.genre,
+                                releaseDate = movie.releaseDate,
+                                durationSecs = movie.durationSecs,
+                                duration = movie.duration,
+                                containerExtension = movie.containerExtension,
+                                categoryId = movie.categoryId,
+                                isFavorite = favorites.contains(id.toString())
+                            )
+                        }
+                    }
+                    Result.success(movies)
+                } else {
+                    Result.failure(Exception("Failed to load movies"))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+    
+    suspend fun getSeriesCategories(): Result<List<Category>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = apiService.getSeriesCategories(prefs.username, prefs.password)
+                if (response.isSuccessful && response.body() != null) {
+                    val categories = response.body()!!.map { 
+                        Category(it.categoryId, it.categoryName, it.parentId)
+                    }
+                    Result.success(categories)
+                } else {
+                    Result.failure(Exception("Failed to load categories"))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+    
+    suspend fun getSeries(categoryId: String? = null): Result<List<Series>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = if (categoryId != null) {
+                    apiService.getSeriesByCategory(prefs.username, prefs.password, categoryId = categoryId)
+                } else {
+                    apiService.getSeries(prefs.username, prefs.password)
+                }
+                
+                if (response.isSuccessful && response.body() != null) {
+                    val favorites = prefs.getFavorites()
+                    val series = response.body()!!.mapNotNull { s ->
+                        s.seriesId?.let { id ->
+                            Series(
+                                seriesId = id.toString(),
+                                name = s.name ?: "Unknown",
+                                cover = s.cover,
+                                plot = s.plot,
+                                cast = s.cast,
+                                director = s.director,
+                                genre = s.genre,
+                                releaseDate = s.releaseDate,
+                                rating = s.rating,
+                                categoryId = s.categoryId,
+                                isFavorite = favorites.contains(id.toString())
+                            )
+                        }
+                    }
+                    Result.success(series)
+                } else {
+                    Result.failure(Exception("Failed to load series"))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+    
+    suspend fun getSeriesInfo(seriesId: String): Result<List<Episode>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = apiService.getSeriesInfo(prefs.username, prefs.password, seriesId = seriesId)
+                if (response.isSuccessful && response.body() != null) {
+                    val seriesInfo = response.body()!!
+                    val episodes = mutableListOf<Episode>()
+                    
+                    seriesInfo.episodes?.forEach { (seasonNum, episodeList) ->
+                        episodeList.forEach { ep ->
+                            episodes.add(
+                                Episode(
+                                    id = ep.id,
+                                    episodeNum = ep.episodeNum,
+                                    title = ep.title ?: "Episode ${ep.episodeNum}",
+                                    containerExtension = ep.containerExtension,
+                                    info = ep.info?.let {
+                                        EpisodeInfo(it.plot, it.duration, it.rating)
+                                    },
+                                    seasonNumber = seasonNum.toIntOrNull() ?: 0
+                                )
+                            )
+                        }
+                    }
+                    
+                    Result.success(episodes)
+                } else {
+                    Result.failure(Exception("Failed to load series info"))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+}
