@@ -93,9 +93,27 @@ Alaa-IPTV/
 - **Gson**: JSON serialization/deserialization
 - **OkHttp**: HTTP client and logging interceptor
 - **Coroutines**: Asynchronous programming
-- **Media3 (ExoPlayer)**: Video playback
+- **Media3 ExoPlayer 1.3.1**: Video playback with HLS support
 - **Glide**: Image loading and caching
 - **Material Components**: UI components
+
+## Media3 ExoPlayer 1.3.1
+
+The project uses the latest Media3 ExoPlayer version 1.3.1, which includes:
+
+- **Enhanced Stability**: Improved buffering and playback reliability
+- **HLS Support**: Full support for HTTP Live Streaming (HLS)
+- **Bug Fixes**: Resolved issues from previous versions
+- **Security**: No known vulnerabilities
+- **Modern API**: Clean, well-documented API for video playback
+
+### Media3 Dependencies
+```gradle
+implementation("androidx.media3:media3-exoplayer:1.3.1")
+implementation("androidx.media3:media3-exoplayer-hls:1.3.1")
+implementation("androidx.media3:media3-ui:1.3.1")
+implementation("androidx.media3:media3-session:1.3.1")
+```
 
 ## Building the Project
 
