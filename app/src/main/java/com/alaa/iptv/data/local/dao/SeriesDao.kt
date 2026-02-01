@@ -36,6 +36,39 @@ interface SeriesDao {
     
     @Query("DELETE FROM series WHERE categoryId = :categoryId")
     suspend fun deleteSeriesByCategory(categoryId: String)
+    
+    // ==================== Search ====================
+    
+    /**
+     * Search series by title
+     */
+    @Query("""
+        SELECT * FROM series 
+        WHERE name LIKE '%' || :query || '%' 
+        ORDER BY name ASC
+    """)
+    suspend fun searchSeriesByTitle(query: String): List<SeriesEntity>
+    
+    /**
+     * Search series by title within a category
+     */
+    @Query("""
+        SELECT * FROM series 
+        WHERE name LIKE '%' || :query || '%' 
+        AND categoryId = :categoryId 
+        ORDER BY name ASC
+    """)
+    suspend fun searchSeriesByTitleInCategory(query: String, categoryId: String): List<SeriesEntity>
+    
+    /**
+     * Search series by genre
+     */
+    @Query("""
+        SELECT * FROM series 
+        WHERE genre LIKE '%' || :genre || '%' 
+        ORDER BY name ASC
+    """)
+    suspend fun searchSeriesByGenre(genre: String): List<SeriesEntity>
 }
 
 /**
