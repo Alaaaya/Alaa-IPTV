@@ -4,7 +4,7 @@ import com.alaa.iptv.data.models.*
 
 /**
  * Repository interface for media operations.
- * Defines contract for accessing Live TV, Movies, Series, and Favorites.
+ * Defines contract for accessing Live TV, Movies, Series, Favorites, EPG, and Search.
  */
 interface IMediaRepository {
     
@@ -50,4 +50,32 @@ interface IMediaRepository {
     // Reordering
     suspend fun updateChannelPosition(channelId: String, newPosition: Int)
     suspend fun getChannelsOrdered(categoryId: String? = null): List<Channel>
+    
+    // ==================== Phase 2 Features ====================
+    
+    // EPG
+    suspend fun getEpgForChannel(channelId: String): List<EpgProgram>
+    suspend fun getEpgForChannelInTimeRange(channelId: String, startTime: Long, endTime: Long): List<EpgProgram>
+    suspend fun getCurrentProgram(channelId: String): EpgProgram?
+    suspend fun getUpcomingPrograms(channelId: String, limit: Int = 10): List<EpgProgram>
+    suspend fun cacheEpgPrograms(programs: List<EpgProgram>)
+    suspend fun cleanupOldEpgData(cutoffTime: Long)
+    
+    // M3U Support
+    suspend fun loadM3UPlaylist(m3uContent: String): Result<List<Channel>>
+    suspend fun loadM3UPlaylistFromUrl(url: String): Result<List<Channel>>
+    suspend fun mergeM3UChannels(channels: List<Channel>)
+    
+    // Search
+    suspend fun searchChannels(query: String, categoryId: String? = null): List<Channel>
+    suspend fun searchMovies(query: String, categoryId: String? = null): List<Movie>
+    suspend fun searchSeries(query: String, categoryId: String? = null): List<Series>
+    suspend fun searchMoviesByGenre(genre: String): List<Movie>
+    suspend fun searchSeriesByGenre(genre: String): List<Series>
+    
+    // Sync
+    suspend fun syncAllData(): Result<Unit>
+    suspend fun syncLiveTV(): Result<Unit>
+    suspend fun syncMovies(): Result<Unit>
+    suspend fun syncSeries(): Result<Unit>
 }
