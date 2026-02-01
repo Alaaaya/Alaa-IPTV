@@ -1,46 +1,18 @@
 package com.alaa.iptv.data.repository
 
-import android.content.Context
 import com.alaa.iptv.data.api.ApiClient
-import com.alaa.iptv.data.local.AppDatabase
-import com.alaa.iptv.data.local.entity.FavoriteEntity
-import com.alaa.iptv.data.local.entity.RecentEntity
-import com.alaa.iptv.data.local.mapper.*
 import com.alaa.iptv.data.models.*
 import com.alaa.iptv.data.preferences.AppPreferences
-import com.alaa.iptv.domain.repository.IMediaRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-/**
- * Implementation of IMediaRepository
- * Integrates Xtream API, M3U data sources with local Room database cache
- */
-class MediaRepository(
-    private val prefs: AppPreferences,
-    context: Context
-) : IMediaRepository {
-    
-    private val database = AppDatabase.getInstance(context)
-    private val channelDao = database.channelDao()
-    private val categoryDao = database.categoryDao()
-    private val movieDao = database.movieDao()
-    private val seriesDao = database.seriesDao()
-    private val episodeDao = database.episodeDao()
-    private val favoriteDao = database.favoriteDao()
-    private val recentDao = database.recentDao()
+class MediaRepository(private val prefs: AppPreferences) {
     
     private val apiService by lazy {
         ApiClient.getXtreamApiService(prefs.serverUrl)
     }
     
-    // ==================== Authentication ====================
-    
-    override suspend fun authenticate(
-        serverUrl: String,
-        username: String,
-        password: String
-    ): Result<XtreamAuthResponse> {
+    suspend fun authenticate(serverUrl: String, username: String, password: String): Result<XtreamAuthResponse> {
         return withContext(Dispatchers.IO) {
             try {
                 val service = ApiClient.getXtreamApiService(serverUrl)
@@ -56,9 +28,7 @@ class MediaRepository(
         }
     }
     
-    // ==================== Live TV ====================
-    
-    override suspend fun getLiveCategories(): Result<List<Category>> {
+    suspend fun getLiveCategories(): Result<List<Category>> {
         return withContext(Dispatchers.IO) {
             try {
                 val response = apiService.getLiveCategories(prefs.username, prefs.password)
@@ -66,11 +36,6 @@ class MediaRepository(
                     val categories = response.body()!!.map { 
                         Category(it.categoryId, it.categoryName, it.parentId)
                     }
-                    
-                    // Cache categories
-                    val entities = categories.map { it.toEntity("live") }
-                    categoryDao.insertCategories(entities)
-                    
                     Result.success(categories)
                 } else {
                     Result.failure(Exception("Failed to load categories"))
@@ -81,7 +46,7 @@ class MediaRepository(
         }
     }
     
-    override suspend fun getLiveStreams(categoryId: String?): Result<List<Channel>> {
+    suspend fun getLiveStreams(categoryId: String? = null): Result<List<Channel>> {
         return withContext(Dispatchers.IO) {
             try {
                 val response = if (categoryId != null) {
@@ -91,7 +56,7 @@ class MediaRepository(
                 }
                 
                 if (response.isSuccessful && response.body() != null) {
-                    val favorites = favoriteDao.getAllFavorites().map { it.itemId }.toSet()
+                    val favorites = prefs.getFavorites()
                     val channels = response.body()!!.mapNotNull { stream ->
                         stream.streamId?.let { id ->
                             Channel(
@@ -112,11 +77,6 @@ class MediaRepository(
                             )
                         }
                     }
-                    
-                    // Cache channels
-                    val entities = channels.map { it.toEntity() }
-                    channelDao.insertChannels(entities)
-                    
                     Result.success(channels)
                 } else {
                     Result.failure(Exception("Failed to load channels"))
@@ -127,25 +87,7 @@ class MediaRepository(
         }
     }
     
-    override suspend fun getLiveStreamsFromCache(categoryId: String?): List<Channel> {
-        return withContext(Dispatchers.IO) {
-            try {
-                val favorites = favoriteDao.getAllFavorites().map { it.itemId }.toSet()
-                val entities = if (categoryId != null) {
-                    channelDao.getChannelsByCategory(categoryId)
-                } else {
-                    channelDao.getAllChannels()
-                }
-                entities.map { it.toChannel(favorites.contains(it.streamId)) }
-            } catch (e: Exception) {
-                emptyList()
-            }
-        }
-    }
-    
-    // ==================== Movies ====================
-    
-    override suspend fun getMovieCategories(): Result<List<Category>> {
+    suspend fun getMovieCategories(): Result<List<Category>> {
         return withContext(Dispatchers.IO) {
             try {
                 val response = apiService.getVodCategories(prefs.username, prefs.password)
@@ -153,11 +95,6 @@ class MediaRepository(
                     val categories = response.body()!!.map { 
                         Category(it.categoryId, it.categoryName, it.parentId)
                     }
-                    
-                    // Cache categories
-                    val entities = categories.map { it.toEntity("movie") }
-                    categoryDao.insertCategories(entities)
-                    
                     Result.success(categories)
                 } else {
                     Result.failure(Exception("Failed to load categories"))
@@ -168,7 +105,7 @@ class MediaRepository(
         }
     }
     
-    override suspend fun getMovies(categoryId: String?): Result<List<Movie>> {
+    suspend fun getMovies(categoryId: String? = null): Result<List<Movie>> {
         return withContext(Dispatchers.IO) {
             try {
                 val response = if (categoryId != null) {
@@ -178,7 +115,7 @@ class MediaRepository(
                 }
                 
                 if (response.isSuccessful && response.body() != null) {
-                    val favorites = favoriteDao.getAllFavorites().map { it.itemId }.toSet()
+                    val favorites = prefs.getFavorites()
                     val movies = response.body()!!.mapNotNull { movie ->
                         movie.streamId?.let { id ->
                             Movie(
@@ -200,11 +137,6 @@ class MediaRepository(
                             )
                         }
                     }
-                    
-                    // Cache movies
-                    val entities = movies.map { it.toEntity() }
-                    movieDao.insertMovies(entities)
-                    
                     Result.success(movies)
                 } else {
                     Result.failure(Exception("Failed to load movies"))
@@ -215,25 +147,7 @@ class MediaRepository(
         }
     }
     
-    override suspend fun getMoviesFromCache(categoryId: String?): List<Movie> {
-        return withContext(Dispatchers.IO) {
-            try {
-                val favorites = favoriteDao.getAllFavorites().map { it.itemId }.toSet()
-                val entities = if (categoryId != null) {
-                    movieDao.getMoviesByCategory(categoryId)
-                } else {
-                    movieDao.getAllMovies()
-                }
-                entities.map { it.toMovie(favorites.contains(it.streamId)) }
-            } catch (e: Exception) {
-                emptyList()
-            }
-        }
-    }
-    
-    // ==================== Series ====================
-    
-    override suspend fun getSeriesCategories(): Result<List<Category>> {
+    suspend fun getSeriesCategories(): Result<List<Category>> {
         return withContext(Dispatchers.IO) {
             try {
                 val response = apiService.getSeriesCategories(prefs.username, prefs.password)
@@ -241,11 +155,6 @@ class MediaRepository(
                     val categories = response.body()!!.map { 
                         Category(it.categoryId, it.categoryName, it.parentId)
                     }
-                    
-                    // Cache categories
-                    val entities = categories.map { it.toEntity("series") }
-                    categoryDao.insertCategories(entities)
-                    
                     Result.success(categories)
                 } else {
                     Result.failure(Exception("Failed to load categories"))
@@ -256,7 +165,7 @@ class MediaRepository(
         }
     }
     
-    override suspend fun getSeries(categoryId: String?): Result<List<Series>> {
+    suspend fun getSeries(categoryId: String? = null): Result<List<Series>> {
         return withContext(Dispatchers.IO) {
             try {
                 val response = if (categoryId != null) {
@@ -266,7 +175,7 @@ class MediaRepository(
                 }
                 
                 if (response.isSuccessful && response.body() != null) {
-                    val favorites = favoriteDao.getAllFavorites().map { it.itemId }.toSet()
+                    val favorites = prefs.getFavorites()
                     val series = response.body()!!.mapNotNull { s ->
                         s.seriesId?.let { id ->
                             Series(
@@ -284,11 +193,6 @@ class MediaRepository(
                             )
                         }
                     }
-                    
-                    // Cache series
-                    val entities = series.map { it.toEntity() }
-                    seriesDao.insertMultipleSeries(entities)
-                    
                     Result.success(series)
                 } else {
                     Result.failure(Exception("Failed to load series"))
@@ -299,23 +203,7 @@ class MediaRepository(
         }
     }
     
-    override suspend fun getSeriesFromCache(categoryId: String?): List<Series> {
-        return withContext(Dispatchers.IO) {
-            try {
-                val favorites = favoriteDao.getAllFavorites().map { it.itemId }.toSet()
-                val entities = if (categoryId != null) {
-                    seriesDao.getSeriesByCategory(categoryId)
-                } else {
-                    seriesDao.getAllSeries()
-                }
-                entities.map { it.toSeries(favorites.contains(it.seriesId)) }
-            } catch (e: Exception) {
-                emptyList()
-            }
-        }
-    }
-    
-    override suspend fun getSeriesInfo(seriesId: String): Result<List<Episode>> {
+    suspend fun getSeriesInfo(seriesId: String): Result<List<Episode>> {
         return withContext(Dispatchers.IO) {
             try {
                 val response = apiService.getSeriesInfo(prefs.username, prefs.password, seriesId = seriesId)
@@ -340,121 +228,12 @@ class MediaRepository(
                         }
                     }
                     
-                    // Cache episodes
-                    val entities = episodes.map { it.toEntity(seriesId) }
-                    episodeDao.insertEpisodes(entities)
-                    
                     Result.success(episodes)
                 } else {
                     Result.failure(Exception("Failed to load series info"))
                 }
             } catch (e: Exception) {
                 Result.failure(e)
-            }
-        }
-    }
-    
-    override suspend fun getEpisodesFromCache(seriesId: String): List<Episode> {
-        return withContext(Dispatchers.IO) {
-            try {
-                val entities = episodeDao.getEpisodesBySeriesId(seriesId)
-                entities.map { it.toEpisode() }
-            } catch (e: Exception) {
-                emptyList()
-            }
-        }
-    }
-    
-    // ==================== Favorites ====================
-    
-    override suspend fun getFavorites(): List<String> {
-        return withContext(Dispatchers.IO) {
-            try {
-                favoriteDao.getAllFavorites().map { it.itemId }
-            } catch (e: Exception) {
-                emptyList()
-            }
-        }
-    }
-    
-    override suspend fun addFavorite(itemId: String) {
-        withContext(Dispatchers.IO) {
-            try {
-                val favorite = FavoriteEntity(itemId = itemId, itemType = "unknown")
-                favoriteDao.insertFavorite(favorite)
-            } catch (e: Exception) {
-                // Log error
-            }
-        }
-    }
-    
-    override suspend fun removeFavorite(itemId: String) {
-        withContext(Dispatchers.IO) {
-            try {
-                favoriteDao.deleteFavoriteById(itemId)
-            } catch (e: Exception) {
-                // Log error
-            }
-        }
-    }
-    
-    override suspend fun isFavorite(itemId: String): Boolean {
-        return withContext(Dispatchers.IO) {
-            try {
-                favoriteDao.isFavorite(itemId)
-            } catch (e: Exception) {
-                false
-            }
-        }
-    }
-    
-    // ==================== Recent ====================
-    
-    override suspend fun addRecent(itemId: String, itemType: String) {
-        withContext(Dispatchers.IO) {
-            try {
-                val recent = RecentEntity(itemId = itemId, itemType = itemType)
-                recentDao.insertRecent(recent)
-            } catch (e: Exception) {
-                // Log error
-            }
-        }
-    }
-    
-    override suspend fun getRecents(): List<Recent> {
-        return withContext(Dispatchers.IO) {
-            try {
-                recentDao.getAllRecents().map { it.toRecent() }
-            } catch (e: Exception) {
-                emptyList()
-            }
-        }
-    }
-    
-    // ==================== Reordering ====================
-    
-    override suspend fun updateChannelPosition(channelId: String, newPosition: Int) {
-        withContext(Dispatchers.IO) {
-            try {
-                channelDao.updateChannelPosition(channelId, newPosition)
-            } catch (e: Exception) {
-                // Log error
-            }
-        }
-    }
-    
-    override suspend fun getChannelsOrdered(categoryId: String?): List<Channel> {
-        return withContext(Dispatchers.IO) {
-            try {
-                val favorites = favoriteDao.getAllFavorites().map { it.itemId }.toSet()
-                val entities = if (categoryId != null) {
-                    channelDao.getChannelsByCategory(categoryId)
-                } else {
-                    channelDao.getAllChannels()
-                }
-                entities.map { it.toChannel(favorites.contains(it.streamId)) }
-            } catch (e: Exception) {
-                emptyList()
             }
         }
     }
