@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary Brand Color -->
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    
+    <!-- Secondary Brand Color -->
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    
+    <!-- Standard Colors -->
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    
+    <!-- Glassmorphism Design Colors -->
+    <color name="glass_background">#33FFFFFF</color>
+    <color name="glass_background_dark">#22000000</color>
+    <color name="glass_border">#44FFFFFF</color>
+    <color name="glass_shadow">#55000000</color>
+    
+    <!-- UI Colors -->
+    <color name="background_primary">#0A0E27</color>
+    <color name="background_secondary">#131837</color>
+    <color name="card_background">#1A1F3A</color>
+    <color name="card_background_focused">#252B4A</color>
+    
+    <!-- Text Colors -->
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#B8B8D1</color>
+    <color name="text_hint">#6B7280</color>
+    
+    <!-- Accent Colors -->
+    <color name="accent_blue">#4A90E2</color>
+    <color name="accent_green">#50C878</color>
+    <color name="accent_red">#E74C3C</color>
+    <color name="accent_orange">#F39C12</color>
+    
+    <!-- Overlay Colors -->
+    <color name="overlay_dark">#AA000000</color>
+    <color name="overlay_light">#33FFFFFF</color>
+</resources>

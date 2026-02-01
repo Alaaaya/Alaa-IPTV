@@ -1,0 +1,50 @@
+<resources>
+    <!-- App Name -->
+    <string name="app_name">Alaa IPTV</string>
+    
+    <!-- Login Screen -->
+    <string name="login_title">Welcome to Alaa IPTV</string>
+    <string name="login_subtitle">Enter your credentials to continue</string>
+    <string name="username_hint">Username</string>
+    <string name="password_hint">Password</string>
+    <string name="server_url_hint">Server URL</string>
+    <string name="login_button">Login</string>
+    <string name="logging_in">Logging in…</string>
+    <string name="login_error">Login failed. Please check your credentials.</string>
+    <string name="login_success">Login successful!</string>
+    
+    <!-- Main Screen -->
+    <string name="main_title">Alaa IPTV</string>
+    <string name="live_tv">Live TV</string>
+    <string name="movies">Movies</string>
+    <string name="series">Series</string>
+    <string name="settings">Settings</string>
+    <string name="search">Search</string>
+    
+    <!-- Player Screen -->
+    <string name="player_loading">Loading…</string>
+    <string name="player_error">Error playing stream</string>
+    <string name="player_buffering">Buffering…</string>
+    
+    <!-- Channel Categories -->
+    <string name="category_all">All Channels</string>
+    <string name="category_news">News</string>
+    <string name="category_sports">Sports</string>
+    <string name="category_entertainment">Entertainment</string>
+    <string name="category_movies">Movies</string>
+    <string name="category_kids">Kids</string>
+    
+    <!-- Common -->
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="retry">Retry</string>
+    <string name="loading">Loading…</string>
+    <string name="error">Error</string>
+    <string name="no_data">No data available</string>
+    <string name="network_error">Network error. Please check your connection.</string>
+    
+    <!-- Settings -->
+    <string name="logout">Logout</string>
+    <string name="about">About</string>
+    <string name="version">Version</string>
+</resources>
