@@ -38,4 +38,27 @@ interface ChannelDao {
     
     @Query("DELETE FROM channels WHERE categoryId = :categoryId")
     suspend fun deleteChannelsByCategory(categoryId: String)
+    
+    // ==================== Search ====================
+    
+    /**
+     * Search channels by name
+     */
+    @Query("""
+        SELECT * FROM channels 
+        WHERE name LIKE '%' || :query || '%' 
+        ORDER BY position ASC, num ASC
+    """)
+    suspend fun searchChannelsByName(query: String): List<ChannelEntity>
+    
+    /**
+     * Search channels by name within a category
+     */
+    @Query("""
+        SELECT * FROM channels 
+        WHERE name LIKE '%' || :query || '%' 
+        AND categoryId = :categoryId 
+        ORDER BY position ASC, num ASC
+    """)
+    suspend fun searchChannelsByNameInCategory(query: String, categoryId: String): List<ChannelEntity>
 }
