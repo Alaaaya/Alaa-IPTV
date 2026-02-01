@@ -1,8 +1,11 @@
 package com.alaa.iptv.ui.main
 
+import android.animation.ObjectAnimator
 import android.graphics.Color
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
+import android.view.animation.DecelerateInterpolator
 import androidx.recyclerview.widget.RecyclerView
 import com.alaa.iptv.data.models.Category
 import com.alaa.iptv.databinding.ItemCategoryBinding
@@ -26,14 +29,30 @@ class CategoryAdapter(
                 }
             }
 
+            // Enhanced focus handling with smooth animations
             binding.root.setOnFocusChangeListener { view, hasFocus ->
                 if (hasFocus) {
-                    view.scaleX = 1.1f
-                    view.scaleY = 1.1f
+                    animateFocusChange(view, true)
                 } else {
-                    view.scaleX = 1.0f
-                    view.scaleY = 1.0f
+                    animateFocusChange(view, false)
                 }
+            }
+        }
+
+        private fun animateFocusChange(view: View, focused: Boolean) {
+            val scale = if (focused) 1.1f else 1.0f
+            val duration = 200L
+
+            ObjectAnimator.ofFloat(view, "scaleX", view.scaleX, scale).apply {
+                this.duration = duration
+                interpolator = DecelerateInterpolator()
+                start()
+            }
+
+            ObjectAnimator.ofFloat(view, "scaleY", view.scaleY, scale).apply {
+                this.duration = duration
+                interpolator = DecelerateInterpolator()
+                start()
             }
         }
 
@@ -73,7 +92,11 @@ class CategoryAdapter(
     private fun setSelectedPosition(position: Int) {
         val previousPosition = selectedPosition
         selectedPosition = position
-        notifyItemChanged(previousPosition)
-        notifyItemChanged(selectedPosition)
+        if (previousPosition >= 0 && previousPosition < categories.size) {
+            notifyItemChanged(previousPosition)
+        }
+        if (selectedPosition >= 0 && selectedPosition < categories.size) {
+            notifyItemChanged(selectedPosition)
+        }
     }
 }
