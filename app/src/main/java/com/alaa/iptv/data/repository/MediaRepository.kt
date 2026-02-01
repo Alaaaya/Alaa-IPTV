@@ -372,6 +372,7 @@ class MediaRepository(
             try {
                 favoriteDao.getAllFavorites().map { it.itemId }
             } catch (e: Exception) {
+                android.util.Log.e("MediaRepository", "Error getting favorites", e)
                 emptyList()
             }
         }
@@ -380,10 +381,17 @@ class MediaRepository(
     override suspend fun addFavorite(itemId: String) {
         withContext(Dispatchers.IO) {
             try {
-                val favorite = FavoriteEntity(itemId = itemId, itemType = "unknown")
+                // Determine item type based on existing data
+                val itemType = when {
+                    channelDao.getChannelById(itemId) != null -> "channel"
+                    movieDao.getMovieById(itemId) != null -> "movie"
+                    seriesDao.getSeriesById(itemId) != null -> "series"
+                    else -> "unknown"
+                }
+                val favorite = FavoriteEntity(itemId = itemId, itemType = itemType)
                 favoriteDao.insertFavorite(favorite)
             } catch (e: Exception) {
-                // Log error
+                android.util.Log.e("MediaRepository", "Error adding favorite: $itemId", e)
             }
         }
     }
@@ -393,7 +401,7 @@ class MediaRepository(
             try {
                 favoriteDao.deleteFavoriteById(itemId)
             } catch (e: Exception) {
-                // Log error
+                android.util.Log.e("MediaRepository", "Error removing favorite: $itemId", e)
             }
         }
     }
@@ -403,6 +411,7 @@ class MediaRepository(
             try {
                 favoriteDao.isFavorite(itemId)
             } catch (e: Exception) {
+                android.util.Log.e("MediaRepository", "Error checking favorite: $itemId", e)
                 false
             }
         }
@@ -416,7 +425,7 @@ class MediaRepository(
                 val recent = RecentEntity(itemId = itemId, itemType = itemType)
                 recentDao.insertRecent(recent)
             } catch (e: Exception) {
-                // Log error
+                android.util.Log.e("MediaRepository", "Error adding recent: $itemId", e)
             }
         }
     }
@@ -426,6 +435,7 @@ class MediaRepository(
             try {
                 recentDao.getAllRecents().map { it.toRecent() }
             } catch (e: Exception) {
+                android.util.Log.e("MediaRepository", "Error getting recents", e)
                 emptyList()
             }
         }
@@ -438,7 +448,7 @@ class MediaRepository(
             try {
                 channelDao.updateChannelPosition(channelId, newPosition)
             } catch (e: Exception) {
-                // Log error
+                android.util.Log.e("MediaRepository", "Error updating channel position: $channelId", e)
             }
         }
     }
@@ -454,6 +464,7 @@ class MediaRepository(
                 }
                 entities.map { it.toChannel(favorites.contains(it.streamId)) }
             } catch (e: Exception) {
+                android.util.Log.e("MediaRepository", "Error getting ordered channels", e)
                 emptyList()
             }
         }

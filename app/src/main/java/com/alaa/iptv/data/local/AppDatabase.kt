@@ -49,7 +49,10 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     DATABASE_NAME
                 )
-                    .fallbackToDestructiveMigration() // For development, remove in production
+                    // TODO: Remove fallbackToDestructiveMigration before production release
+                    // This will delete all user data (favorites, recents) on schema changes
+                    // Implement proper migrations to preserve user data
+                    .fallbackToDestructiveMigration()
                     .build()
                 
                 INSTANCE = instance
