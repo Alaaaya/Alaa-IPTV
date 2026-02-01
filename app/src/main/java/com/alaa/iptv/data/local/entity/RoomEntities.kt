@@ -2,6 +2,7 @@ package com.alaa.iptv.data.local.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import androidx.room.Index
 
 /**
  * Room entity for Channel/Live TV stream
@@ -127,9 +128,9 @@ data class RecentEntity(
 @Entity(
     tableName = "epg_programs",
     indices = [
-        androidx.room.Index(value = ["channelId"]),
-        androidx.room.Index(value = ["startTime"]),
-        androidx.room.Index(value = ["endTime"])
+        Index(value = ["channelId"]),
+        Index(value = ["startTime"]),
+        Index(value = ["endTime"])
     ]
 )
 data class EpgProgramEntity(
