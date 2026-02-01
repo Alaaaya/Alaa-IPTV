@@ -120,3 +120,27 @@ data class RecentEntity(
     val itemType: String, // "channel", "movie", "series"
     val viewedAt: Long = System.currentTimeMillis()
 )
+
+/**
+ * Room entity for EPG Program data
+ */
+@Entity(
+    tableName = "epg_programs",
+    indices = [
+        androidx.room.Index(value = ["channelId"]),
+        androidx.room.Index(value = ["startTime"]),
+        androidx.room.Index(value = ["endTime"])
+    ]
+)
+data class EpgProgramEntity(
+    @PrimaryKey
+    val id: String,
+    val channelId: String,
+    val title: String,
+    val description: String?,
+    val startTime: Long,
+    val endTime: Long,
+    val category: String?,
+    val icon: String?,
+    val lastUpdated: Long = System.currentTimeMillis()
+)

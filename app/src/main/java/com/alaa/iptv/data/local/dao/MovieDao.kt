@@ -35,4 +35,43 @@ interface MovieDao {
     
     @Query("DELETE FROM movies WHERE categoryId = :categoryId")
     suspend fun deleteMoviesByCategory(categoryId: String)
+    
+    // ==================== Search ====================
+    
+    /**
+     * Search movies by title
+     */
+    @Query("""
+        SELECT * FROM movies 
+        WHERE name LIKE '%' || :query || '%' 
+        ORDER BY name ASC
+    """)
+    suspend fun searchMoviesByTitle(query: String): List<MovieEntity>
+    
+    /**
+     * Search movies by title within a category
+     */
+    @Query("""
+        SELECT * FROM movies 
+        WHERE name LIKE '%' || :query || '%' 
+        AND categoryId = :categoryId 
+        ORDER BY name ASC
+    """)
+    suspend fun searchMoviesByTitleInCategory(query: String, categoryId: String): List<MovieEntity>
+    
+    /**
+     * Search movies by genre
+     */
+    @Query("""
+        SELECT * FROM movies 
+        WHERE genre LIKE '%' || :genre || '%' 
+        ORDER BY name ASC
+    """)
+    suspend fun searchMoviesByGenre(genre: String): List<MovieEntity>
+    
+    /**
+     * Search movies by year
+     */
+    @Query("SELECT * FROM movies WHERE year = :year ORDER BY name ASC")
+    suspend fun searchMoviesByYear(year: String): List<MovieEntity>
 }
