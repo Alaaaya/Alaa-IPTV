@@ -2,6 +2,7 @@ package com.alaaaya.iptv.utils
 
 object Constants {
     // API Constants
+    // Note: DEFAULT_SERVER_URL is a placeholder - users must provide their actual IPTV server URL
     const val DEFAULT_SERVER_URL = "http://example.com/"
     const val API_TIMEOUT = 30L // seconds
     
