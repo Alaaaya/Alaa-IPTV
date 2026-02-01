@@ -41,7 +41,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         
         prefs = AppPreferences(this)
-        repository = MediaRepository(prefs)
+        repository = MediaRepository(prefs, this)
         
         setupRecyclerViews()
         setupTabs()
