@@ -9,6 +9,19 @@
     android:focusable="true"
     android:clickable="true">
 
+    <!-- Reorder Indicator -->
+    <TextView
+        android:id="@+id/reorderIndicator"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:text="►"
+        android:textColor="@color/accent_blue"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        android:layout_marginEnd="8dp" />
+
     <ImageView
         android:id="@+id/channelIcon"
         android:layout_width="60dp"
