@@ -202,6 +202,9 @@ fun RecentEntity.toRecentItem(): RecentItem {
         icon = icon,
         categoryId = categoryId,
         timestamp = viewedAt
+    )
+}
+
 // EPG conversions
 fun EpgProgramEntity.toEpgProgram(): com.alaa.iptv.data.models.EpgProgram {
     return com.alaa.iptv.data.models.EpgProgram(
