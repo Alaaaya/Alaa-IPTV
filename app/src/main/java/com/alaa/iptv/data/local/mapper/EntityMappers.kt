@@ -181,3 +181,26 @@ fun Recent.toEntity(): RecentEntity {
         viewedAt = timestamp
     )
 }
+
+// Extended conversions for UI display
+fun FavoriteEntity.toFavoriteItem(): FavoriteItem {
+    return FavoriteItem(
+        contentId = itemId,
+        name = name,
+        type = itemType,
+        icon = icon,
+        categoryId = categoryId,
+        timestamp = addedAt
+    )
+}
+
+fun RecentEntity.toRecentItem(): RecentItem {
+    return RecentItem(
+        contentId = itemId,
+        name = name,
+        type = itemType,
+        icon = icon,
+        categoryId = categoryId,
+        timestamp = viewedAt
+    )
+}

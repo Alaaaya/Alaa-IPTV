@@ -253,7 +253,7 @@ class MainActivity : AppCompatActivity() {
         showLoading(true)
         lifecycleScope.launch {
             // Load favorites from database using repository
-            repository.getFavorites().onSuccess { favorites ->
+            repository.getFavoritesWithDetails().onSuccess { favorites ->
                 // Convert favorites to channels for display
                 val favoriteChannels = favorites.map { favorite ->
                     Channel(

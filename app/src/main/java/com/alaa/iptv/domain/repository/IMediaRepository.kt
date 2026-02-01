@@ -28,15 +28,24 @@ interface IMediaRepository {
     suspend fun getSeriesInfo(seriesId: String): Result<List<Episode>>
     suspend fun getEpisodesFromCache(seriesId: String): List<Episode>
     
-    // Favorites
+    // Favorites (basic)
     suspend fun getFavorites(): List<String>
     suspend fun addFavorite(itemId: String)
     suspend fun removeFavorite(itemId: String)
     suspend fun isFavorite(itemId: String): Boolean
     
-    // Recent
+    // Favorites (extended with details)
+    suspend fun addFavorite(contentId: String, name: String, type: String, icon: String?, categoryId: String?): Result<Unit>
+    suspend fun removeFavorite(contentId: String): Result<Unit>
+    suspend fun getFavoritesWithDetails(): Result<List<FavoriteItem>>
+    
+    // Recent (basic)
     suspend fun addRecent(itemId: String, itemType: String)
     suspend fun getRecents(): List<Recent>
+    
+    // Recent (extended with details)
+    suspend fun addRecentView(contentId: String, name: String, type: String, icon: String?, categoryId: String?): Result<Unit>
+    suspend fun getRecentViews(): Result<List<RecentItem>>
     
     // Reordering
     suspend fun updateChannelPosition(channelId: String, newPosition: Int)

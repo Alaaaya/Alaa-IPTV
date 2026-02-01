@@ -107,6 +107,9 @@ data class FavoriteEntity(
     @PrimaryKey
     val itemId: String,
     val itemType: String, // "channel", "movie", "series"
+    val name: String = "",
+    val icon: String? = null,
+    val categoryId: String? = null,
     val addedAt: Long = System.currentTimeMillis()
 )
 
@@ -118,5 +121,8 @@ data class RecentEntity(
     @PrimaryKey
     val itemId: String,
     val itemType: String, // "channel", "movie", "series"
+    val name: String = "",
+    val icon: String? = null,
+    val categoryId: String? = null,
     val viewedAt: Long = System.currentTimeMillis()
 )
