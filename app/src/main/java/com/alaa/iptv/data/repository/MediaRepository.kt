@@ -35,7 +35,9 @@ class MediaRepository(
         ApiClient.getXtreamApiService(prefs.serverUrl)
     }
     
-    private val m3uParser = com.alaa.iptv.utils.M3UParser
+    private val httpClient by lazy {
+        okhttp3.OkHttpClient()
+    }
     
     // ==================== Authentication ====================
     
@@ -556,7 +558,7 @@ class MediaRepository(
     override suspend fun loadM3UPlaylist(m3uContent: String): Result<List<Channel>> {
         return withContext(Dispatchers.IO) {
             try {
-                val channels = m3uParser.parseFromString(m3uContent)
+                val channels = com.alaa.iptv.utils.M3UParser.parseFromString(m3uContent)
                 android.util.Log.d("MediaRepository", "Parsed ${channels.size} channels from M3U")
                 Result.success(channels)
             } catch (e: Exception) {
@@ -569,15 +571,14 @@ class MediaRepository(
     override suspend fun loadM3UPlaylistFromUrl(url: String): Result<List<Channel>> {
         return withContext(Dispatchers.IO) {
             try {
-                val client = okhttp3.OkHttpClient()
                 val request = okhttp3.Request.Builder()
                     .url(url)
                     .build()
                 
-                val response = client.newCall(request).execute()
+                val response = httpClient.newCall(request).execute()
                 if (response.isSuccessful) {
                     val content = response.body?.string() ?: ""
-                    val channels = m3uParser.parseFromString(content)
+                    val channels = com.alaa.iptv.utils.M3UParser.parseFromString(content)
                     android.util.Log.d("MediaRepository", "Loaded ${channels.size} channels from M3U URL")
                     Result.success(channels)
                 } else {
