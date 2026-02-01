@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:background="@color/dark_background">
+
+    <!-- Left Sidebar with Categories and Channels -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Tab Navigation -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/glassmorphism_background"
+            android:padding="8dp">
+
+            <Button
+                android:id="@+id/liveTvTab"
+                style="@style/PrimaryButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/live_tv"
+                android:layout_marginEnd="4dp"
+                android:nextFocusRight="@id/moviesTab"
+                android:nextFocusDown="@id/categoriesRecyclerView" />
+
+            <Button
+                android:id="@+id/moviesTab"
+                style="@style/PrimaryButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/movies"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:nextFocusLeft="@id/liveTvTab"
+                android:nextFocusRight="@id/seriesTab"
+                android:nextFocusDown="@id/categoriesRecyclerView" />
+
+            <Button
+                android:id="@+id/seriesTab"
+                style="@style/PrimaryButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/series"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:nextFocusLeft="@id/moviesTab"
+                android:nextFocusRight="@id/favoritesTab"
+                android:nextFocusDown="@id/categoriesRecyclerView" />
+
+            <Button
+                android:id="@+id/favoritesTab"
+                style="@style/PrimaryButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/favorites"
+                android:layout_marginStart="4dp"
+                android:nextFocusLeft="@id/seriesTab"
+                android:nextFocusDown="@id/categoriesRecyclerView" />
+
+        </LinearLayout>
+
+        <!-- Categories -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/categoriesRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="80dp"
+            android:layout_marginBottom="16dp"
+            android:clipToPadding="false"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:nextFocusUp="@id/liveTvTab"
+            android:nextFocusDown="@id/channelsRecyclerView" />
+
+        <!-- Channels/Movies/Series List -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/channelsRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:clipToPadding="false"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            android:nextFocusUp="@id/categoriesRecyclerView" />
+
+    </LinearLayout>
+
+    <!-- Right Preview Panel -->
+    <RelativeLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:background="@drawable/glassmorphism_background"
+            android:padding="24dp">
+
+            <!-- Preview Image -->
+            <ImageView
+                android:id="@+id/previewImage"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:scaleType="centerCrop"
+                android:background="@color/card_background"
+                android:contentDescription="@string/app_name" />
+
+            <!-- Title -->
+            <TextView
+                android:id="@+id/previewTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text=""
+                android:textColor="@color/text_primary"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:maxLines="2"
+                android:ellipsize="end" />
+
+            <!-- Info -->
+            <TextView
+                android:id="@+id/previewInfo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text=""
+                android:textColor="@color/text_secondary"
+                android:textSize="16sp"
+                android:maxLines="3"
+                android:ellipsize="end" />
+
+            <!-- Action Buttons -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="16dp">
+
+                <Button
+                    android:id="@+id/playButton"
+                    style="@style/PrimaryButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Play"
+                    android:layout_marginEnd="8dp" />
+
+                <Button
+                    android:id="@+id/favoriteButton"
+                    style="@style/PrimaryButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="❤" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Loading Indicator -->
+        <ProgressBar
+            android:id="@+id/loadingProgress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:indeterminateTint="@color/accent_blue"
+            android:visibility="gone" />
+
+    </RelativeLayout>
+
+</LinearLayout>

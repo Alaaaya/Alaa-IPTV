@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Alaa IPTV</string>
+    
+    <!-- Login -->
+    <string name="login_title">Welcome to Alaa IPTV</string>
+    <string name="server_url">Server URL</string>
+    <string name="username">Username</string>
+    <string name="password">Password</string>
+    <string name="login">Login</string>
+    <string name="logging_in">Logging in…</string>
+    <string name="login_error">Login failed. Please check your credentials.</string>
+    <string name="network_error">Network error. Please check your connection.</string>
+    
+    <!-- Main -->
+    <string name="live_tv">Live TV</string>
+    <string name="movies">Movies</string>
+    <string name="series">Series</string>
+    <string name="favorites">Favorites</string>
+    <string name="settings">Settings</string>
+    
+    <!-- Categories -->
+    <string name="all_channels">All Channels</string>
+    <string name="loading">Loading…</string>
+    <string name="no_channels">No channels available</string>
+    <string name="no_movies">No movies available</string>
+    <string name="no_series">No series available</string>
+    
+    <!-- Player -->
+    <string name="player_error">Error playing media</string>
+    <string name="add_to_favorites">Add to Favorites</string>
+    <string name="remove_from_favorites">Remove from Favorites</string>
+    
+    <!-- Actions -->
+    <string name="long_press_to_reorder">Long press OK to reorder</string>
+    <string name="reordering_mode">Reordering Mode - Use arrows to move, OK to confirm</string>
+</resources>
