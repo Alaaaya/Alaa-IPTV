@@ -1,34 +1,41 @@
 # Alaa IPTV - Android TV Application
 
-A fully functional IPTV application for Android TV with a modern dark glassmorphism design, blue accent theme, and iBO Player-like experience.
+A fully functional IPTV application for Android TV with a modern dark Glassmorphism design, blue accent theme, and iBO Player-like experience.
 
 ## Features
 
-### Core Features
+### Core Features (Phase 1)
 - **Live TV Streaming**: Stream live channels using Xtream Codes API or M3U playlists
 - **Movies (VOD)**: Browse and watch movies from your IPTV provider
 - **Series**: Access TV series with episodes organized by season
-- **Favorites**: Mark and quickly access your favorite content with database persistence
-- **Recents**: Track and revisit recently viewed content
-- **Full Player**: ExoPlayer (Media3) based video player with playback controls
-- **Channel Reordering**: Long-press on OK button to reorder channels
+- **Favorites**: Mark and quickly access your favorite content (database-backed)
+- **Recents**: Track recently watched content
+- **Full Player**: ExoPlayer-based video player with playback controls
+- **Local Caching**: Room database for offline access and fast performance
+
+### Phase 2 Features
+- **EPG Integration**: Electronic Program Guide with current and upcoming programs
+- **M3U Playlist Support**: Import and merge M3U playlists from URLs or files
+- **Advanced Search**: Search channels, movies, and series by title, genre, category
+- **Data Sync Pipeline**: Automatic synchronization of all content from sources
+- **Multi-Source Support**: Combine Xtream Codes and M3U sources seamlessly
 
 ### User Interface
 - **Dark Glassmorphism Design**: Modern translucent UI with depth effects
-- **Blue Accent Theme**: Elegant blue color scheme throughout the app (`#2196F3`)
-- **D-Pad Navigation**: Fully optimized for Android TV remote control (no touch/mouse)
-- **Focus Handling**: Smooth custom focus management with scale animations
-- **Preview Panel**: Large preview (2/3 screen) with content metadata
+- **Blue Accent Theme**: Elegant blue color scheme throughout the app (#2196F3)
+- **D-Pad Navigation**: Optimized for Android TV remote control (no touch/mouse)
+- **Focus Handling**: Smooth custom focus management for seamless navigation
+- **Preview Panel**: Live preview of selected content with metadata
 - **Category Navigation**: Horizontal scrolling categories for easy filtering
-- **5 Tab Layout**: Live TV, Movies, Series, Favorites, and Recents
+- **5-Tab Layout**: Live TV, Movies, Series, Favorites, and Recents
 
 ### Technical Features
 - **Xtream Codes API**: Full integration with Xtream Codes providers
-- **M3U Support**: Parse and play M3U playlists
-- **ExoPlayer (Media3)**: Industry-standard video player with adaptive streaming
-- **Room Database**: Local caching with favorites and recents persistence
+- **M3U Support**: Parse and play M3U playlists from URLs or files
+- **EPG Support**: Electronic Program Guide with time-based queries
+- **Room Database**: Local caching with SQLite for offline access
 - **Clean Architecture**: Separated data/domain/ui layers
-- **RecyclerView**: Efficient list rendering with custom TV-optimized adapters
+- **RecyclerView**: Efficient list rendering with custom adapters
 - **ViewBinding**: Type-safe view access
 - **Coroutines**: Asynchronous operations for smooth UI
 - **Retrofit**: RESTful API communication
@@ -40,17 +47,17 @@ This app features a **complete Android TV interface** with iBO Player-like exper
 
 ### Screen Layout
 ```
-┌──────────────────────────────────────────────────────────────┐
-│ [Live TV] [Movies] [Series] [Favorites] [Recents]            │
-├────────────────────┬─────────────────────────────────────────┤
-│ [All][News][Sports]│           PREVIEW PANEL                 │
-│                    │                                          │
-│ ► BBC News   ❤    │        [Large Poster/Icon]               │
-│   CNN             │                                          │
-│   Fox News        │    BBC News - Channel 102                │
-│   Sky News        │                                          │
-│   MSNBC           │    [Play]  [❤]                          │
-└────────────────────┴─────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│ [Live TV] [Movies] [Series] [Favorites] [Recents]                   │
+├─────────────────────────────────────────────────────────────────────┤
+│ [All] [News] [Sports]                                               │  PREVIEW PANEL
+│                                                                     │
+│   BBC News                  [Large Poster/Icon]                     │
+│   CNN                       BBC News - Channel 102                  │
+│   Fox News                                                       │
+│   Sky News                                                        │
+│   MSNBC                    [Play] [❤]                              │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Key Features
@@ -61,23 +68,24 @@ This app features a **complete Android TV interface** with iBO Player-like exper
 - **Auto-Preview Updates**: Preview changes automatically with focus
 - **Custom Focus Management**: No Leanback library, fully custom implementation
 
-📖 **Full Documentation**: See [ANDROID_TV_UI.md](ANDROID_TV_UI.md) for complete Android TV UI/UX details.
-
 ## Architecture
 
 ### Project Structure
 ```
 app/src/main/java/com/alaa/iptv/
 ├── data/
-│   ├── api/              # API services and clients
-│   ├── models/           # Data models
-│   ├── preferences/      # SharedPreferences wrapper
-│   └── repository/       # Data repositories
+│   ├── api/           # API services and clients
+│   ├── local/         # Room database (entities, DAOs, mappers)
+│   ├── models/        # Domain models (Channel, Movie, Series, EPG)
+│   ├── preferences/   # SharedPreferences wrapper
+│   └── repository/    # Data repositories with sync logic
+├── domain/
+│   └── repository/    # Repository interfaces
 ├── ui/
-│   ├── login/           # Login screen
-│   ├── main/            # Main activity with channel list
-│   └── player/          # Video player activity
-└── utils/               # Utility classes (M3U parser, etc.)
+│   ├── login/         # Login screen
+│   ├── main/          # Main activity with channel list
+│   ├── player/        # Video player activity
+│   └── utils/         # Utility classes (M3U parser, etc.)
 ```
 
 ### Key Components
@@ -145,7 +153,7 @@ Alternatively, you can use M3U playlist URLs.
 - **D-Pad Up/Down**: Navigate through channels/content
 - **D-Pad Left/Right**: Switch between tabs and categories
 - **OK/Select**: Select channel/content to view preview or play
-- **Long Press OK**: Enable reordering mode (future enhancement)
+- **Long Press OK**: Enable reordering mode
 - **Back**: Return to previous screen
 
 ### Playing Content
@@ -175,7 +183,7 @@ The app features a modern glassmorphism design with:
 
 ### Favorites System
 - Toggle favorites with heart button
-- Persistent storage using SharedPreferences
+- Persistent storage using SharedPreferences/Room
 - Quick access via Favorites tab
 - Visual indicators on favorited items
 
@@ -183,12 +191,14 @@ The app features a modern glassmorphism design with:
 
 - **Kotlin**: 1.9.20
 - **AndroidX Core**: 1.12.0
-- **ExoPlayer (Media3)**: 1.2.0
+- **Room Database**: 2.6.1
+- **ExoPlayer (Media3)**: 1.3.1
 - **Retrofit**: 2.9.0
 - **OkHttp**: 4.12.0
 - **Glide**: 4.16.0
 - **Coroutines**: 1.7.3
 - **Gson**: 2.10.1
+- **KSP**: 1.9.20-1.0.14 (for Room code generation)
 
 ## Build Configuration
 
@@ -226,11 +236,21 @@ Contributions are welcome! Please feel free to submit pull requests or open issu
 
 ## Future Enhancements
 
-- EPG (Electronic Program Guide) integration
-- Channel reordering with drag-and-drop
+- Channel reordering with drag-and-drop in UI
 - Parental controls
 - Multi-profile support
 - Picture-in-Picture mode
 - Recommendations based on viewing history
-- Search functionality
 - Settings screen for customization
+- Background sync with WorkManager
+- EPG notifications for favorite programs
+- Advanced search filters in UI
+
+## Documentation
+
+- **[PHASE1_IMPLEMENTATION.md](PHASE1_IMPLEMENTATION.md)** - Phase 1 architecture and data layer
+- **[PHASE2_IMPLEMENTATION.md](PHASE2_IMPLEMENTATION.md)** - Phase 2 EPG, M3U, search, and sync
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Detailed architecture documentation
+- **[UI_DESIGN.md](UI_DESIGN.md)** - UI/UX design specifications
+- **[TESTING.md](TESTING.md)** - Testing guidelines
+- **[QUICKSTART.md](QUICKSTART.md)** - Quick start guide
