@@ -181,3 +181,30 @@ fun Recent.toEntity(): RecentEntity {
         viewedAt = timestamp
     )
 }
+
+// EPG conversions
+fun EpgProgramEntity.toEpgProgram(): com.alaa.iptv.data.models.EpgProgram {
+    return com.alaa.iptv.data.models.EpgProgram(
+        id = id,
+        channelId = channelId,
+        title = title,
+        description = description,
+        startTime = startTime,
+        endTime = endTime,
+        category = category,
+        icon = icon
+    )
+}
+
+fun com.alaa.iptv.data.models.EpgProgram.toEntity(): EpgProgramEntity {
+    return EpgProgramEntity(
+        id = id,
+        channelId = channelId,
+        title = title,
+        description = description,
+        startTime = startTime,
+        endTime = endTime,
+        category = category,
+        icon = icon
+    )
+}

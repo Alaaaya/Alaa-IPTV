@@ -2,6 +2,7 @@ package com.alaa.iptv.data.local.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import androidx.room.Index
 
 /**
  * Room entity for Channel/Live TV stream
@@ -119,4 +120,28 @@ data class RecentEntity(
     val itemId: String,
     val itemType: String, // "channel", "movie", "series"
     val viewedAt: Long = System.currentTimeMillis()
+)
+
+/**
+ * Room entity for EPG Program data
+ */
+@Entity(
+    tableName = "epg_programs",
+    indices = [
+        Index(value = ["channelId"]),
+        Index(value = ["startTime"]),
+        Index(value = ["endTime"])
+    ]
+)
+data class EpgProgramEntity(
+    @PrimaryKey
+    val id: String,
+    val channelId: String,
+    val title: String,
+    val description: String?,
+    val startTime: Long,
+    val endTime: Long,
+    val category: String?,
+    val icon: String?,
+    val lastUpdated: Long = System.currentTimeMillis()
 )

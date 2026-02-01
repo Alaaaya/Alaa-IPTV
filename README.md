@@ -4,12 +4,21 @@ A fully functional IPTV application for Android TV with a modern dark glassmorph
 
 ## Features
 
-### Core Features
+### Core Features (Phase 1)
 - **Live TV Streaming**: Stream live channels using Xtream Codes API or M3U playlists
 - **Movies**: Browse and watch movies from your IPTV provider
 - **Series**: Access TV series with episodes organized by season
 - **Favorites**: Mark and quickly access your favorite content
 - **Full Player**: ExoPlayer-based video player with playback controls
+- **Local Caching**: Room database for offline access and fast performance
+- **Recent Views**: Track recently watched content
+
+### Phase 2 Features
+- **EPG Integration**: Electronic Program Guide with current and upcoming programs
+- **M3U Playlist Support**: Import and merge M3U playlists from URLs or files
+- **Advanced Search**: Search channels, movies, and series by title, genre, category
+- **Data Sync Pipeline**: Automatic synchronization of all content from sources
+- **Multi-Source Support**: Combine Xtream Codes and M3U sources seamlessly
 
 ### User Interface
 - **Dark Glassmorphism Design**: Modern translucent UI with depth effects
@@ -21,7 +30,11 @@ A fully functional IPTV application for Android TV with a modern dark glassmorph
 
 ### Technical Features
 - **Xtream Codes API**: Full integration with Xtream Codes providers
-- **M3U Support**: Parse and play M3U playlists
+- **M3U Support**: Parse and play M3U playlists from URLs or files
+- **EPG Support**: Electronic Program Guide with time-based queries
+- **Room Database**: Local caching with SQLite for offline access
+- **Search**: Comprehensive search across all content types
+- **Sync Pipeline**: Automatic data synchronization with error handling
 - **ExoPlayer**: Industry-standard video player with adaptive streaming
 - **RecyclerView**: Efficient list rendering with custom adapters
 - **ViewBinding**: Type-safe view access
@@ -36,9 +49,12 @@ A fully functional IPTV application for Android TV with a modern dark glassmorph
 app/src/main/java/com/alaa/iptv/
 ├── data/
 │   ├── api/              # API services and clients
-│   ├── models/           # Data models
+│   ├── local/            # Room database (entities, DAOs, mappers)
+│   ├── models/           # Domain models (Channel, Movie, Series, EPG)
 │   ├── preferences/      # SharedPreferences wrapper
-│   └── repository/       # Data repositories
+│   └── repository/       # Data repositories with sync logic
+├── domain/
+│   └── repository/       # Repository interfaces
 ├── ui/
 │   ├── login/           # Login screen
 │   ├── main/            # Main activity with channel list
@@ -149,12 +165,14 @@ The app features a modern glassmorphism design with:
 
 - **Kotlin**: 1.9.20
 - **AndroidX Core**: 1.12.0
-- **ExoPlayer (Media3)**: 1.2.0
+- **Room Database**: 2.6.1
+- **ExoPlayer (Media3)**: 1.3.1
 - **Retrofit**: 2.9.0
 - **OkHttp**: 4.12.0
 - **Glide**: 4.16.0
 - **Coroutines**: 1.7.3
 - **Gson**: 2.10.1
+- **KSP**: 1.9.20-1.0.14 (for Room code generation)
 
 ## Build Configuration
 
@@ -192,11 +210,21 @@ Contributions are welcome! Please feel free to submit pull requests or open issu
 
 ## Future Enhancements
 
-- EPG (Electronic Program Guide) integration
-- Channel reordering with drag-and-drop
+- Channel reordering with drag-and-drop in UI
 - Parental controls
 - Multi-profile support
 - Picture-in-Picture mode
 - Recommendations based on viewing history
-- Search functionality
 - Settings screen for customization
+- Background sync with WorkManager
+- EPG notifications for favorite programs
+- Advanced search filters in UI
+
+## Documentation
+
+- **[PHASE1_IMPLEMENTATION.md](PHASE1_IMPLEMENTATION.md)** - Phase 1 architecture and data layer
+- **[PHASE2_IMPLEMENTATION.md](PHASE2_IMPLEMENTATION.md)** - Phase 2 EPG, M3U, search, and sync
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Detailed architecture documentation
+- **[UI_DESIGN.md](UI_DESIGN.md)** - UI/UX design specifications
+- **[TESTING.md](TESTING.md)** - Testing guidelines
+- **[QUICKSTART.md](QUICKSTART.md)** - Quick start guide

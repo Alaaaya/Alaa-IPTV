@@ -11,7 +11,7 @@ import com.alaa.iptv.data.local.entity.*
 
 /**
  * Room database for IPTV app
- * Version 1: Initial schema with all entities
+ * Version 2: Added EPG support
  */
 @Database(
     entities = [
@@ -21,9 +21,10 @@ import com.alaa.iptv.data.local.entity.*
         SeriesEntity::class,
         EpisodeEntity::class,
         FavoriteEntity::class,
-        RecentEntity::class
+        RecentEntity::class,
+        EpgProgramEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -35,6 +36,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun episodeDao(): EpisodeDao
     abstract fun favoriteDao(): FavoriteDao
     abstract fun recentDao(): RecentDao
+    abstract fun epgDao(): EpgDao
     
     companion object {
         @Volatile
