@@ -105,3 +105,23 @@ data class Recent(
     val timestamp: Long
 ) : Parcelable
 
+@Parcelize
+data class FavoriteItem(
+    val contentId: String,
+    val name: String,
+    val type: String,
+    val icon: String?,
+    val categoryId: String?,
+    val timestamp: Long
+) : Parcelable
+
+@Parcelize
+data class RecentItem(
+    val contentId: String,
+    val name: String,
+    val type: String,
+    val icon: String?,
+    val categoryId: String?,
+    val timestamp: Long
+) : Parcelable
+

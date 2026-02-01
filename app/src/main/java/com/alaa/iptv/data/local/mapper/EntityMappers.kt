@@ -182,6 +182,26 @@ fun Recent.toEntity(): RecentEntity {
     )
 }
 
+// Extended conversions for UI display
+fun FavoriteEntity.toFavoriteItem(): FavoriteItem {
+    return FavoriteItem(
+        contentId = itemId,
+        name = name,
+        type = itemType,
+        icon = icon,
+        categoryId = categoryId,
+        timestamp = addedAt
+    )
+}
+
+fun RecentEntity.toRecentItem(): RecentItem {
+    return RecentItem(
+        contentId = itemId,
+        name = name,
+        type = itemType,
+        icon = icon,
+        categoryId = categoryId,
+        timestamp = viewedAt
 // EPG conversions
 fun EpgProgramEntity.toEpgProgram(): com.alaa.iptv.data.models.EpgProgram {
     return com.alaa.iptv.data.models.EpgProgram(

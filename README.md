@@ -1,17 +1,17 @@
 # Alaa IPTV - Android TV Application
 
-A fully functional IPTV application for Android TV with a modern dark glassmorphism design and blue accent theme.
+A fully functional IPTV application for Android TV with a modern dark Glassmorphism design, blue accent theme, and iBO Player-like experience.
 
 ## Features
 
 ### Core Features (Phase 1)
 - **Live TV Streaming**: Stream live channels using Xtream Codes API or M3U playlists
-- **Movies**: Browse and watch movies from your IPTV provider
+- **Movies (VOD)**: Browse and watch movies from your IPTV provider
 - **Series**: Access TV series with episodes organized by season
-- **Favorites**: Mark and quickly access your favorite content
+- **Favorites**: Mark and quickly access your favorite content (database-backed)
+- **Recents**: Track recently watched content
 - **Full Player**: ExoPlayer-based video player with playback controls
 - **Local Caching**: Room database for offline access and fast performance
-- **Recent Views**: Track recently watched content
 
 ### Phase 2 Features
 - **EPG Integration**: Electronic Program Guide with current and upcoming programs
@@ -22,25 +22,51 @@ A fully functional IPTV application for Android TV with a modern dark glassmorph
 
 ### User Interface
 - **Dark Glassmorphism Design**: Modern translucent UI with depth effects
-- **Blue Accent Theme**: Elegant blue color scheme throughout the app
-- **D-Pad Navigation**: Optimized for Android TV remote control
-- **Focus Handling**: Custom focus management for seamless navigation
+- **Blue Accent Theme**: Elegant blue color scheme throughout the app (#2196F3)
+- **D-Pad Navigation**: Optimized for Android TV remote control (no touch/mouse)
+- **Focus Handling**: Smooth custom focus management for seamless navigation
 - **Preview Panel**: Live preview of selected content with metadata
 - **Category Navigation**: Horizontal scrolling categories for easy filtering
+- **5-Tab Layout**: Live TV, Movies, Series, Favorites, and Recents
 
 ### Technical Features
 - **Xtream Codes API**: Full integration with Xtream Codes providers
 - **M3U Support**: Parse and play M3U playlists from URLs or files
 - **EPG Support**: Electronic Program Guide with time-based queries
 - **Room Database**: Local caching with SQLite for offline access
-- **Search**: Comprehensive search across all content types
-- **Sync Pipeline**: Automatic data synchronization with error handling
-- **ExoPlayer**: Industry-standard video player with adaptive streaming
+- **Clean Architecture**: Separated data/domain/ui layers
 - **RecyclerView**: Efficient list rendering with custom adapters
 - **ViewBinding**: Type-safe view access
 - **Coroutines**: Asynchronous operations for smooth UI
 - **Retrofit**: RESTful API communication
 - **Glide**: Efficient image loading and caching
+
+## Android TV UI/UX
+
+This app features a **complete Android TV interface** with iBO Player-like experience:
+
+### Screen Layout
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ [Live TV] [Movies] [Series] [Favorites] [Recents]                   │
+├─────────────────────────────────────────────────────────────────────┤
+│ [All] [News] [Sports]                                               │  PREVIEW PANEL
+│                                                                     │
+│   BBC News                  [Large Poster/Icon]                     │
+│   CNN                       BBC News - Channel 102                  │
+│   Fox News                                                       │
+│   Sky News                                                        │
+│   MSNBC                    [Play] [❤]                              │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Key Features
+- **1/3 + 2/3 Split Layout**: Content list on left, large preview on right
+- **Smooth Focus Animations**: 1.05x scale with 200ms transitions
+- **Long-Press Reordering**: Hold OK for 1 second to enable reorder mode
+- **Database-Backed State**: Favorites and recents persist across sessions
+- **Auto-Preview Updates**: Preview changes automatically with focus
+- **Custom Focus Management**: No Leanback library, fully custom implementation
 
 ## Architecture
 
@@ -48,18 +74,18 @@ A fully functional IPTV application for Android TV with a modern dark glassmorph
 ```
 app/src/main/java/com/alaa/iptv/
 ├── data/
-│   ├── api/              # API services and clients
-│   ├── local/            # Room database (entities, DAOs, mappers)
-│   ├── models/           # Domain models (Channel, Movie, Series, EPG)
-│   ├── preferences/      # SharedPreferences wrapper
-│   └── repository/       # Data repositories with sync logic
+│   ├── api/           # API services and clients
+│   ├── local/         # Room database (entities, DAOs, mappers)
+│   ├── models/        # Domain models (Channel, Movie, Series, EPG)
+│   ├── preferences/   # SharedPreferences wrapper
+│   └── repository/    # Data repositories with sync logic
 ├── domain/
-│   └── repository/       # Repository interfaces
+│   └── repository/    # Repository interfaces
 ├── ui/
-│   ├── login/           # Login screen
-│   ├── main/            # Main activity with channel list
-│   └── player/          # Video player activity
-└── utils/               # Utility classes (M3U parser, etc.)
+│   ├── login/         # Login screen
+│   ├── main/          # Main activity with channel list
+│   ├── player/        # Video player activity
+│   └── utils/         # Utility classes (M3U parser, etc.)
 ```
 
 ### Key Components
@@ -127,7 +153,7 @@ Alternatively, you can use M3U playlist URLs.
 - **D-Pad Up/Down**: Navigate through channels/content
 - **D-Pad Left/Right**: Switch between tabs and categories
 - **OK/Select**: Select channel/content to view preview or play
-- **Long Press OK**: Enable reordering mode (future enhancement)
+- **Long Press OK**: Enable reordering mode
 - **Back**: Return to previous screen
 
 ### Playing Content
@@ -157,7 +183,7 @@ The app features a modern glassmorphism design with:
 
 ### Favorites System
 - Toggle favorites with heart button
-- Persistent storage using SharedPreferences
+- Persistent storage using SharedPreferences/Room
 - Quick access via Favorites tab
 - Visual indicators on favorited items
 

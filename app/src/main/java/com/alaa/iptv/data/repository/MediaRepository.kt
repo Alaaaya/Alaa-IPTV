@@ -421,6 +421,56 @@ class MediaRepository(
             }
         }
     }
+
+    // Extended favorites with full details
+    override suspend fun addFavorite(
+        contentId: String,
+        name: String,
+        type: String,
+        icon: String?,
+        categoryId: String?
+    ): Result<Unit> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val favorite = FavoriteEntity(
+                    itemId = contentId,
+                    itemType = type,
+                    name = name,
+                    icon = icon,
+                    categoryId = categoryId
+                )
+                favoriteDao.insertFavorite(favorite)
+                Result.success(Unit)
+            } catch (e: Exception) {
+                android.util.Log.e("MediaRepository", "Error adding favorite with details: $contentId", e)
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun removeFavorite(contentId: String): Result<Unit> {
+        return withContext(Dispatchers.IO) {
+            try {
+                favoriteDao.deleteFavoriteById(contentId)
+                Result.success(Unit)
+            } catch (e: Exception) {
+                android.util.Log.e("MediaRepository", "Error removing favorite: $contentId", e)
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun getFavoritesWithDetails(): Result<List<FavoriteItem>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val favorites = favoriteDao.getAllFavorites().map { it.toFavoriteItem() }
+                Result.success(favorites)
+            } catch (e: Exception) {
+                android.util.Log.e("MediaRepository", "Error getting favorites with details", e)
+                Result.failure(e)
+            }
+        }
+    }
     
     // ==================== Recent ====================
     
@@ -442,6 +492,44 @@ class MediaRepository(
             } catch (e: Exception) {
                 android.util.Log.e("MediaRepository", "Error getting recents", e)
                 emptyList()
+            }
+        }
+    }
+
+    // Extended recents with full details
+    override suspend fun addRecentView(
+        contentId: String,
+        name: String,
+        type: String,
+        icon: String?,
+        categoryId: String?
+    ): Result<Unit> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val recent = RecentEntity(
+                    itemId = contentId,
+                    itemType = type,
+                    name = name,
+                    icon = icon,
+                    categoryId = categoryId
+                )
+                recentDao.insertRecent(recent)
+                Result.success(Unit)
+            } catch (e: Exception) {
+                android.util.Log.e("MediaRepository", "Error adding recent view: $contentId", e)
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun getRecentViews(): Result<List<RecentItem>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val recents = recentDao.getAllRecents().map { it.toRecentItem() }
+                Result.success(recents)
+            } catch (e: Exception) {
+                android.util.Log.e("MediaRepository", "Error getting recent views", e)
+                Result.failure(e)
             }
         }
     }
