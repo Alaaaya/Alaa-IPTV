@@ -67,7 +67,20 @@
                 android:layout_weight="1"
                 android:text="@string/favorites"
                 android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
                 android:nextFocusLeft="@id/seriesTab"
+                android:nextFocusRight="@id/recentsTab"
+                android:nextFocusDown="@id/categoriesRecyclerView" />
+
+            <Button
+                android:id="@+id/recentsTab"
+                style="@style/PrimaryButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/recents"
+                android:layout_marginStart="4dp"
+                android:nextFocusLeft="@id/favoritesTab"
                 android:nextFocusDown="@id/categoriesRecyclerView" />
 
         </LinearLayout>
@@ -160,14 +173,16 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Play"
-                    android:layout_marginEnd="8dp" />
+                    android:layout_marginEnd="8dp"
+                    android:nextFocusRight="@id/favoriteButton" />
 
                 <Button
                     android:id="@+id/favoriteButton"
                     style="@style/PrimaryButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="❤" />
+                    android:text="❤"
+                    android:nextFocusLeft="@id/playButton" />
 
             </LinearLayout>
 

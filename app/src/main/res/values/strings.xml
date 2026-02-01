@@ -17,6 +17,7 @@
     <string name="movies">Movies</string>
     <string name="series">Series</string>
     <string name="favorites">Favorites</string>
+    <string name="recents">Recents</string>
     <string name="settings">Settings</string>
     
     <!-- Categories -->
