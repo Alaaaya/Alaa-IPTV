@@ -97,3 +97,11 @@ data class EpisodeInfo(
     val duration: String?,
     val rating: String?
 ) : Parcelable
+
+@Parcelize
+data class Recent(
+    val itemId: String,
+    val itemType: String,
+    val timestamp: Long
+) : Parcelable
+
