@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:background="@color/background_dark">
+
+    <!-- Left Side: Categories and Content List -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Top Navigation Tabs -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+
+            <Button
+                android:id="@+id/btnLiveTV"
+                style="@style/Widget.AlaaIPTV.Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/live_tv"
+                android:layout_marginEnd="8dp"
+                android:nextFocusRight="@id/btnMovies"
+                android:nextFocusDown="@id/recyclerCategories" />
+
+            <Button
+                android:id="@+id/btnMovies"
+                style="@style/Widget.AlaaIPTV.Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/movies"
+                android:layout_marginEnd="8dp"
+                android:nextFocusLeft="@id/btnLiveTV"
+                android:nextFocusRight="@id/btnSeries"
+                android:nextFocusDown="@id/recyclerCategories" />
+
+            <Button
+                android:id="@+id/btnSeries"
+                style="@style/Widget.AlaaIPTV.Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/series"
+                android:nextFocusLeft="@id/btnMovies"
+                android:nextFocusDown="@id/recyclerCategories" />
+
+        </LinearLayout>
+
+        <!-- Categories RecyclerView -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Categories"
+            android:textColor="@color/text_secondary"
+            android:textSize="14sp"
+            android:layout_marginBottom="8dp" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerCategories"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:clipToPadding="false"
+            android:nextFocusUp="@id/btnLiveTV"
+            android:nextFocusDown="@id/recyclerContent"
+            android:nextFocusRight="@id/recyclerContent" />
+
+        <!-- Content RecyclerView -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Content"
+            android:textColor="@color/text_secondary"
+            android:textSize="14sp"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="8dp" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerContent"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="2"
+            android:clipToPadding="false"
+            android:nextFocusUp="@id/recyclerCategories"
+            android:nextFocusLeft="@id/recyclerCategories" />
+
+    </LinearLayout>
+
+    <!-- Right Side: Preview/Details -->
+    <FrameLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:id="@+id/previewContainer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:background="@drawable/bg_glass_card"
+            android:padding="24dp">
+
+            <!-- Preview Image -->
+            <ImageView
+                android:id="@+id/ivPreview"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:scaleType="centerCrop"
+                android:background="@color/surface_dark"
+                android:contentDescription="Preview image" />
+
+            <!-- Content Title -->
+            <TextView
+                android:id="@+id/tvPreviewTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Select a channel"
+                android:textAppearance="@style/TextAppearance.AlaaIPTV.Title"
+                android:textSize="24sp"
+                android:layout_marginTop="16dp"
+                android:maxLines="2"
+                android:ellipsize="end" />
+
+            <!-- Content Description -->
+            <TextView
+                android:id="@+id/tvPreviewDescription"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="No content selected"
+                android:textAppearance="@style/TextAppearance.AlaaIPTV.Body"
+                android:layout_marginTop="8dp"
+                android:maxLines="4"
+                android:ellipsize="end" />
+
+            <!-- Action Buttons -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="16dp">
+
+                <Button
+                    android:id="@+id/btnPlay"
+                    style="@style/Widget.AlaaIPTV.Button"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/play"
+                    android:layout_marginEnd="8dp" />
+
+                <Button
+                    android:id="@+id/btnFavorite"
+                    style="@style/Widget.AlaaIPTV.Button"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/add_to_favorites" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Loading Indicator -->
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:visibility="gone"
+            android:indeterminateTint="@color/accent_blue" />
+
+    </FrameLayout>
+
+</LinearLayout>
