@@ -22,15 +22,16 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var prefs: AppPreferences
     private lateinit var repository: MediaRepository
-    
+
     private lateinit var channelAdapter: ChannelAdapter
     private lateinit var categoryAdapter: CategoryAdapter
-    
+
+    private var allChannels = listOf<Channel>()   // ✅ مهم
     private var currentChannels = listOf<Channel>()
     private var currentCategories = listOf<Category>()
     private var selectedChannel: Channel? = null
     private var currentMode = MediaMode.LIVE_TV
-    
+
     private enum class MediaMode {
         LIVE_TV, MOVIES, SERIES, FAVORITES, RECENTS
     }
@@ -39,20 +40,18 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        
+
         prefs = AppPreferences(this)
-        repository = MediaRepository(prefs, this)
-        
+        repository = MediaRepository(prefs)
+
         setupRecyclerViews()
         setupTabs()
         setupButtons()
-        
-        // Load Live TV by default
+
         loadLiveTV()
     }
 
     private fun setupRecyclerViews() {
-        // Categories RecyclerView
         categoryAdapter = CategoryAdapter(emptyList()) { category ->
             loadChannelsByCategory(category)
         }
@@ -60,20 +59,16 @@ class MainActivity : AppCompatActivity() {
             layoutManager = LinearLayoutManager(this@MainActivity, LinearLayoutManager.HORIZONTAL, false)
             adapter = categoryAdapter
         }
-        
-        // Channels RecyclerView with reorder support
+
         channelAdapter = ChannelAdapter(
             emptyList(),
-            onChannelClick = { channel ->
-                updatePreview(channel)
-            },
-            onChannelLongClick = { channel ->
+            onChannelClick = { updatePreview(it) },
+            onChannelLongClick = {
                 Toast.makeText(this, getString(R.string.long_press_to_reorder), Toast.LENGTH_SHORT).show()
             },
-            onReorderRequest = { fromPosition, toPosition ->
-                handleChannelReorder(fromPosition, toPosition)
-            }
+            onReorderRequest = { _, _ -> }
         )
+
         binding.channelsRecyclerView.apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             adapter = channelAdapter
@@ -86,446 +81,159 @@ class MainActivity : AppCompatActivity() {
             highlightTab(binding.liveTvTab)
             loadLiveTV()
         }
-        
+
         binding.moviesTab.setOnClickListener {
             currentMode = MediaMode.MOVIES
             highlightTab(binding.moviesTab)
             loadMovies()
         }
-        
+
         binding.seriesTab.setOnClickListener {
             currentMode = MediaMode.SERIES
             highlightTab(binding.seriesTab)
             loadSeries()
         }
-        
-        binding.favoritesTab.setOnClickListener {
-            currentMode = MediaMode.FAVORITES
-            highlightTab(binding.favoritesTab)
-            loadFavorites()
-        }
-
-        binding.recentsTab.setOnClickListener {
-            currentMode = MediaMode.RECENTS
-            highlightTab(binding.recentsTab)
-            loadRecents()
-        }
-
-        // Highlight Live TV tab by default
-        highlightTab(binding.liveTvTab)
     }
 
-    private fun highlightTab(selectedTab: View) {
-        // Reset all tabs
-        binding.liveTvTab.alpha = 0.6f
-        binding.moviesTab.alpha = 0.6f
-        binding.seriesTab.alpha = 0.6f
-        binding.favoritesTab.alpha = 0.6f
-        binding.recentsTab.alpha = 0.6f
-        
-        // Highlight selected
-        selectedTab.alpha = 1.0f
+    private fun highlightTab(tab: View) {
+        listOf(
+            binding.liveTvTab,
+            binding.moviesTab,
+            binding.seriesTab,
+            binding.favoritesTab,
+            binding.recentsTab
+        ).forEach { it.alpha = 0.6f }
+        tab.alpha = 1f
     }
 
     private fun setupButtons() {
         binding.playButton.setOnClickListener {
-            selectedChannel?.let { channel ->
-                playChannel(channel)
-            }
-        }
-        
-        binding.favoriteButton.setOnClickListener {
-            selectedChannel?.let { channel ->
-                toggleFavorite(channel)
-            }
+            selectedChannel?.let { playChannel(it) }
         }
     }
+
+    // ===================== LIVE TV =====================
 
     private fun loadLiveTV() {
         showLoading(true)
         lifecycleScope.launch {
-            // Load categories
             repository.getLiveCategories().onSuccess { categories ->
-                currentCategories = listOf(Category("0", getString(R.string.all_channels), 0)) + categories
+                currentCategories =
+                    listOf(Category("0", getString(R.string.all_channels), 0)) + categories
                 categoryAdapter.updateCategories(currentCategories)
             }
-            
-            // Load all channels
-            repository.getLiveStreams().onSuccess { channels ->
+
+            repository.getLiveStreams(null).onSuccess { channels ->
+                allChannels = channels               // ✅ التخزين الأساسي
                 currentChannels = channels
                 channelAdapter.updateChannels(channels)
-                if (channels.isNotEmpty()) {
-                    updatePreview(channels[0])
-                }
+                if (channels.isNotEmpty()) updatePreview(channels[0])
                 showLoading(false)
-            }.onFailure { error ->
+            }.onFailure {
                 showLoading(false)
-                Toast.makeText(this@MainActivity, error.message, Toast.LENGTH_LONG).show()
+                Toast.makeText(this@MainActivity, it.message, Toast.LENGTH_LONG).show()
             }
         }
-    }
-
-    private fun loadMovies() {
-        showLoading(true)
-        lifecycleScope.launch {
-            // Load categories
-            repository.getMovieCategories().onSuccess { categories ->
-                currentCategories = listOf(Category("0", getString(R.string.all_channels), 0)) + categories
-                categoryAdapter.updateCategories(currentCategories)
-            }
-            
-            // Load all movies - convert to Channel for display
-            repository.getMovies().onSuccess { movies ->
-                val movieChannels = movies.map { movie ->
-                    Channel(
-                        streamId = movie.streamId,
-                        num = movie.streamId,
-                        name = movie.name,
-                        streamType = "movie",
-                        streamIcon = movie.streamIcon,
-                        epgChannelId = null,
-                        added = null,
-                        categoryId = movie.categoryId,
-                        categoryName = null,
-                        customSid = null,
-                        tvArchive = 0,
-                        directSource = movie.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password),
-                        tvArchiveDuration = 0,
-                        isFavorite = movie.isFavorite
-                    )
-                }
-                currentChannels = movieChannels
-                channelAdapter.updateChannels(movieChannels)
-                if (movieChannels.isNotEmpty()) {
-                    updatePreview(movieChannels[0])
-                }
-                showLoading(false)
-            }.onFailure { error ->
-                showLoading(false)
-                Toast.makeText(this@MainActivity, error.message, Toast.LENGTH_LONG).show()
-            }
-        }
-    }
-
-    private fun loadSeries() {
-        showLoading(true)
-        lifecycleScope.launch {
-            // Load categories
-            repository.getSeriesCategories().onSuccess { categories ->
-                currentCategories = listOf(Category("0", getString(R.string.all_channels), 0)) + categories
-                categoryAdapter.updateCategories(currentCategories)
-            }
-            
-            // Load all series - convert to Channel for display
-            repository.getSeries().onSuccess { seriesList ->
-                val seriesChannels = seriesList.map { series ->
-                    Channel(
-                        streamId = series.seriesId,
-                        num = series.seriesId,
-                        name = series.name,
-                        streamType = "series",
-                        streamIcon = series.cover,
-                        epgChannelId = null,
-                        added = null,
-                        categoryId = series.categoryId,
-                        categoryName = null,
-                        customSid = null,
-                        tvArchive = 0,
-                        directSource = null,
-                        tvArchiveDuration = 0,
-                        isFavorite = series.isFavorite
-                    )
-                }
-                currentChannels = seriesChannels
-                channelAdapter.updateChannels(seriesChannels)
-                if (seriesChannels.isNotEmpty()) {
-                    updatePreview(seriesChannels[0])
-                }
-                showLoading(false)
-            }.onFailure { error ->
-                showLoading(false)
-                Toast.makeText(this@MainActivity, error.message, Toast.LENGTH_LONG).show()
-            }
-        }
-    }
-
-    private fun loadFavorites() {
-        showLoading(true)
-        lifecycleScope.launch {
-            // Load favorites from database using repository
-            repository.getFavoritesWithDetails().onSuccess { favorites ->
-                // Convert favorites to channels for display
-                val favoriteChannels = favorites.map { favorite ->
-                    Channel(
-                        streamId = favorite.contentId,
-                        num = favorite.contentId,
-                        name = favorite.name,
-                        streamType = favorite.type,
-                        streamIcon = favorite.icon,
-                        epgChannelId = null,
-                        added = null,
-                        categoryId = favorite.categoryId,
-                        categoryName = null,
-                        customSid = null,
-                        tvArchive = 0,
-                        directSource = null,
-                        tvArchiveDuration = 0,
-                        isFavorite = true
-                    )
-                }
-                currentChannels = favoriteChannels
-                channelAdapter.updateChannels(favoriteChannels)
-                if (favoriteChannels.isNotEmpty()) {
-                    updatePreview(favoriteChannels[0])
-                }
-                showLoading(false)
-            }.onFailure { error ->
-                showLoading(false)
-                Toast.makeText(this@MainActivity, error.message, Toast.LENGTH_LONG).show()
-            }
-        }
-        
-        // Clear categories for favorites view
-        categoryAdapter.updateCategories(emptyList())
-    }
-
-    private fun loadRecents() {
-        showLoading(true)
-        lifecycleScope.launch {
-            // Load recent views from database using repository
-            repository.getRecentViews().onSuccess { recents ->
-                // Convert recents to channels for display
-                val recentChannels = recents.map { recent ->
-                    Channel(
-                        streamId = recent.contentId,
-                        num = recent.contentId,
-                        name = recent.name,
-                        streamType = recent.type,
-                        streamIcon = recent.icon,
-                        epgChannelId = null,
-                        added = null,
-                        categoryId = recent.categoryId,
-                        categoryName = null,
-                        customSid = null,
-                        tvArchive = 0,
-                        directSource = null,
-                        tvArchiveDuration = 0,
-                        isFavorite = false
-                    )
-                }
-                currentChannels = recentChannels
-                channelAdapter.updateChannels(recentChannels)
-                if (recentChannels.isNotEmpty()) {
-                    updatePreview(recentChannels[0])
-                }
-                showLoading(false)
-            }.onFailure { error ->
-                showLoading(false)
-                Toast.makeText(this@MainActivity, error.message, Toast.LENGTH_LONG).show()
-            }
-        }
-        
-        // Clear categories for recents view
-        categoryAdapter.updateCategories(emptyList())
     }
 
     private fun loadChannelsByCategory(category: Category) {
         if (category.categoryId == "0") {
-            // Show all
-            channelAdapter.updateChannels(currentChannels)
+            channelAdapter.updateChannels(allChannels)   // ✅ الرجوع للكل
+            if (allChannels.isNotEmpty()) updatePreview(allChannels[0])
             return
         }
-        
+
         showLoading(true)
         lifecycleScope.launch {
             when (currentMode) {
                 MediaMode.LIVE_TV -> {
-                    repository.getLiveStreams(category.categoryId).onSuccess { channels ->
-                        channelAdapter.updateChannels(channels)
-                        if (channels.isNotEmpty()) {
-                            updatePreview(channels[0])
-                        }
+                    repository.getLiveStreams(category.categoryId).onSuccess {
+                        channelAdapter.updateChannels(it)
+                        if (it.isNotEmpty()) updatePreview(it[0])
                         showLoading(false)
-                    }.onFailure { error ->
-                        showLoading(false)
-                        Toast.makeText(this@MainActivity, error.message, Toast.LENGTH_LONG).show()
                     }
                 }
-                MediaMode.MOVIES -> {
-                    repository.getMovies(category.categoryId).onSuccess { movies ->
-                        val movieChannels = movies.map { movie ->
-                            Channel(
-                                streamId = movie.streamId,
-                                num = movie.streamId,
-                                name = movie.name,
-                                streamType = "movie",
-                                streamIcon = movie.streamIcon,
-                                epgChannelId = null,
-                                added = null,
-                                categoryId = movie.categoryId,
-                                categoryName = null,
-                                customSid = null,
-                                tvArchive = 0,
-                                directSource = movie.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password),
-                                tvArchiveDuration = 0,
-                                isFavorite = movie.isFavorite
-                            )
-                        }
-                        channelAdapter.updateChannels(movieChannels)
-                        if (movieChannels.isNotEmpty()) {
-                            updatePreview(movieChannels[0])
-                        }
-                        showLoading(false)
-                    }.onFailure { error ->
-                        showLoading(false)
-                        Toast.makeText(this@MainActivity, error.message, Toast.LENGTH_LONG).show()
-                    }
-                }
-                MediaMode.SERIES -> {
-                    repository.getSeries(category.categoryId).onSuccess { seriesList ->
-                        val seriesChannels = seriesList.map { series ->
-                            Channel(
-                                streamId = series.seriesId,
-                                num = series.seriesId,
-                                name = series.name,
-                                streamType = "series",
-                                streamIcon = series.cover,
-                                epgChannelId = null,
-                                added = null,
-                                categoryId = series.categoryId,
-                                categoryName = null,
-                                customSid = null,
-                                tvArchive = 0,
-                                directSource = null,
-                                tvArchiveDuration = 0,
-                                isFavorite = series.isFavorite
-                            )
-                        }
-                        channelAdapter.updateChannels(seriesChannels)
-                        if (seriesChannels.isNotEmpty()) {
-                            updatePreview(seriesChannels[0])
-                        }
-                        showLoading(false)
-                    }.onFailure { error ->
-                        showLoading(false)
-                        Toast.makeText(this@MainActivity, error.message, Toast.LENGTH_LONG).show()
-                    }
-                }
-                else -> {
-                    showLoading(false)
-                }
+                else -> showLoading(false)
             }
         }
     }
+
+    // ===================== MOVIES =====================
+
+    private fun loadMovies() {
+        showLoading(true)
+        lifecycleScope.launch {
+            repository.getMovies(null).onSuccess { movies ->
+                val channels = movies.map {
+                    Channel(
+                        streamId = it.streamId,
+                        num = it.streamId,
+                        name = it.name,
+                        streamType = "movie",
+                        streamIcon = it.streamIcon,
+                        directSource = it.getStreamUrl(
+                            prefs.serverUrl,
+                            prefs.username,
+                            prefs.password
+                        )
+                    )
+                }
+                allChannels = channels
+                channelAdapter.updateChannels(channels)
+                if (channels.isNotEmpty()) updatePreview(channels[0])
+                showLoading(false)
+            }
+        }
+    }
+
+    // ===================== SERIES =====================
+
+    private fun loadSeries() {
+        showLoading(true)
+        lifecycleScope.launch {
+            repository.getSeries(null).onSuccess { series ->
+                val channels = series.map {
+                    Channel(
+                        streamId = it.seriesId,
+                        num = it.seriesId,
+                        name = it.name,
+                        streamType = "series",
+                        streamIcon = it.cover
+                    )
+                }
+                allChannels = channels
+                channelAdapter.updateChannels(channels)
+                if (channels.isNotEmpty()) updatePreview(channels[0])
+                showLoading(false)
+            }
+        }
+    }
+
+    // ===================== PLAYER =====================
 
     private fun updatePreview(channel: Channel) {
         selectedChannel = channel
         binding.previewTitle.text = channel.name
-        
-        // Update info based on content type
-        when (channel.streamType) {
-            "movie" -> binding.previewInfo.text = "Movie"
-            "series" -> binding.previewInfo.text = "Series"
-            else -> binding.previewInfo.text = "Channel ${channel.num}"
-        }
-        
-        // Load preview image with fade animation
-        if (!channel.streamIcon.isNullOrEmpty()) {
-            binding.previewImage.alpha = 0f
-            Glide.with(this)
-                .load(channel.streamIcon)
-                .placeholder(R.drawable.app_banner)
-                .error(R.drawable.app_banner)
-                .into(binding.previewImage)
-            binding.previewImage.animate()
-                .alpha(1f)
-                .setDuration(300)
-                .start()
-        } else {
-            binding.previewImage.setImageResource(R.drawable.app_banner)
-        }
-        
-        // Update favorite button
-        binding.favoriteButton.text = if (channel.isFavorite) "❤" else "♡"
+        binding.previewInfo.text = channel.streamType ?: ""
+
+        Glide.with(this)
+            .load(channel.streamIcon)
+            .placeholder(R.drawable.app_banner)
+            .into(binding.previewImage)
     }
 
     private fun playChannel(channel: Channel) {
-        val streamUrl = if (channel.directSource != null) {
-            channel.directSource
-        } else {
-            channel.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password)
-        }
-        
-        // Track recent view in database
-        lifecycleScope.launch {
-            repository.addRecentView(
-                contentId = channel.streamId,
-                name = channel.name,
-                type = channel.streamType ?: "live",
-                icon = channel.streamIcon,
-                categoryId = channel.categoryId
-            )
-        }
-        
-        val intent = Intent(this, PlayerActivity::class.java).apply {
-            putExtra("STREAM_URL", streamUrl)
-            putExtra("CHANNEL_NAME", channel.name)
-        }
-        startActivity(intent)
-    }
+        val url = channel.directSource
+            ?: channel.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password)
 
-    private fun toggleFavorite(channel: Channel) {
-        lifecycleScope.launch {
-            if (channel.isFavorite) {
-                // Remove from favorites
-                repository.removeFavorite(channel.streamId).onSuccess {
-                    channel.isFavorite = false
-                    Toast.makeText(this@MainActivity, getString(R.string.remove_from_favorites), Toast.LENGTH_SHORT).show()
-                    binding.favoriteButton.text = "♡"
-                    channelAdapter.notifyDataSetChanged()
-                }
-            } else {
-                // Add to favorites
-                repository.addFavorite(
-                    contentId = channel.streamId,
-                    name = channel.name,
-                    type = channel.streamType ?: "live",
-                    icon = channel.streamIcon,
-                    categoryId = channel.categoryId
-                ).onSuccess {
-                    channel.isFavorite = true
-                    Toast.makeText(this@MainActivity, getString(R.string.add_to_favorites), Toast.LENGTH_SHORT).show()
-                    binding.favoriteButton.text = "❤"
-                    channelAdapter.notifyDataSetChanged()
-                }
-            }
-        }
-    }
-
-    private fun handleChannelReorder(fromPosition: Int, toPosition: Int) {
-        // Reorder channels in the list
-        val mutableChannels = currentChannels.toMutableList()
-        val item = mutableChannels.removeAt(fromPosition)
-        mutableChannels.add(toPosition, item)
-        currentChannels = mutableChannels
-        
-        // Update adapter
-        channelAdapter.updateChannels(currentChannels)
-        
-        // Save reorder to database if needed
-        lifecycleScope.launch {
-            // TODO: Implement channel order persistence in repository
-            Toast.makeText(this@MainActivity, getString(R.string.reordering_mode), Toast.LENGTH_SHORT).show()
-        }
+        startActivity(
+            Intent(this, PlayerActivity::class.java)
+                .putExtra("STREAM_URL", url)
+                .putExtra("CHANNEL_NAME", channel.name)
+        )
     }
 
     private fun showLoading(show: Boolean) {
         binding.loadingProgress.visibility = if (show) View.VISIBLE else View.GONE
-    }
-
-    override fun onBackPressed() {
-        // Disable reorder mode on back press
-        channelAdapter.disableReorderMode()
-        super.onBackPressed()
     }
 }
