@@ -26,14 +26,12 @@ class MainActivity : AppCompatActivity() {
     private lateinit var channelAdapter: ChannelAdapter
     private lateinit var categoryAdapter: CategoryAdapter
 
-    private var allChannels = listOf<Channel>()   // ✅ مهم
-    private var currentChannels = listOf<Channel>()
-    private var currentCategories = listOf<Category>()
+    private var allChannels = listOf<Channel>()
     private var selectedChannel: Channel? = null
     private var currentMode = MediaMode.LIVE_TV
 
     private enum class MediaMode {
-        LIVE_TV, MOVIES, SERIES, FAVORITES, RECENTS
+        LIVE_TV, MOVIES, SERIES
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,7 +40,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         prefs = AppPreferences(this)
-        repository = MediaRepository(prefs)
+        repository = MediaRepository(prefs, this) // ✅ مهم
 
         setupRecyclerViews()
         setupTabs()
@@ -96,13 +94,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun highlightTab(tab: View) {
-        listOf(
-            binding.liveTvTab,
-            binding.moviesTab,
-            binding.seriesTab,
-            binding.favoritesTab,
-            binding.recentsTab
-        ).forEach { it.alpha = 0.6f }
+        listOf(binding.liveTvTab, binding.moviesTab, binding.seriesTab).forEach {
+            it.alpha = 0.6f
+        }
         tab.alpha = 1f
     }
 
@@ -118,14 +112,13 @@ class MainActivity : AppCompatActivity() {
         showLoading(true)
         lifecycleScope.launch {
             repository.getLiveCategories().onSuccess { categories ->
-                currentCategories =
+                categoryAdapter.updateCategories(
                     listOf(Category("0", getString(R.string.all_channels), 0)) + categories
-                categoryAdapter.updateCategories(currentCategories)
+                )
             }
 
             repository.getLiveStreams(null).onSuccess { channels ->
-                allChannels = channels               // ✅ التخزين الأساسي
-                currentChannels = channels
+                allChannels = channels
                 channelAdapter.updateChannels(channels)
                 if (channels.isNotEmpty()) updatePreview(channels[0])
                 showLoading(false)
@@ -138,22 +131,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadChannelsByCategory(category: Category) {
         if (category.categoryId == "0") {
-            channelAdapter.updateChannels(allChannels)   // ✅ الرجوع للكل
+            channelAdapter.updateChannels(allChannels)
             if (allChannels.isNotEmpty()) updatePreview(allChannels[0])
             return
         }
 
-        showLoading(true)
         lifecycleScope.launch {
-            when (currentMode) {
-                MediaMode.LIVE_TV -> {
-                    repository.getLiveStreams(category.categoryId).onSuccess {
-                        channelAdapter.updateChannels(it)
-                        if (it.isNotEmpty()) updatePreview(it[0])
-                        showLoading(false)
-                    }
-                }
-                else -> showLoading(false)
+            repository.getLiveStreams(category.categoryId).onSuccess {
+                channelAdapter.updateChannels(it)
+                if (it.isNotEmpty()) updatePreview(it[0])
             }
         }
     }
@@ -171,11 +157,19 @@ class MainActivity : AppCompatActivity() {
                         name = it.name,
                         streamType = "movie",
                         streamIcon = it.streamIcon,
+                        epgChannelId = null,
+                        added = null,
+                        categoryId = it.categoryId,
+                        categoryName = null,
+                        customSid = null,
+                        tvArchive = 0,
                         directSource = it.getStreamUrl(
                             prefs.serverUrl,
                             prefs.username,
                             prefs.password
-                        )
+                        ),
+                        tvArchiveDuration = 0,
+                        isFavorite = it.isFavorite
                     )
                 }
                 allChannels = channels
@@ -198,7 +192,16 @@ class MainActivity : AppCompatActivity() {
                         num = it.seriesId,
                         name = it.name,
                         streamType = "series",
-                        streamIcon = it.cover
+                        streamIcon = it.cover,
+                        epgChannelId = null,
+                        added = null,
+                        categoryId = it.categoryId,
+                        categoryName = null,
+                        customSid = null,
+                        tvArchive = 0,
+                        directSource = null,
+                        tvArchiveDuration = 0,
+                        isFavorite = it.isFavorite
                     )
                 }
                 allChannels = channels
@@ -208,8 +211,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-
-    // ===================== PLAYER =====================
 
     private fun updatePreview(channel: Channel) {
         selectedChannel = channel
