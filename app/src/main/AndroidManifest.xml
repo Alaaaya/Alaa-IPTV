@@ -2,6 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Android TV -->
     <uses-feature
         android:name="android.hardware.touchscreen"
         android:required="false" />
@@ -9,6 +10,7 @@
         android:name="android.software.leanback"
         android:required="true" />
 
+    <!-- Permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
@@ -21,24 +23,36 @@
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
 
+        <!-- 🔐 Login (أول شاشة) -->
         <activity
             android:name=".ui.login.LoginActivity"
             android:exported="true"
             android:screenOrientation="landscape"
             android:configChanges="orientation|keyboardHidden|screenSize">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
+
         </activity>
 
+        <!-- 🏠 Dashboard (القائمة الرئيسية الجديدة) -->
+        <activity
+            android:name=".ui.dashboard.DashboardActivity"
+            android:exported="true"
+            android:screenOrientation="landscape"
+            android:configChanges="orientation|keyboardHidden|screenSize" />
+
+        <!-- 📺 Live TV / Main -->
         <activity
             android:name=".ui.main.MainActivity"
             android:exported="false"
             android:screenOrientation="landscape"
             android:configChanges="orientation|keyboardHidden|screenSize" />
 
+        <!-- ▶️ Player -->
         <activity
             android:name=".ui.player.PlayerActivity"
             android:exported="false"
