@@ -26,7 +26,8 @@ class LoginActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         prefs = AppPreferences(this)
-        repository = MediaRepository(prefs)
+        // ✅ التعديل المهم هنا
+        repository = MediaRepository(prefs, this)
 
         // إذا المستخدم مسجّل دخول سابقاً ➜ روح مباشرة للداشبورد
         if (prefs.isLoggedIn) {
