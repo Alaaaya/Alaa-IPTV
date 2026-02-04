@@ -21,19 +21,20 @@ class LoginActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         prefs = AppPreferences(this)
         repository = MediaRepository(prefs)
 
-        // إذا مسجّل دخول من قبل ➜ روح عالداشبورد
+        // إذا المستخدم مسجّل دخول سابقاً ➜ روح مباشرة للداشبورد
         if (prefs.isLoggedIn) {
             navigateToDashboard()
             return
         }
 
-        // تحميل البيانات المحفوظة
+        // تحميل القيم المحفوظة (إن وُجدت)
         binding.serverUrlInput.setText(prefs.serverUrl)
         binding.usernameInput.setText(prefs.username)
 
@@ -57,25 +58,36 @@ class LoginActivity : AppCompatActivity() {
         showLoading(true)
 
         lifecycleScope.launch {
-            val result = repository.authenticate(serverUrl, username, password)
+            try {
+                val result = repository.authenticate(serverUrl, username, password)
 
-            result.onSuccess { response ->
-                if (response.userInfo?.auth == 1) {
-                    // حفظ البيانات
-                    prefs.serverUrl = serverUrl
-                    prefs.username = username
-                    prefs.password = password
-                    prefs.isLoggedIn = true
+                result.onSuccess { response ->
+                    if (response.userInfo?.auth == 1) {
 
+                        // حفظ بيانات الدخول
+                        prefs.serverUrl = serverUrl
+                        prefs.username = username
+                        prefs.password = password
+                        prefs.isLoggedIn = true
+
+                        showLoading(false)
+                        navigateToDashboard()
+
+                    } else {
+                        showLoading(false)
+                        showError(
+                            response.userInfo?.message
+                                ?: getString(R.string.login_error)
+                        )
+                    }
+                }.onFailure { error ->
                     showLoading(false)
-                    navigateToDashboard()
-                } else {
-                    showLoading(false)
-                    showError(response.userInfo?.message ?: getString(R.string.login_error))
+                    showError(error.message ?: getString(R.string.network_error))
                 }
-            }.onFailure {
+
+            } catch (e: Exception) {
                 showLoading(false)
-                showError(it.message ?: getString(R.string.network_error))
+                showError(e.message ?: getString(R.string.network_error))
             }
         }
     }
@@ -94,7 +106,6 @@ class LoginActivity : AppCompatActivity() {
         Toast.makeText(this, message, Toast.LENGTH_LONG).show()
     }
 
-    // ✅ هنا التغيير المهم
     private fun navigateToDashboard() {
         val intent = Intent(this, DashboardActivity::class.java)
         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
