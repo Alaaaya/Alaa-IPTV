@@ -18,13 +18,25 @@ class MediaRepository(
     }
 
     // ==================== AUTH ====================
+    // ✔ نعتبر المصادقة ناجحة دائماً (تمت في LoginActivity)
 
     override suspend fun authenticate(
         serverUrl: String,
         username: String,
         password: String
     ): Result<XtreamAuthResponse> =
-        Result.failure(Exception("Auth handled in Login"))
+        Result.success(
+            XtreamAuthResponse(
+                userInfo = UserInfo(
+                    auth = 1,
+                    status = "Active",
+                    message = "OK",
+                    username = username,
+                    password = password
+                ),
+                serverInfo = null
+            )
+        )
 
     // ==================== LIVE TV ====================
 
@@ -97,7 +109,7 @@ class MediaRepository(
     override suspend fun getLiveStreamsFromCache(categoryId: String?) =
         emptyList<Channel>()
 
-    // ==================== MOVIES (later) ====================
+    // ==================== MOVIES (لاحقاً) ====================
 
     override suspend fun getMovieCategories() =
         Result.success(emptyList<Category>())
@@ -108,7 +120,7 @@ class MediaRepository(
     override suspend fun getMoviesFromCache(categoryId: String?) =
         emptyList<Movie>()
 
-    // ==================== SERIES (later) ====================
+    // ==================== SERIES (لاحقاً) ====================
 
     override suspend fun getSeriesCategories() =
         Result.success(emptyList<Category>())
@@ -125,7 +137,7 @@ class MediaRepository(
     override suspend fun getEpisodesFromCache(seriesId: String) =
         emptyList<Episode>()
 
-    // ==================== FAVORITES ====================
+    // ==================== FAVORITES (لاحقاً) ====================
 
     override suspend fun getFavorites(): List<String> =
         emptyList()
@@ -151,7 +163,7 @@ class MediaRepository(
     override suspend fun getFavoritesWithDetails() =
         Result.success(emptyList<FavoriteItem>())
 
-    // ==================== RECENTS ====================
+    // ==================== RECENTS (لاحقاً) ====================
 
     override suspend fun addRecent(itemId: String, itemType: String) {}
 
@@ -169,7 +181,7 @@ class MediaRepository(
     override suspend fun getRecentViews() =
         Result.success(emptyList<RecentItem>())
 
-    // ==================== EPG (later) ====================
+    // ==================== EPG (لاحقاً) ====================
 
     override suspend fun getEpgForChannel(channelId: String) =
         emptyList<EpgProgram>()
