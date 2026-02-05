@@ -18,7 +18,8 @@ class MediaRepository(
     }
 
     // ==================== AUTH ====================
-    // ✔ نعتبر المصادقة ناجحة دائماً (تمت في LoginActivity)
+    // المصادقة الحقيقية تمت في LoginActivity
+    // هنا نرجّع Success حتى ما يفشل التطبيق
 
     override suspend fun authenticate(
         serverUrl: String,
@@ -32,7 +33,12 @@ class MediaRepository(
                     status = "Active",
                     message = "OK",
                     username = username,
-                    password = password
+                    password = password,
+                    expDate = null,
+                    isTrial = null,
+                    activeCons = null,
+                    createdAt = null,
+                    maxConnections = null
                 ),
                 serverInfo = null
             )
