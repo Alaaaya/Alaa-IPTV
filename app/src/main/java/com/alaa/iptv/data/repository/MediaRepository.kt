@@ -1,6 +1,7 @@
 package com.alaa.iptv.data.repository
 
 import android.content.Context
+import com.alaa.iptv.data.api.ApiClient
 import com.alaa.iptv.data.models.*
 import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.domain.repository.IMediaRepository
@@ -12,51 +13,114 @@ class MediaRepository(
     context: Context
 ) : IMediaRepository {
 
+    private val apiService by lazy {
+        ApiClient.getXtreamApiService(prefs.serverUrl)
+    }
+
     // ==================== AUTH ====================
 
     override suspend fun authenticate(
         serverUrl: String,
         username: String,
         password: String
-    ): Result<XtreamAuthResponse> = withContext(Dispatchers.IO) {
-        Result.failure(Exception("Auth handled elsewhere"))
-    }
+    ): Result<XtreamAuthResponse> =
+        Result.failure(Exception("Auth handled in Login"))
 
     // ==================== LIVE TV ====================
 
     override suspend fun getLiveCategories(): Result<List<Category>> =
-        Result.success(emptyList())
+        withContext(Dispatchers.IO) {
+            try {
+                val response = apiService.getLiveCategories(
+                    prefs.username,
+                    prefs.password
+                )
+
+                if (response.isSuccessful && response.body() != null) {
+                    val categories = response.body()!!.map {
+                        Category(
+                            categoryId = it.categoryId,
+                            categoryName = it.categoryName,
+                            parentId = it.parentId ?: 0
+                        )
+                    }
+                    Result.success(categories)
+                } else {
+                    Result.failure(Exception("Failed to load live categories"))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
 
     override suspend fun getLiveStreams(categoryId: String?): Result<List<Channel>> =
-        Result.success(emptyList())
+        withContext(Dispatchers.IO) {
+            try {
+                val response = apiService.getLiveStreams(
+                    prefs.username,
+                    prefs.password
+                )
+
+                if (response.isSuccessful && response.body() != null) {
+
+                    val channels = response.body()!!
+                        .filter { it.streamType == "live" }
+                        .filter { categoryId == null || it.categoryId == categoryId }
+                        .map { stream ->
+                            Channel(
+                                streamId = stream.streamId.toString(),
+                                num = stream.num?.toString() ?: "",
+                                name = stream.name ?: "Channel",
+                                streamType = "live",
+                                streamIcon = stream.streamIcon,
+                                epgChannelId = stream.epgChannelId,
+                                added = stream.added,
+                                categoryId = stream.categoryId,
+                                categoryName = null,
+                                customSid = stream.customSid,
+                                tvArchive = stream.tvArchive ?: 0,
+                                directSource = stream.directSource,
+                                tvArchiveDuration = stream.tvArchiveDuration ?: 0,
+                                isFavorite = false
+                            )
+                        }
+
+                    Result.success(channels)
+                } else {
+                    Result.failure(Exception("Failed to load live streams"))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
 
     override suspend fun getLiveStreamsFromCache(categoryId: String?) =
         emptyList<Channel>()
 
-    // ==================== MOVIES ====================
+    // ==================== MOVIES (later) ====================
 
-    override suspend fun getMovieCategories(): Result<List<Category>> =
-        Result.success(emptyList())
+    override suspend fun getMovieCategories() =
+        Result.success(emptyList<Category>())
 
-    override suspend fun getMovies(categoryId: String?): Result<List<Movie>> =
-        Result.success(emptyList())
+    override suspend fun getMovies(categoryId: String?) =
+        Result.success(emptyList<Movie>())
 
     override suspend fun getMoviesFromCache(categoryId: String?) =
         emptyList<Movie>()
 
-    // ==================== SERIES ====================
+    // ==================== SERIES (later) ====================
 
-    override suspend fun getSeriesCategories(): Result<List<Category>> =
-        Result.success(emptyList())
+    override suspend fun getSeriesCategories() =
+        Result.success(emptyList<Category>())
 
-    override suspend fun getSeries(categoryId: String?): Result<List<Series>> =
-        Result.success(emptyList())
+    override suspend fun getSeries(categoryId: String?) =
+        Result.success(emptyList<Series>())
 
     override suspend fun getSeriesFromCache(categoryId: String?) =
         emptyList<Series>()
 
-    override suspend fun getSeriesInfo(seriesId: String): Result<List<Episode>> =
-        Result.success(emptyList())
+    override suspend fun getSeriesInfo(seriesId: String) =
+        Result.success(emptyList<Episode>())
 
     override suspend fun getEpisodesFromCache(seriesId: String) =
         emptyList<Episode>()
@@ -79,13 +143,13 @@ class MediaRepository(
         type: String,
         icon: String?,
         categoryId: String?
-    ): Result<Unit> = Result.success(Unit)
+    ) = Result.success(Unit)
 
-    override suspend fun removeFavorite(contentId: String): Result<Unit> =
+    override suspend fun removeFavorite(contentId: String) =
         Result.success(Unit)
 
-    override suspend fun getFavoritesWithDetails(): Result<List<FavoriteItem>> =
-        Result.success(emptyList())
+    override suspend fun getFavoritesWithDetails() =
+        Result.success(emptyList<FavoriteItem>())
 
     // ==================== RECENTS ====================
 
@@ -100,12 +164,12 @@ class MediaRepository(
         type: String,
         icon: String?,
         categoryId: String?
-    ): Result<Unit> = Result.success(Unit)
+    ) = Result.success(Unit)
 
-    override suspend fun getRecentViews(): Result<List<RecentItem>> =
-        Result.success(emptyList())
+    override suspend fun getRecentViews() =
+        Result.success(emptyList<RecentItem>())
 
-    // ==================== EPG ====================
+    // ==================== EPG (later) ====================
 
     override suspend fun getEpgForChannel(channelId: String) =
         emptyList<EpgProgram>()
