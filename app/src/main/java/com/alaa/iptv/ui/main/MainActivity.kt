@@ -40,13 +40,35 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         prefs = AppPreferences(this)
-        repository = MediaRepository(prefs, this) // ✅ مهم
+        repository = MediaRepository(prefs, this)
+
+        // 🔹 قراءة MODE القادم من Dashboard
+        val mode = intent.getStringExtra("MODE") ?: "live"
+        currentMode = when (mode) {
+            "movies" -> MediaMode.MOVIES
+            "series" -> MediaMode.SERIES
+            else -> MediaMode.LIVE_TV
+        }
 
         setupRecyclerViews()
         setupTabs()
         setupButtons()
 
-        loadLiveTV()
+        // 🔹 تحميل المحتوى حسب MODE
+        when (currentMode) {
+            MediaMode.MOVIES -> {
+                highlightTab(binding.moviesTab)
+                loadMovies()
+            }
+            MediaMode.SERIES -> {
+                highlightTab(binding.seriesTab)
+                loadSeries()
+            }
+            else -> {
+                highlightTab(binding.liveTvTab)
+                loadLiveTV()
+            }
+        }
     }
 
     private fun setupRecyclerViews() {
@@ -54,7 +76,8 @@ class MainActivity : AppCompatActivity() {
             loadChannelsByCategory(category)
         }
         binding.categoriesRecyclerView.apply {
-            layoutManager = LinearLayoutManager(this@MainActivity, LinearLayoutManager.HORIZONTAL, false)
+            layoutManager =
+                LinearLayoutManager(this@MainActivity, LinearLayoutManager.HORIZONTAL, false)
             adapter = categoryAdapter
         }
 
@@ -62,7 +85,11 @@ class MainActivity : AppCompatActivity() {
             emptyList(),
             onChannelClick = { updatePreview(it) },
             onChannelLongClick = {
-                Toast.makeText(this, getString(R.string.long_press_to_reorder), Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    this,
+                    getString(R.string.long_press_to_reorder),
+                    Toast.LENGTH_SHORT
+                ).show()
             },
             onReorderRequest = { _, _ -> }
         )
