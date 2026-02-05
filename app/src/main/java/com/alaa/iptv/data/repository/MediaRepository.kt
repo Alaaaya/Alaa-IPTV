@@ -18,24 +18,14 @@ class MediaRepository(
 ) : IMediaRepository {
 
     private val database = AppDatabase.getInstance(context)
-    private val channelDao = database.channelDao()
-    private val categoryDao = database.categoryDao()
-    private val movieDao = database.movieDao()
-    private val seriesDao = database.seriesDao()
-    private val episodeDao = database.episodeDao()
     private val favoriteDao = database.favoriteDao()
     private val recentDao = database.recentDao()
-    private val epgDao = database.epgDao()
 
     private val apiService by lazy {
         ApiClient.getXtreamApiService(prefs.serverUrl)
     }
 
-    private val httpClient by lazy {
-        okhttp3.OkHttpClient()
-    }
-
-    // ==================== Authentication ====================
+    // ==================== AUTH ====================
 
     override suspend fun authenticate(
         serverUrl: String,
@@ -54,39 +44,74 @@ class MediaRepository(
         }
     }
 
-    // ==================== Favorites (basic) ====================
+    // ==================== LIVE TV ====================
 
-    override suspend fun getFavorites(): List<String> = withContext(Dispatchers.IO) {
-        try {
-            favoriteDao.getAllFavorites().map { it.itemId }
-        } catch (e: Exception) {
-            emptyList()
-        }
-    }
-
-    override suspend fun addFavorite(itemId: String) = withContext(Dispatchers.IO) {
-        try {
-            val type = when {
-                channelDao.getChannelById(itemId) != null -> "channel"
-                movieDao.getMovieById(itemId) != null -> "movie"
-                seriesDao.getSeriesById(itemId) != null -> "series"
-                else -> "unknown"
-            }
-            favoriteDao.insertFavorite(FavoriteEntity(itemId = itemId, itemType = type))
-        } catch (_: Exception) {
-        }
-    }
-
-    override suspend fun removeBasicFavorite(itemId: String) =
+    override suspend fun getLiveCategories(): Result<List<Category>> =
         withContext(Dispatchers.IO) {
-            favoriteDao.deleteFavoriteById(itemId)
+            try {
+                val response = apiService.getLiveCategories()
+                if (response.isSuccessful && response.body() != null) {
+                    Result.success(response.body()!!.map { it.toCategory() })
+                } else {
+                    Result.failure(Exception("Failed to load live categories"))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
         }
 
-    override suspend fun isFavorite(itemId: String): Boolean = withContext(Dispatchers.IO) {
-        favoriteDao.isFavorite(itemId)
-    }
+    override suspend fun getLiveStreams(categoryId: String?): Result<List<Channel>> =
+        withContext(Dispatchers.IO) {
+            try {
+                val response = apiService.getLiveStreams()
+                if (response.isSuccessful && response.body() != null) {
 
-    // ==================== Favorites (extended) ====================
+                    val channels = response.body()!!
+                        .filter { it.streamType == "live" }
+                        .filter { categoryId == null || it.categoryId == categoryId }
+                        .map { it.toChannel() }
+
+                    Result.success(channels)
+                } else {
+                    Result.failure(Exception("Failed to load live streams"))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+
+    override suspend fun getLiveStreamsFromCache(categoryId: String?) =
+        emptyList<Channel>()
+
+    // ==================== MOVIES (جاهز لاحقاً) ====================
+
+    override suspend fun getMovieCategories() =
+        Result.success(emptyList<Category>())
+
+    override suspend fun getMovies(categoryId: String?) =
+        Result.success(emptyList<Movie>())
+
+    override suspend fun getMoviesFromCache(categoryId: String?) =
+        emptyList<Movie>()
+
+    // ==================== SERIES (جاهز لاحقاً) ====================
+
+    override suspend fun getSeriesCategories() =
+        Result.success(emptyList<Category>())
+
+    override suspend fun getSeries(categoryId: String?) =
+        Result.success(emptyList<Series>())
+
+    override suspend fun getSeriesFromCache(categoryId: String?) =
+        emptyList<Series>()
+
+    override suspend fun getSeriesInfo(seriesId: String) =
+        Result.success(emptyList<Episode>())
+
+    override suspend fun getEpisodesFromCache(seriesId: String) =
+        emptyList<Episode>()
+
+    // ==================== FAVORITES ====================
 
     override suspend fun addFavorite(
         contentId: String,
@@ -126,16 +151,26 @@ class MediaRepository(
             Result.success(favoriteDao.getAllFavorites().map { it.toFavoriteItem() })
         }
 
-    // ==================== Recent ====================
+    override suspend fun getFavorites(): List<String> =
+        favoriteDao.getAllFavorites().map { it.itemId }
+
+    override suspend fun isFavorite(itemId: String): Boolean =
+        favoriteDao.isFavorite(itemId)
+
+    override suspend fun addFavorite(itemId: String) {}
+    override suspend fun removeBasicFavorite(itemId: String) {}
+
+    // ==================== RECENTS ====================
 
     override suspend fun addRecent(itemId: String, itemType: String) =
         withContext(Dispatchers.IO) {
-            recentDao.insertRecent(RecentEntity(itemId = itemId, itemType = itemType))
+            recentDao.insertRecent(
+                RecentEntity(itemId = itemId, itemType = itemType)
+            )
         }
 
-    override suspend fun getRecents(): List<Recent> = withContext(Dispatchers.IO) {
+    override suspend fun getRecents(): List<Recent> =
         recentDao.getAllRecents().map { it.toRecent() }
-    }
 
     override suspend fun addRecentView(
         contentId: String,
@@ -165,44 +200,47 @@ class MediaRepository(
             Result.success(recentDao.getAllRecents().map { it.toRecentItem() })
         }
 
-    // ==================== Stub implementations (required by interface) ====================
-    // ⚠️ هذه موجودة فقط عشان ينجح الـ build
-
-    override suspend fun getLiveCategories() = Result.success(emptyList<Category>())
-    override suspend fun getLiveStreams(categoryId: String?) = Result.success(emptyList<Channel>())
-    override suspend fun getLiveStreamsFromCache(categoryId: String?) = emptyList<Channel>()
-
-    override suspend fun getMovieCategories() = Result.success(emptyList<Category>())
-    override suspend fun getMovies(categoryId: String?) = Result.success(emptyList<Movie>())
-    override suspend fun getMoviesFromCache(categoryId: String?) = emptyList<Movie>()
-
-    override suspend fun getSeriesCategories() = Result.success(emptyList<Category>())
-    override suspend fun getSeries(categoryId: String?) = Result.success(emptyList<Series>())
-    override suspend fun getSeriesFromCache(categoryId: String?) = emptyList<Series>()
-    override suspend fun getSeriesInfo(seriesId: String) = Result.success(emptyList<Episode>())
-    override suspend fun getEpisodesFromCache(seriesId: String) = emptyList<Episode>()
+    // ==================== STUBS (لاحقاً) ====================
 
     override suspend fun updateChannelPosition(channelId: String, newPosition: Int) {}
     override suspend fun getChannelsOrdered(categoryId: String?) = emptyList<Channel>()
 
     override suspend fun getEpgForChannel(channelId: String) = emptyList<EpgProgram>()
-    override suspend fun getEpgForChannelInTimeRange(channelId: String, startTime: Long, endTime: Long) =
-        emptyList<EpgProgram>()
+    override suspend fun getEpgForChannelInTimeRange(
+        channelId: String,
+        startTime: Long,
+        endTime: Long
+    ) = emptyList<EpgProgram>()
 
     override suspend fun getCurrentProgram(channelId: String): EpgProgram? = null
-    override suspend fun getUpcomingPrograms(channelId: String, limit: Int) = emptyList<EpgProgram>()
+    override suspend fun getUpcomingPrograms(channelId: String, limit: Int) =
+        emptyList<EpgProgram>()
+
     override suspend fun cacheEpgPrograms(programs: List<EpgProgram>) {}
     override suspend fun cleanupOldEpgData(cutoffTime: Long) {}
 
-    override suspend fun loadM3UPlaylist(m3uContent: String) = Result.success(emptyList<Channel>())
-    override suspend fun loadM3UPlaylistFromUrl(url: String) = Result.success(emptyList<Channel>())
+    override suspend fun loadM3UPlaylist(m3uContent: String) =
+        Result.success(emptyList<Channel>())
+
+    override suspend fun loadM3UPlaylistFromUrl(url: String) =
+        Result.success(emptyList<Channel>())
+
     override suspend fun mergeM3UChannels(channels: List<Channel>) {}
 
-    override suspend fun searchChannels(query: String, categoryId: String?) = emptyList<Channel>()
-    override suspend fun searchMovies(query: String, categoryId: String?) = emptyList<Movie>()
-    override suspend fun searchSeries(query: String, categoryId: String?) = emptyList<Series>()
-    override suspend fun searchMoviesByGenre(genre: String) = emptyList<Movie>()
-    override suspend fun searchSeriesByGenre(genre: String) = emptyList<Series>()
+    override suspend fun searchChannels(query: String, categoryId: String?) =
+        emptyList<Channel>()
+
+    override suspend fun searchMovies(query: String, categoryId: String?) =
+        emptyList<Movie>()
+
+    override suspend fun searchSeries(query: String, categoryId: String?) =
+        emptyList<Series>()
+
+    override suspend fun searchMoviesByGenre(genre: String) =
+        emptyList<Movie>()
+
+    override suspend fun searchSeriesByGenre(genre: String) =
+        emptyList<Series>()
 
     override suspend fun syncAllData() = Result.success(Unit)
     override suspend fun syncLiveTV() = Result.success(Unit)
