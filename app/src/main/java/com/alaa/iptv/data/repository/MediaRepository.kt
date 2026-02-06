@@ -19,6 +19,7 @@ class MediaRepository(
 
     // ==================== AUTH ====================
     // المصادقة الحقيقية تمت في LoginActivity
+    // هنا نرجّع Success حتى لا يفشل التطبيق
 
     override suspend fun authenticate(
         serverUrl: String,
@@ -80,9 +81,9 @@ class MediaRepository(
 
                 if (response.isSuccessful && response.body() != null) {
 
+                    // ✅ نرجّع كل القنوات بدون فلترة
                     val channels = response.body()!!
                         .filter { it.streamType == "live" }
-                        .filter { categoryId == null || it.categoryId == categoryId }
                         .map { stream ->
                             Channel(
                                 streamId = stream.streamId.toString(),
@@ -102,7 +103,7 @@ class MediaRepository(
                             )
                         }
 
-                    // 🔴 LOG مهم
+                    // 🔵 Log للتأكد
                     println("LIVE CHANNELS FROM API = ${channels.size}")
 
                     Result.success(channels)
