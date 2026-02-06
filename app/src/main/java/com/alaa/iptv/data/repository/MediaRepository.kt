@@ -19,7 +19,6 @@ class MediaRepository(
 
     // ==================== AUTH ====================
     // المصادقة الحقيقية تمت في LoginActivity
-    // هنا نرجّع Success حتى ما يفشل التطبيق
 
     override suspend fun authenticate(
         serverUrl: String,
@@ -103,6 +102,9 @@ class MediaRepository(
                             )
                         }
 
+                    // 🔴 LOG مهم
+                    println("LIVE CHANNELS FROM API = ${channels.size}")
+
                     Result.success(channels)
                 } else {
                     Result.failure(Exception("Failed to load live streams"))
@@ -143,16 +145,11 @@ class MediaRepository(
     override suspend fun getEpisodesFromCache(seriesId: String) =
         emptyList<Episode>()
 
-    // ==================== FAVORITES (لاحقاً) ====================
+    // ==================== FAVORITES ====================
 
-    override suspend fun getFavorites(): List<String> =
-        emptyList()
-
-    override suspend fun isFavorite(itemId: String): Boolean =
-        false
-
+    override suspend fun getFavorites(): List<String> = emptyList()
+    override suspend fun isFavorite(itemId: String): Boolean = false
     override suspend fun addFavorite(itemId: String) {}
-
     override suspend fun removeBasicFavorite(itemId: String) {}
 
     override suspend fun addFavorite(
@@ -169,12 +166,10 @@ class MediaRepository(
     override suspend fun getFavoritesWithDetails() =
         Result.success(emptyList<FavoriteItem>())
 
-    // ==================== RECENTS (لاحقاً) ====================
+    // ==================== RECENTS ====================
 
     override suspend fun addRecent(itemId: String, itemType: String) {}
-
-    override suspend fun getRecents(): List<Recent> =
-        emptyList()
+    override suspend fun getRecents(): List<Recent> = emptyList()
 
     override suspend fun addRecentView(
         contentId: String,
@@ -187,7 +182,7 @@ class MediaRepository(
     override suspend fun getRecentViews() =
         Result.success(emptyList<RecentItem>())
 
-    // ==================== EPG (لاحقاً) ====================
+    // ==================== EPG ====================
 
     override suspend fun getEpgForChannel(channelId: String) =
         emptyList<EpgProgram>()
@@ -198,14 +193,11 @@ class MediaRepository(
         endTime: Long
     ) = emptyList<EpgProgram>()
 
-    override suspend fun getCurrentProgram(channelId: String): EpgProgram? =
-        null
-
+    override suspend fun getCurrentProgram(channelId: String): EpgProgram? = null
     override suspend fun getUpcomingPrograms(channelId: String, limit: Int) =
         emptyList<EpgProgram>()
 
     override suspend fun cacheEpgPrograms(programs: List<EpgProgram>) {}
-
     override suspend fun cleanupOldEpgData(cutoffTime: Long) {}
 
     // ==================== SEARCH ====================
