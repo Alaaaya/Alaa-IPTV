@@ -81,15 +81,15 @@ class MediaRepository(
 
                 if (response.isSuccessful && response.body() != null) {
 
-                    // ✅ نرجّع كل القنوات بدون فلترة
+                    // ✅ نرجّع كل القنوات (بدون فلترة streamType)
                     val channels = response.body()!!
-                        .filter { it.streamType == "live" }
+                        .filter { categoryId == null || it.categoryId == categoryId }
                         .map { stream ->
                             Channel(
                                 streamId = stream.streamId.toString(),
                                 num = stream.num?.toString() ?: "",
                                 name = stream.name ?: "Channel",
-                                streamType = "live",
+                                streamType = stream.streamType ?: "live",
                                 streamIcon = stream.streamIcon,
                                 epgChannelId = stream.epgChannelId,
                                 added = stream.added,
@@ -103,8 +103,7 @@ class MediaRepository(
                             )
                         }
 
-                    // 🔵 Log للتأكد
-                    println("LIVE CHANNELS FROM API = ${channels.size}")
+                    println("✅ LIVE CHANNELS FROM API = ${channels.size}")
 
                     Result.success(channels)
                 } else {
