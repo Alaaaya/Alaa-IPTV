@@ -14,7 +14,8 @@ class MediaRepository(
 ) : IMediaRepository {
 
     // ==================== AUTH ====================
-    // المصادقة تمت فعليًا عبر إدخال M3U
+    // المصادقة منطقية فقط (التحقق الحقيقي تم في LoginActivity)
+
     override suspend fun authenticate(
         serverUrl: String,
         username: String,
@@ -38,19 +39,20 @@ class MediaRepository(
             )
         )
 
-    // ==================== LIVE TV (M3U) ====================
+    // ==================== LIVE TV ====================
 
     override suspend fun getLiveCategories(): Result<List<Category>> =
         withContext(Dispatchers.IO) {
             try {
                 val channels = loadM3U()
+
                 val categories = channels
-                    .map { it.categoryId }
+                    .map { it.categoryId ?: "Other" }
                     .distinct()
                     .map {
                         Category(
-                            categoryId = it ?: "other",
-                            categoryName = it ?: "Other",
+                            categoryId = it,
+                            categoryName = it,
                             parentId = 0
                         )
                     }
@@ -79,34 +81,54 @@ class MediaRepository(
     override suspend fun getLiveStreamsFromCache(categoryId: String?) =
         emptyList<Channel>()
 
+    // ==================== M3U URL BUILDER ====================
+
+    private fun buildM3uUrl(): String {
+        val url = prefs.serverUrl.trim()
+
+        return if (
+            url.contains("get.php", ignoreCase = true) ||
+            url.contains(".m3u", ignoreCase = true)
+        ) {
+            // المستخدم أدخل رابط M3U كامل
+            url
+        } else {
+            // المستخدم أدخل Xtream فقط
+            "$url/get.php?username=${prefs.username}&password=${prefs.password}&type=m3u_plus&output=ts"
+        }
+    }
+
     // ==================== M3U PARSER ====================
 
     private suspend fun loadM3U(): List<Channel> =
         withContext(Dispatchers.IO) {
 
-            val url = prefs.serverUrl
-            val lines = URL(url).readText().lines()
+            val m3uUrl = buildM3uUrl()
+            val lines = URL(m3uUrl).readText().lines()
 
             val channels = mutableListOf<Channel>()
 
-            var name = ""
+            var name = "Channel"
             var logo: String? = null
-            var group: String? = null
+            var group: String? = "Other"
 
             lines.forEach { line ->
                 when {
-                    line.startsWith("#EXTINF") -> {
+                    line.startsWith("#EXTINF", ignoreCase = true) -> {
+
                         name = Regex(",(.+)")
-                            .find(line)?.groupValues?.get(1) ?: "Channel"
+                            .find(line)?.groupValues?.get(1)
+                            ?: "Channel"
 
                         logo = Regex("tvg-logo=\"(.*?)\"")
                             .find(line)?.groupValues?.get(1)
 
                         group = Regex("group-title=\"(.*?)\"")
                             .find(line)?.groupValues?.get(1)
+                            ?: "Other"
                     }
 
-                    line.startsWith("http") -> {
+                    line.startsWith("http", ignoreCase = true) -> {
                         channels.add(
                             Channel(
                                 streamId = line.hashCode().toString(),
@@ -133,7 +155,7 @@ class MediaRepository(
             channels
         }
 
-    // ==================== STUBS (Not used now) ====================
+    // ==================== STUBS (غير مستخدمة حاليًا) ====================
 
     override suspend fun getMovieCategories() = Result.success(emptyList<Category>())
     override suspend fun getMovies(categoryId: String?) = Result.success(emptyList<Movie>())
@@ -156,8 +178,10 @@ class MediaRepository(
         icon: String?,
         categoryId: String?
     ) = Result.success(Unit)
+
     override suspend fun removeFavorite(contentId: String) = Result.success(Unit)
-    override suspend fun getFavoritesWithDetails() = Result.success(emptyList<FavoriteItem>())
+    override suspend fun getFavoritesWithDetails() =
+        Result.success(emptyList<FavoriteItem>())
 
     override suspend fun addRecent(itemId: String, itemType: String) {}
     override suspend fun getRecents(): List<Recent> = emptyList()
@@ -168,14 +192,19 @@ class MediaRepository(
         icon: String?,
         categoryId: String?
     ) = Result.success(Unit)
-    override suspend fun getRecentViews() = Result.success(emptyList<RecentItem>())
 
-    override suspend fun getEpgForChannel(channelId: String) = emptyList<EpgProgram>()
+    override suspend fun getRecentViews() =
+        Result.success(emptyList<RecentItem>())
+
+    override suspend fun getEpgForChannel(channelId: String) =
+        emptyList<EpgProgram>()
+
     override suspend fun getEpgForChannelInTimeRange(
         channelId: String,
         startTime: Long,
         endTime: Long
     ) = emptyList<EpgProgram>()
+
     override suspend fun getCurrentProgram(channelId: String): EpgProgram? = null
     override suspend fun getUpcomingPrograms(channelId: String, limit: Int) =
         emptyList<EpgProgram>()
@@ -196,8 +225,12 @@ class MediaRepository(
 
     override suspend fun updateChannelPosition(channelId: String, newPosition: Int) {}
     override suspend fun getChannelsOrdered(categoryId: String?) = emptyList<Channel>()
-    override suspend fun loadM3UPlaylist(m3uContent: String) = Result.success(emptyList<Channel>())
+
+    override suspend fun loadM3UPlaylist(m3uContent: String) =
+        Result.success(emptyList<Channel>())
+
     override suspend fun loadM3UPlaylistFromUrl(url: String) =
         Result.success(emptyList<Channel>())
+
     override suspend fun mergeM3UChannels(channels: List<Channel>) {}
 }
