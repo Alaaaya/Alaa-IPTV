@@ -5,19 +5,15 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
 import com.alaa.iptv.R
 import com.alaa.iptv.data.preferences.AppPreferences
-import com.alaa.iptv.data.repository.MediaRepository
 import com.alaa.iptv.databinding.ActivityLoginBinding
 import com.alaa.iptv.ui.dashboard.DashboardActivity
-import kotlinx.coroutines.launch
 
 class LoginActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityLoginBinding
     private lateinit var prefs: AppPreferences
-    private lateinit var repository: MediaRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,8 +22,6 @@ class LoginActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         prefs = AppPreferences(this)
-        // ✅ التعديل المهم هنا
-        repository = MediaRepository(prefs, this)
 
         // إذا المستخدم مسجّل دخول سابقاً ➜ روح مباشرة للداشبورد
         if (prefs.isLoggedIn) {
@@ -35,10 +29,8 @@ class LoginActivity : AppCompatActivity() {
             return
         }
 
-        // تحميل القيم المحفوظة (إن وُجدت)
+        // تحميل رابط M3U المحفوظ (إن وُجد)
         binding.serverUrlInput.setText(prefs.serverUrl)
-        binding.usernameInput.setText(prefs.username)
-
         binding.serverUrlInput.requestFocus()
 
         binding.loginButton.setOnClickListener {
@@ -48,57 +40,27 @@ class LoginActivity : AppCompatActivity() {
 
     private fun performLogin() {
         val serverUrl = binding.serverUrlInput.text.toString().trim()
-        val username = binding.usernameInput.text.toString().trim()
-        val password = binding.passwordInput.text.toString().trim()
 
-        if (serverUrl.isEmpty() || username.isEmpty() || password.isEmpty()) {
-            showError(getString(R.string.login_error))
+        // تحقق بسيط من رابط M3U
+        if (serverUrl.isEmpty() || !serverUrl.startsWith("http")) {
+            showError("Please enter a valid M3U URL")
             return
         }
 
         showLoading(true)
 
-        lifecycleScope.launch {
-            try {
-                val result = repository.authenticate(serverUrl, username, password)
+        // نحفظ رابط M3U فقط
+        prefs.serverUrl = serverUrl
+        prefs.isLoggedIn = true
 
-                result.onSuccess { response ->
-                    if (response.userInfo?.auth == 1) {
-
-                        // حفظ بيانات الدخول
-                        prefs.serverUrl = serverUrl
-                        prefs.username = username
-                        prefs.password = password
-                        prefs.isLoggedIn = true
-
-                        showLoading(false)
-                        navigateToDashboard()
-
-                    } else {
-                        showLoading(false)
-                        showError(
-                            response.userInfo?.message
-                                ?: getString(R.string.login_error)
-                        )
-                    }
-                }.onFailure { error ->
-                    showLoading(false)
-                    showError(error.message ?: getString(R.string.network_error))
-                }
-
-            } catch (e: Exception) {
-                showLoading(false)
-                showError(e.message ?: getString(R.string.network_error))
-            }
-        }
+        showLoading(false)
+        navigateToDashboard()
     }
 
     private fun showLoading(show: Boolean) {
         binding.progressBar.visibility = if (show) View.VISIBLE else View.GONE
         binding.loginButton.isEnabled = !show
         binding.serverUrlInput.isEnabled = !show
-        binding.usernameInput.isEnabled = !show
-        binding.passwordInput.isEnabled = !show
     }
 
     private fun showError(message: String) {
