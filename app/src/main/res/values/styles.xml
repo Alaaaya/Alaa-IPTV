@@ -1,54 +1,81 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+
+    <!-- ========================= -->
     <!-- Base Application Theme -->
+    <!-- ========================= -->
     <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">
-        <!-- Primary brand color -->
+        <!-- Brand colors -->
         <item name="colorPrimary">@color/primary_blue</item>
         <item name="colorPrimaryDark">@color/dark_background</item>
         <item name="colorAccent">@color/accent_blue</item>
-        
-        <!-- Background colors -->
+
+        <!-- Background -->
         <item name="android:windowBackground">@color/dark_background</item>
         <item name="android:colorBackground">@color/dark_background</item>
-        
-        <!-- Text colors -->
+
+        <!-- Text -->
         <item name="android:textColorPrimary">@color/text_primary</item>
         <item name="android:textColorSecondary">@color/text_secondary</item>
+
+        <!-- Disable action bar shadow -->
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
     </style>
 
-    <!-- Glassmorphism Card Style -->
+    <!-- ========================= -->
+    <!-- Glass Card (Dashboard / Main) -->
+    <!-- ========================= -->
     <style name="GlassmorphismCard">
         <item name="android:background">@drawable/glassmorphism_background</item>
-        <item name="android:elevation">8dp</item>
+        <item name="android:elevation">10dp</item>
+        <item name="android:focusable">true</item>
+        <item name="android:focusableInTouchMode">true</item>
+        <item name="android:foreground">?attr/selectableItemBackground</item>
     </style>
 
-    <!-- Focused Item Style -->
+    <!-- ========================= -->
+    <!-- Focused Item (Android TV) -->
+    <!-- ========================= -->
     <style name="FocusedItem">
         <item name="android:background">@drawable/focused_item_background</item>
+        <item name="android:scaleX">1.05</item>
+        <item name="android:scaleY">1.05</item>
     </style>
 
-    <!-- Button Style -->
+    <!-- ========================= -->
+    <!-- Primary Button (TV Safe) -->
+    <!-- ========================= -->
     <style name="PrimaryButton" parent="Widget.AppCompat.Button">
         <item name="android:background">@drawable/button_background</item>
         <item name="android:textColor">@color/text_primary</item>
-        <item name="android:textSize">16sp</item>
-        <item name="android:paddingStart">24dp</item>
-        <item name="android:paddingEnd">24dp</item>
-        <item name="android:paddingTop">12dp</item>
-        <item name="android:paddingBottom">12dp</item>
+        <item name="android:textSize">18sp</item>
+        <item name="android:paddingStart">28dp</item>
+        <item name="android:paddingEnd">28dp</item>
+        <item name="android:paddingTop">14dp</item>
+        <item name="android:paddingBottom">14dp</item>
+
+        <!-- Android TV -->
         <item name="android:focusable">true</item>
         <item name="android:focusableInTouchMode">true</item>
+        <item name="android:foreground">?attr/selectableItemBackground</item>
     </style>
 
-    <!-- EditText Style -->
+    <!-- ========================= -->
+    <!-- Input Field (Login Screen) -->
+    <!-- ========================= -->
     <style name="InputField" parent="Widget.AppCompat.EditText">
         <item name="android:background">@drawable/input_background</item>
         <item name="android:textColor">@color/text_primary</item>
         <item name="android:textColorHint">@color/text_secondary</item>
-        <item name="android:paddingStart">16dp</item>
-        <item name="android:paddingEnd">16dp</item>
-        <item name="android:paddingTop">12dp</item>
-        <item name="android:paddingBottom">12dp</item>
-        <item name="android:textSize">16sp</item>
+        <item name="android:paddingStart">18dp</item>
+        <item name="android:paddingEnd">18dp</item>
+        <item name="android:paddingTop">14dp</item>
+        <item name="android:paddingBottom">14dp</item>
+        <item name="android:textSize">18sp</item>
+
+        <!-- Android TV -->
+        <item name="android:focusable">true</item>
+        <item name="android:focusableInTouchMode">true</item>
     </style>
+
 </resources>
