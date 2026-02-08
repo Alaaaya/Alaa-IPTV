@@ -17,6 +17,7 @@ class DashboardActivity : AppCompatActivity() {
         val btnMovies = findViewById<Button>(R.id.btnMovies)
         val btnSeries = findViewById<Button>(R.id.btnSeries)
 
+        // ✅ فوكس افتراضي (مهم للتلفزيون)
         btnLive.requestFocus()
 
         btnLive.setOnClickListener {
@@ -33,8 +34,13 @@ class DashboardActivity : AppCompatActivity() {
     }
 
     private fun openMain(mode: String) {
-        val intent = Intent(this, MainActivity::class.java)
-        intent.putExtra("MODE", mode)
+        val intent = Intent(this, MainActivity::class.java).apply {
+            putExtra("MODE", mode)
+
+            // ✅ حتى لا يرجع للداشبورد عند الضغط Back
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+        }
         startActivity(intent)
+        finish() // ✅ مهم جداً
     }
 }
