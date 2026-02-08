@@ -3,24 +3,26 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="horizontal"
-    android:background="@color/dark_background">
+    android:background="@color/dark_background"
+    android:focusable="true"
+    android:focusableInTouchMode="true">
 
-    <!-- Left Sidebar with Categories and Channels -->
+    <!-- ================= LEFT PANEL ================= -->
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="match_parent"
-        android:layout_weight="1"
+        android:layout_weight="1.2"
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Tab Navigation -->
+        <!-- ===== TOP TABS ===== -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="16dp"
             android:background="@drawable/glassmorphism_background"
-            android:padding="8dp">
+            android:padding="8dp"
+            android:layout_marginBottom="16dp">
 
             <Button
                 android:id="@+id/liveTvTab"
@@ -29,7 +31,6 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="@string/live_tv"
-                android:layout_marginEnd="4dp"
                 android:nextFocusRight="@id/moviesTab"
                 android:nextFocusDown="@id/categoriesRecyclerView" />
 
@@ -40,8 +41,6 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="@string/movies"
-                android:layout_marginStart="4dp"
-                android:layout_marginEnd="4dp"
                 android:nextFocusLeft="@id/liveTvTab"
                 android:nextFocusRight="@id/seriesTab"
                 android:nextFocusDown="@id/categoriesRecyclerView" />
@@ -53,51 +52,23 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="@string/series"
-                android:layout_marginStart="4dp"
-                android:layout_marginEnd="4dp"
                 android:nextFocusLeft="@id/moviesTab"
-                android:nextFocusRight="@id/favoritesTab"
                 android:nextFocusDown="@id/categoriesRecyclerView" />
-
-            <Button
-                android:id="@+id/favoritesTab"
-                style="@style/PrimaryButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/favorites"
-                android:layout_marginStart="4dp"
-                android:layout_marginEnd="4dp"
-                android:nextFocusLeft="@id/seriesTab"
-                android:nextFocusRight="@id/recentsTab"
-                android:nextFocusDown="@id/categoriesRecyclerView" />
-
-            <Button
-                android:id="@+id/recentsTab"
-                style="@style/PrimaryButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/recents"
-                android:layout_marginStart="4dp"
-                android:nextFocusLeft="@id/favoritesTab"
-                android:nextFocusDown="@id/categoriesRecyclerView" />
-
         </LinearLayout>
 
-        <!-- Categories -->
+        <!-- ===== CATEGORIES ===== -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/categoriesRecyclerView"
             android:layout_width="match_parent"
-            android:layout_height="80dp"
-            android:layout_marginBottom="16dp"
+            android:layout_height="72dp"
+            android:layout_marginBottom="12dp"
             android:clipToPadding="false"
             android:paddingStart="8dp"
             android:paddingEnd="8dp"
             android:nextFocusUp="@id/liveTvTab"
             android:nextFocusDown="@id/channelsRecyclerView" />
 
-        <!-- Channels/Movies/Series List -->
+        <!-- ===== CHANNELS LIST ===== -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/channelsRecyclerView"
             android:layout_width="match_parent"
@@ -110,11 +81,11 @@
 
     </LinearLayout>
 
-    <!-- Right Preview Panel -->
-    <RelativeLayout
+    <!-- ================= RIGHT PREVIEW PANEL ================= -->
+    <FrameLayout
         android:layout_width="0dp"
         android:layout_height="match_parent"
-        android:layout_weight="1"
+        android:layout_weight="0.8"
         android:padding="16dp">
 
         <LinearLayout
@@ -122,9 +93,9 @@
             android:layout_height="match_parent"
             android:orientation="vertical"
             android:background="@drawable/glassmorphism_background"
-            android:padding="24dp">
+            android:padding="20dp">
 
-            <!-- Preview Image -->
+            <!-- PREVIEW IMAGE -->
             <ImageView
                 android:id="@+id/previewImage"
                 android:layout_width="match_parent"
@@ -134,37 +105,35 @@
                 android:background="@color/card_background"
                 android:contentDescription="@string/app_name" />
 
-            <!-- Title -->
+            <!-- TITLE -->
             <TextView
                 android:id="@+id/previewTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text=""
+                android:layout_marginTop="12dp"
                 android:textColor="@color/text_primary"
-                android:textSize="24sp"
+                android:textSize="22sp"
                 android:textStyle="bold"
                 android:maxLines="2"
                 android:ellipsize="end" />
 
-            <!-- Info -->
+            <!-- INFO -->
             <TextView
                 android:id="@+id/previewInfo"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text=""
+                android:layout_marginTop="6dp"
                 android:textColor="@color/text_secondary"
-                android:textSize="16sp"
+                android:textSize="15sp"
                 android:maxLines="3"
                 android:ellipsize="end" />
 
-            <!-- Action Buttons -->
+            <!-- ACTIONS -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:layout_marginTop="16dp">
+                android:layout_marginTop="14dp">
 
                 <Button
                     android:id="@+id/playButton"
@@ -172,8 +141,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Play"
-                    android:layout_marginEnd="8dp"
+                    android:text="@string/play"
                     android:nextFocusRight="@id/favoriteButton" />
 
                 <Button
@@ -183,20 +151,19 @@
                     android:layout_height="wrap_content"
                     android:text="❤"
                     android:nextFocusLeft="@id/playButton" />
-
             </LinearLayout>
 
         </LinearLayout>
 
-        <!-- Loading Indicator -->
+        <!-- LOADING -->
         <ProgressBar
             android:id="@+id/loadingProgress"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="center"
             android:indeterminateTint="@color/accent_blue"
             android:visibility="gone" />
 
-    </RelativeLayout>
+    </FrameLayout>
 
 </LinearLayout>
