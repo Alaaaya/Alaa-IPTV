@@ -1,37 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="horizontal"
+    android:id="@+id/dashboardRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/black"
-    android:gravity="center">
+    android:orientation="horizontal"
+    android:gravity="center"
+    android:background="@color/dark_background"
+    android:focusable="true"
+    android:focusableInTouchMode="true"
+    android:padding="48dp">
 
+    <!-- LIVE TV -->
     <Button
         android:id="@+id/btnLive"
-        android:layout_width="220dp"
-        android:layout_height="120dp"
+        style="@style/PrimaryButton"
+        android:layout_width="240dp"
+        android:layout_height="140dp"
         android:text="LIVE TV"
-        android:textSize="18sp"
-        android:focusable="true"
-        android:focusableInTouchMode="true"/>
+        android:textSize="20sp"
+        android:nextFocusRight="@id/btnMovies"
+        android:nextFocusLeft="@id/btnSeries" />
 
+    <!-- MOVIES -->
     <Button
         android:id="@+id/btnMovies"
-        android:layout_width="220dp"
-        android:layout_height="120dp"
+        style="@style/PrimaryButton"
+        android:layout_width="240dp"
+        android:layout_height="140dp"
+        android:layout_marginStart="32dp"
+        android:layout_marginEnd="32dp"
         android:text="MOVIES"
-        android:textSize="18sp"
-        android:focusable="true"
-        android:focusableInTouchMode="true"
-        android:layout_marginStart="24dp"/>
+        android:textSize="20sp"
+        android:nextFocusLeft="@id/btnLive"
+        android:nextFocusRight="@id/btnSeries" />
 
+    <!-- SERIES -->
     <Button
         android:id="@+id/btnSeries"
-        android:layout_width="220dp"
-        android:layout_height="120dp"
+        style="@style/PrimaryButton"
+        android:layout_width="240dp"
+        android:layout_height="140dp"
         android:text="SERIES"
-        android:textSize="18sp"
-        android:focusable="true"
-        android:focusableInTouchMode="true"
-        android:layout_marginStart="24dp"/>
+        android:textSize="20sp"
+        android:nextFocusLeft="@id/btnMovies"
+        android:nextFocusRight="@id/btnLive" />
+
 </LinearLayout>
