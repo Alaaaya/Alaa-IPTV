@@ -10,6 +10,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.alaa.iptv.R
 import com.alaa.iptv.data.models.Category
 import com.alaa.iptv.data.models.Channel
+import com.alaa.iptv.data.models.Movie
+import com.alaa.iptv.data.models.Series
 import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.data.repository.MediaRepository
 import com.alaa.iptv.databinding.ActivityMainBinding
@@ -26,7 +28,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var channelAdapter: ChannelAdapter
     private lateinit var categoryAdapter: CategoryAdapter
 
-    private var allChannels = listOf<Channel>()
+    private var allChannels: List<Channel> = emptyList()
     private var selectedChannel: Channel? = null
     private var currentMode = MediaMode.LIVE_TV
 
@@ -42,7 +44,7 @@ class MainActivity : AppCompatActivity() {
         prefs = AppPreferences(this)
         repository = MediaRepository(prefs, this)
 
-        // ================== MODE من Dashboard ==================
+        // MODE من Dashboard
         val mode = intent.getStringExtra("MODE") ?: "live"
         currentMode = when (mode) {
             "movies" -> MediaMode.MOVIES
@@ -54,7 +56,6 @@ class MainActivity : AppCompatActivity() {
         setupTabs()
         setupButtons()
 
-        // ================== تحميل حسب MODE ==================
         when (currentMode) {
             MediaMode.MOVIES -> {
                 highlightTab(binding.moviesTab)
@@ -72,7 +73,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupRecyclerViews() {
-        categoryAdapter = CategoryAdapter(emptyList()) { category ->
+        categoryAdapter = CategoryAdapter(emptyList()) { category: Category ->
             if (currentMode == MediaMode.LIVE_TV) {
                 loadChannelsByCategory(category)
             }
@@ -86,7 +87,7 @@ class MainActivity : AppCompatActivity() {
 
         channelAdapter = ChannelAdapter(
             emptyList(),
-            onChannelClick = { updatePreview(it) },
+            onChannelClick = { channel: Channel -> updatePreview(channel) },
             onChannelLongClick = {
                 Toast.makeText(
                     this,
@@ -132,22 +133,22 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupButtons() {
         binding.playButton.setOnClickListener {
-            selectedChannel?.let { playChannel(it) }
+            selectedChannel?.let { channel -> playChannel(channel) }
         }
     }
 
-    // ===================== LIVE TV =====================
+    // ================= LIVE TV =================
 
     private fun loadLiveTV() {
         showLoading(true)
         lifecycleScope.launch {
-            repository.getLiveCategories().onSuccess { categories ->
+            repository.getLiveCategories().onSuccess { categories: List<Category> ->
                 categoryAdapter.updateCategories(
                     listOf(Category("0", getString(R.string.all_channels), 0)) + categories
                 )
             }
 
-            repository.getLiveStreams(null).onSuccess { channels ->
+            repository.getLiveStreams(null).onSuccess { channels: List<Channel> ->
                 allChannels = channels
                 channelAdapter.updateChannels(channels)
                 if (channels.isNotEmpty()) updatePreview(channels[0])
@@ -167,39 +168,39 @@ class MainActivity : AppCompatActivity() {
         }
 
         lifecycleScope.launch {
-            repository.getLiveStreams(category.categoryId).onSuccess {
-                channelAdapter.updateChannels(it)
-                if (it.isNotEmpty()) updatePreview(it[0])
+            repository.getLiveStreams(category.categoryId).onSuccess { channels: List<Channel> ->
+                channelAdapter.updateChannels(channels)
+                if (channels.isNotEmpty()) updatePreview(channels[0])
             }
         }
     }
 
-    // ===================== MOVIES =====================
+    // ================= MOVIES =================
 
     private fun loadMovies() {
         showLoading(true)
         lifecycleScope.launch {
-            repository.getMovies(null).onSuccess { movies ->
-                val channels = movies.map {
+            repository.getMovies(null).onSuccess { movies: List<Movie> ->
+                val channels = movies.map { movie ->
                     Channel(
-                        streamId = it.streamId,
-                        num = it.streamId,
-                        name = it.name,
+                        streamId = movie.streamId,
+                        num = movie.streamId,
+                        name = movie.name,
                         streamType = "movie",
-                        streamIcon = it.streamIcon,
+                        streamIcon = movie.streamIcon,
                         epgChannelId = null,
                         added = null,
-                        categoryId = it.categoryId,
+                        categoryId = movie.categoryId,
                         categoryName = null,
                         customSid = null,
                         tvArchive = 0,
-                        directSource = it.getStreamUrl(
+                        directSource = movie.getStreamUrl(
                             prefs.serverUrl,
                             prefs.username,
                             prefs.password
                         ),
                         tvArchiveDuration = 0,
-                        isFavorite = it.isFavorite
+                        isFavorite = movie.isFavorite
                     )
                 }
                 allChannels = channels
@@ -210,28 +211,28 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // ===================== SERIES =====================
+    // ================= SERIES =================
 
     private fun loadSeries() {
         showLoading(true)
         lifecycleScope.launch {
-            repository.getSeries(null).onSuccess { series ->
-                val channels = series.map {
+            repository.getSeries(null).onSuccess { seriesList: List<Series> ->
+                val channels = seriesList.map { series ->
                     Channel(
-                        streamId = it.seriesId,
-                        num = it.seriesId,
-                        name = it.name,
+                        streamId = series.seriesId,
+                        num = series.seriesId,
+                        name = series.name,
                         streamType = "series",
-                        streamIcon = it.cover,
+                        streamIcon = series.cover,
                         epgChannelId = null,
                         added = null,
-                        categoryId = it.categoryId,
+                        categoryId = series.categoryId,
                         categoryName = null,
                         customSid = null,
                         tvArchive = 0,
                         directSource = null,
                         tvArchiveDuration = 0,
-                        isFavorite = it.isFavorite
+                        isFavorite = series.isFavorite
                     )
                 }
                 allChannels = channels
