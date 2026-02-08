@@ -42,7 +42,7 @@ class MainActivity : AppCompatActivity() {
         prefs = AppPreferences(this)
         repository = MediaRepository(prefs, this)
 
-        // 🔹 قراءة MODE القادم من Dashboard
+        // ================== MODE من Dashboard ==================
         val mode = intent.getStringExtra("MODE") ?: "live"
         currentMode = when (mode) {
             "movies" -> MediaMode.MOVIES
@@ -54,7 +54,7 @@ class MainActivity : AppCompatActivity() {
         setupTabs()
         setupButtons()
 
-        // 🔹 تحميل المحتوى حسب MODE
+        // ================== تحميل حسب MODE ==================
         when (currentMode) {
             MediaMode.MOVIES -> {
                 highlightTab(binding.moviesTab)
@@ -64,7 +64,7 @@ class MainActivity : AppCompatActivity() {
                 highlightTab(binding.seriesTab)
                 loadSeries()
             }
-            else -> {
+            MediaMode.LIVE_TV -> {
                 highlightTab(binding.liveTvTab)
                 loadLiveTV()
             }
@@ -73,8 +73,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupRecyclerViews() {
         categoryAdapter = CategoryAdapter(emptyList()) { category ->
-            loadChannelsByCategory(category)
+            if (currentMode == MediaMode.LIVE_TV) {
+                loadChannelsByCategory(category)
+            }
         }
+
         binding.categoriesRecyclerView.apply {
             layoutManager =
                 LinearLayoutManager(this@MainActivity, LinearLayoutManager.HORIZONTAL, false)
