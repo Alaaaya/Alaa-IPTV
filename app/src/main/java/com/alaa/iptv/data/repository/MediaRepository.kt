@@ -1,59 +1,61 @@
 package com.alaa.iptv.data.repository
 
 import android.content.Context
+import com.alaa.iptv.data.api.ApiClient
 import com.alaa.iptv.data.models.*
 import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.domain.repository.IMediaRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.net.URL
 
 class MediaRepository(
     private val prefs: AppPreferences,
     context: Context
 ) : IMediaRepository {
 
-    // ==================== AUTH ====================
+    private val api by lazy {
+        ApiClient.getXtreamApiService(prefs.serverUrl)
+    }
+
+    // ================= AUTH =================
+
     override suspend fun authenticate(
         serverUrl: String,
         username: String,
         password: String
     ): Result<XtreamAuthResponse> =
-        Result.success(
-            XtreamAuthResponse(
-                userInfo = UserInfo(
-                    auth = 1,
-                    status = "Active",
-                    message = "OK",
-                    username = username,
-                    password = password,
-                    expDate = null,
-                    isTrial = null,
-                    activeCons = null,
-                    createdAt = null,
-                    maxConnections = null
-                ),
-                serverInfo = null
-            )
-        )
+        withContext(Dispatchers.IO) {
+            try {
+                val response = api.authenticate(username, password)
+                if (response.isSuccessful && response.body() != null) {
+                    Result.success(response.body()!!)
+                } else {
+                    Result.failure(Exception("Login failed"))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
 
-    // ==================== LIVE TV ====================
+    // ================= LIVE TV =================
 
     override suspend fun getLiveCategories(): Result<List<Category>> =
         withContext(Dispatchers.IO) {
             try {
-                val channels = loadM3U()
-                val categories = channels
-                    .map { it.categoryId ?: "Other" }
-                    .distinct()
-                    .map {
-                        Category(
-                            categoryId = it,
-                            categoryName = it,
-                            parentId = 0
-                        )
-                    }
-                Result.success(categories)
+                val res = api.getLiveCategories(prefs.username, prefs.password)
+                if (res.isSuccessful && res.body() != null) {
+                    Result.success(
+                        res.body()!!.map {
+                            Category(
+                                categoryId = it.categoryId,
+                                categoryName = it.categoryName,
+                                parentId = it.parentId ?: 0
+                            )
+                        }
+                    )
+                } else {
+                    Result.failure(Exception("No live categories"))
+                }
             } catch (e: Exception) {
                 Result.failure(e)
             }
@@ -62,156 +64,47 @@ class MediaRepository(
     override suspend fun getLiveStreams(categoryId: String?): Result<List<Channel>> =
         withContext(Dispatchers.IO) {
             try {
-                val channels = loadM3U()
-                Result.success(
-                    if (categoryId == null) channels
-                    else channels.filter { it.categoryId == categoryId }
-                )
+                val res = api.getLiveStreams(prefs.username, prefs.password)
+                if (res.isSuccessful && res.body() != null) {
+                    val channels = res.body()!!
+                        .filter { categoryId == null || it.categoryId == categoryId }
+                        .map {
+                            Channel(
+                                streamId = it.streamId.toString(),
+                                num = it.num?.toString() ?: "",
+                                name = it.name ?: "",
+                                streamType = "live",
+                                streamIcon = it.streamIcon,
+                                epgChannelId = it.epgChannelId,
+                                added = it.added,
+                                categoryId = it.categoryId,
+                                categoryName = null,
+                                customSid = it.customSid,
+                                tvArchive = it.tvArchive ?: 0,
+                                directSource = it.directSource,
+                                tvArchiveDuration = it.tvArchiveDuration ?: 0,
+                                isFavorite = false
+                            )
+                        }
+
+                    Result.success(channels)
+                } else {
+                    Result.failure(Exception("No channels"))
+                }
             } catch (e: Exception) {
                 Result.failure(e)
             }
         }
 
-    override suspend fun getLiveStreamsFromCache(categoryId: String?) =
-        emptyList<Channel>()
+    override suspend fun getLiveStreamsFromCache(categoryId: String?) = emptyList<Channel>()
 
-    // ==================== BUILD M3U URL ====================
-
-    private fun buildM3uUrl(): String {
-        val input = prefs.serverUrl.trim()
-
-        return if (input.contains("get.php") || input.endsWith(".m3u") || input.endsWith(".m3u8")) {
-            // المستخدم أدخل M3U جاهز
-            input
-        } else {
-            // المستخدم أدخل Xtream
-            "${input.trimEnd('/')}/get.php" +
-                    "?username=${prefs.username}" +
-                    "&password=${prefs.password}" +
-                    "&type=m3u_plus" +
-                    "&output=ts"
-        }
-    }
-
-    // ==================== M3U PARSER ====================
-
-    private suspend fun loadM3U(): List<Channel> =
-        withContext(Dispatchers.IO) {
-
-            val m3uUrl = buildM3uUrl()
-            println("📡 M3U URL = $m3uUrl")
-
-            val text = URL(m3uUrl).readText()
-            val lines = text.lines()
-
-            val channels = mutableListOf<Channel>()
-
-            var name = "Channel"
-            var logo: String? = null
-            var group: String? = "Other"
-
-            for (line in lines) {
-                when {
-                    line.startsWith("#EXTINF", true) -> {
-                        name = Regex(",(.+)").find(line)?.groupValues?.get(1) ?: "Channel"
-                        logo = Regex("tvg-logo=\"(.*?)\"").find(line)?.groupValues?.get(1)
-                        group = Regex("group-title=\"(.*?)\"").find(line)?.groupValues?.get(1) ?: "Other"
-                    }
-
-                    line.startsWith("http", true) -> {
-                        channels.add(
-                            Channel(
-                                streamId = line.hashCode().toString(),
-                                num = "",
-                                name = name,
-                                streamType = "live",
-                                streamIcon = logo,
-                                epgChannelId = null,
-                                added = null,
-                                categoryId = group,
-                                categoryName = group,
-                                customSid = null,
-                                tvArchive = 0,
-                                directSource = line,
-                                tvArchiveDuration = 0,
-                                isFavorite = false
-                            )
-                        )
-                    }
-                }
-            }
-
-            println("✅ CHANNELS PARSED = ${channels.size}")
-            channels
-        }
-
-    // ==================== STUBS ====================
-
-    override suspend fun getMovieCategories() = Result.success(emptyList<Category>())
-    override suspend fun getMovies(categoryId: String?) = Result.success(emptyList<Movie>())
+    // ================= STUBS =================
+    override suspend fun getMovieCategories() = Result.success(emptyList())
+    override suspend fun getMovies(categoryId: String?) = Result.success(emptyList())
     override suspend fun getMoviesFromCache(categoryId: String?) = emptyList<Movie>()
-
-    override suspend fun getSeriesCategories() = Result.success(emptyList<Category>())
-    override suspend fun getSeries(categoryId: String?) = Result.success(emptyList<Series>())
+    override suspend fun getSeriesCategories() = Result.success(emptyList())
+    override suspend fun getSeries(categoryId: String?) = Result.success(emptyList())
     override suspend fun getSeriesFromCache(categoryId: String?) = emptyList<Series>()
     override suspend fun getSeriesInfo(seriesId: String) = Result.success(emptyList<Episode>())
     override suspend fun getEpisodesFromCache(seriesId: String) = emptyList<Episode>()
-
-    override suspend fun getFavorites(): List<String> = emptyList()
-    override suspend fun isFavorite(itemId: String) = false
-    override suspend fun addFavorite(itemId: String) {}
-    override suspend fun removeBasicFavorite(itemId: String) {}
-    override suspend fun addFavorite(
-        contentId: String,
-        name: String,
-        type: String,
-        icon: String?,
-        categoryId: String?
-    ) = Result.success(Unit)
-
-    override suspend fun removeFavorite(contentId: String) = Result.success(Unit)
-    override suspend fun getFavoritesWithDetails() = Result.success(emptyList<FavoriteItem>())
-
-    override suspend fun addRecent(itemId: String, itemType: String) {}
-    override suspend fun getRecents(): List<Recent> = emptyList()
-
-    override suspend fun addRecentView(
-        contentId: String,
-        name: String,
-        type: String,
-        icon: String?,
-        categoryId: String?
-    ) = Result.success(Unit)
-
-    override suspend fun getRecentViews() = Result.success(emptyList<RecentItem>())
-
-    override suspend fun getEpgForChannel(channelId: String) = emptyList<EpgProgram>()
-    override suspend fun getEpgForChannelInTimeRange(
-        channelId: String,
-        startTime: Long,
-        endTime: Long
-    ) = emptyList<EpgProgram>()
-
-    override suspend fun getCurrentProgram(channelId: String): EpgProgram? = null
-    override suspend fun getUpcomingPrograms(channelId: String, limit: Int) = emptyList<EpgProgram>()
-
-    override suspend fun cacheEpgPrograms(programs: List<EpgProgram>) {}
-    override suspend fun cleanupOldEpgData(cutoffTime: Long) {}
-
-    override suspend fun searchChannels(query: String, categoryId: String?) = emptyList<Channel>()
-    override suspend fun searchMovies(query: String, categoryId: String?) = emptyList<Movie>()
-    override suspend fun searchSeries(query: String, categoryId: String?) = emptyList<Series>()
-    override suspend fun searchMoviesByGenre(genre: String) = emptyList<Movie>()
-    override suspend fun searchSeriesByGenre(genre: String) = emptyList<Series>()
-
-    override suspend fun syncAllData() = Result.success(Unit)
-    override suspend fun syncLiveTV() = Result.success(Unit)
-    override suspend fun syncMovies() = Result.success(Unit)
-    override suspend fun syncSeries() = Result.success(Unit)
-
-    override suspend fun updateChannelPosition(channelId: String, newPosition: Int) {}
-    override suspend fun getChannelsOrdered(categoryId: String?) = emptyList<Channel>()
-    override suspend fun loadM3UPlaylist(m3uContent: String) = Result.success(emptyList<Channel>())
-    override suspend fun loadM3UPlaylistFromUrl(url: String) = Result.success(emptyList<Channel>())
-    override suspend fun mergeM3UChannels(channels: List<Channel>) {}
 }
