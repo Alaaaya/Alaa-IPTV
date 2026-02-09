@@ -42,49 +42,63 @@ class MediaRepository(
 
     override suspend fun getLiveCategories(): Result<List<Category>> =
         withContext(Dispatchers.IO) {
-            val channels = loadM3U()
-            val categories = channels
-                .map { it.categoryId ?: "Other" }
-                .distinct()
-                .map {
-                    Category(
-                        categoryId = it,
-                        categoryName = it,
-                        parentId = 0
-                    )
-                }
-            Result.success(categories)
+            runCatching {
+                val channels = loadM3U()
+                channels
+                    .map { it.categoryId ?: "Other" }
+                    .distinct()
+                    .map {
+                        Category(
+                            categoryId = it,
+                            categoryName = it,
+                            parentId = 0
+                        )
+                    }
+            }
         }
 
     override suspend fun getLiveStreams(categoryId: String?): Result<List<Channel>> =
         withContext(Dispatchers.IO) {
-            val channels = loadM3U()
-            Result.success(
-                if (categoryId == null) channels
-                else channels.filter { it.categoryId == categoryId }
-            )
+            runCatching {
+                val channels = loadM3U()
+                if (categoryId == null || categoryId == "0")
+                    channels
+                else
+                    channels.filter { it.categoryId == categoryId }
+            }
         }
 
     override suspend fun getLiveStreamsFromCache(categoryId: String?): List<Channel> =
         emptyList()
 
-    // ================= M3U =================
+    // ================= M3U PARSER =================
 
     private fun loadM3U(): List<Channel> {
-        val lines = URL(prefs.serverUrl).readText().lines()
+        val url = prefs.serverUrl.trim()
+        if (!url.startsWith("http")) return emptyList()
+
+        val lines = try {
+            URL(url).readText().lines()
+        } catch (e: Exception) {
+            return emptyList()
+        }
+
         val channels = mutableListOf<Channel>()
 
-        var name = ""
+        var name = "Channel"
         var logo: String? = null
-        var group: String? = null
+        var group: String? = "Other"
 
-        for (line in lines) {
+        lines.forEach { line ->
             when {
                 line.startsWith("#EXTINF") -> {
                     name = Regex(",(.+)").find(line)?.groupValues?.get(1) ?: "Channel"
-                    logo = Regex("tvg-logo=\"(.*?)\"").find(line)?.groupValues?.get(1)
-                    group = Regex("group-title=\"(.*?)\"").find(line)?.groupValues?.get(1)
+                    logo = Regex("tvg-logo=\"(.*?)\"")
+                        .find(line)?.groupValues?.get(1)
+                    group = Regex("group-title=\"(.*?)\"")
+                        .find(line)?.groupValues?.get(1) ?: "Other"
                 }
+
                 line.startsWith("http") -> {
                     channels.add(
                         Channel(
@@ -95,8 +109,8 @@ class MediaRepository(
                             streamIcon = logo,
                             epgChannelId = null,
                             added = null,
-                            categoryId = group ?: "Other",
-                            categoryName = group ?: "Other",
+                            categoryId = group,
+                            categoryName = group,
                             customSid = null,
                             tvArchive = 0,
                             directSource = line,
@@ -107,6 +121,7 @@ class MediaRepository(
                 }
             }
         }
+
         return channels
     }
 
@@ -133,6 +148,7 @@ class MediaRepository(
 
     override suspend fun addRecent(itemId: String, itemType: String) {}
     override suspend fun getRecents(): List<Recent> = emptyList()
+
     override suspend fun addRecentView(
         contentId: String,
         name: String,
