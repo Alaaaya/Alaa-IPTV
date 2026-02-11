@@ -7,36 +7,47 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 object ApiClient {
-    
+
     private var retrofit: Retrofit? = null
-    private var currentBaseUrl: String = ""
-    
+    private var currentBaseUrl: String? = null
+
+    private fun buildClient(): OkHttpClient {
+        val logging = HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.BODY
+        }
+
+        return OkHttpClient.Builder()
+            .addInterceptor(logging)
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .build()
+    }
+
     fun getClient(baseUrl: String): Retrofit {
-        if (retrofit == null || currentBaseUrl != baseUrl) {
-            val logging = HttpLoggingInterceptor()
-            logging.setLevel(HttpLoggingInterceptor.Level.BODY)
-            
-            val client = OkHttpClient.Builder()
-                .addInterceptor(logging)
-                .connectTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
-                .build()
-            
-            val cleanUrl = if (baseUrl.endsWith("/")) baseUrl else "$baseUrl/"
-            
+
+        // تنظيف الرابط
+        val cleanUrl = baseUrl
+            .trim()
+            .removeSuffix("/")
+            .plus("/")
+
+        if (retrofit == null || currentBaseUrl != cleanUrl) {
+
             retrofit = Retrofit.Builder()
                 .baseUrl(cleanUrl)
-                .client(client)
+                .client(buildClient())
                 .addConverterFactory(GsonConverterFactory.create())
                 .build()
-            
-            currentBaseUrl = baseUrl
+
+            currentBaseUrl = cleanUrl
         }
+
         return retrofit!!
     }
-    
+
     fun getXtreamApiService(baseUrl: String): XtreamApiService {
-        return getClient(baseUrl).create(XtreamApiService::class.java)
+        return getClient(baseUrl)
+            .create(XtreamApiService::class.java)
     }
 }
