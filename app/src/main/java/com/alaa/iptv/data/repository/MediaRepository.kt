@@ -2,6 +2,7 @@ package com.alaa.iptv.data.repository
 
 import android.content.Context
 import com.alaa.iptv.data.api.ApiClient
+import com.alaa.iptv.data.api.XtreamApiService
 import com.alaa.iptv.data.models.*
 import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.domain.repository.IMediaRepository
@@ -13,7 +14,10 @@ class MediaRepository(
     context: Context
 ) : IMediaRepository {
 
-    private val api = ApiClient.getXtreamApiService(prefs.serverUrl)
+    // 🔥 مهم جداً — لا نخزن api ثابت
+    private fun getApi(): XtreamApiService {
+        return ApiClient.getXtreamApiService(prefs.serverUrl)
+    }
 
     // ================= AUTH =================
 
@@ -24,10 +28,13 @@ class MediaRepository(
     ): Result<XtreamAuthResponse> =
         withContext(Dispatchers.IO) {
             runCatching {
+                val api = ApiClient.getXtreamApiService(serverUrl)
                 val response = api.authenticate(username, password)
+
                 if (!response.isSuccessful || response.body() == null) {
                     throw Exception("Authentication failed")
                 }
+
                 response.body()!!
             }
         }
@@ -37,7 +44,8 @@ class MediaRepository(
     override suspend fun getLiveCategories(): Result<List<Category>> =
         withContext(Dispatchers.IO) {
             runCatching {
-                val response = api.getLiveCategories(
+
+                val response = getApi().getLiveCategories(
                     prefs.username,
                     prefs.password
                 )
@@ -62,6 +70,8 @@ class MediaRepository(
         withContext(Dispatchers.IO) {
             runCatching {
 
+                val api = getApi()
+
                 val response = if (categoryId == null || categoryId == "0") {
                     api.getLiveStreams(
                         prefs.username,
@@ -81,7 +91,7 @@ class MediaRepository(
 
                 response.body()!!.map { stream ->
                     Channel(
-                        streamId = stream.streamId.toString(),
+                        streamId = stream.streamId?.toString() ?: "",
                         num = stream.num?.toString() ?: "",
                         name = stream.name ?: "Channel",
                         streamType = "live",
@@ -102,7 +112,7 @@ class MediaRepository(
     override suspend fun getLiveStreamsFromCache(categoryId: String?) =
         emptyList<Channel>()
 
-    // ================= باقي الدوال مؤقتاً =================
+    // ================= STUB METHODS =================
 
     override suspend fun getFavorites() = emptyList<String>()
     override suspend fun isFavorite(itemId: String) = false
@@ -171,6 +181,7 @@ class MediaRepository(
     ) = emptyList<EpgProgram>()
 
     override suspend fun getCurrentProgram(channelId: String) = null
+
     override suspend fun getUpcomingPrograms(channelId: String, limit: Int) =
         emptyList<EpgProgram>()
 
@@ -198,6 +209,7 @@ class MediaRepository(
     override suspend fun syncSeries() = Result.success(Unit)
 
     override suspend fun updateChannelPosition(channelId: String, newPosition: Int) {}
+
     override suspend fun getChannelsOrdered(categoryId: String?) =
         emptyList<Channel>()
 
