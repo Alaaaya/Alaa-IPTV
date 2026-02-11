@@ -24,22 +24,38 @@ data class Channel(
     var position: Int = 0
 ) : Parcelable {
 
-    fun getStreamUrl(serverUrl: String, username: String, password: String): String {
+    fun getStreamUrl(
+        serverUrl: String,
+        username: String,
+        password: String
+    ): String {
+
         val cleanUrl = serverUrl.removeSuffix("/")
         val type = streamType.lowercase()
 
+        // إذا السيرفر رجع direct source استخدمه
+        if (!directSource.isNullOrEmpty()) {
+            return directSource
+        }
+
         return when (type) {
-            "live" -> "$cleanUrl/live/$username/$password/$streamId.ts"
 
-            "movie", "vod" ->
+            "live" -> {
+                // أغلب سيرفرات Xtream live = ts
+                "$cleanUrl/live/$username/$password/$streamId.ts"
+            }
+
+            "movie", "vod" -> {
                 "$cleanUrl/movie/$username/$password/$streamId.ts"
+            }
 
-            "series" ->
+            "series" -> {
                 "$cleanUrl/series/$username/$password/$streamId.ts"
+            }
 
-            else ->
-                directSource
-                    ?: "$cleanUrl/live/$username/$password/$streamId.ts"
+            else -> {
+                "$cleanUrl/live/$username/$password/$streamId.ts"
+            }
         }
     }
 }
@@ -74,9 +90,15 @@ data class Movie(
     var isFavorite: Boolean = false
 ) : Parcelable {
 
-    fun getStreamUrl(serverUrl: String, username: String, password: String): String {
+    fun getStreamUrl(
+        serverUrl: String,
+        username: String,
+        password: String
+    ): String {
+
         val cleanUrl = serverUrl.removeSuffix("/")
         val extension = containerExtension ?: "ts"
+
         return "$cleanUrl/movie/$username/$password/$streamId.$extension"
     }
 }
@@ -110,9 +132,15 @@ data class Episode(
     val seasonNumber: Int
 ) : Parcelable {
 
-    fun getStreamUrl(serverUrl: String, username: String, password: String): String {
+    fun getStreamUrl(
+        serverUrl: String,
+        username: String,
+        password: String
+    ): String {
+
         val cleanUrl = serverUrl.removeSuffix("/")
         val extension = containerExtension ?: "ts"
+
         return "$cleanUrl/series/$username/$password/$id.$extension"
     }
 }
