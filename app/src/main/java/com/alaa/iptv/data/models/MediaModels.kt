@@ -26,12 +26,20 @@ data class Channel(
 
     fun getStreamUrl(serverUrl: String, username: String, password: String): String {
         val cleanUrl = serverUrl.removeSuffix("/")
+        val type = streamType.lowercase()
 
-        return when (streamType) {
+        return when (type) {
             "live" -> "$cleanUrl/live/$username/$password/$streamId.ts"
-            "movie" -> "$cleanUrl/movie/$username/$password/$streamId.ts"
-            "series" -> "$cleanUrl/series/$username/$password/$streamId.ts"
-            else -> "$cleanUrl/live/$username/$password/$streamId.ts"
+
+            "movie", "vod" ->
+                "$cleanUrl/movie/$username/$password/$streamId.ts"
+
+            "series" ->
+                "$cleanUrl/series/$username/$password/$streamId.ts"
+
+            else ->
+                directSource
+                    ?: "$cleanUrl/live/$username/$password/$streamId.ts"
         }
     }
 }
