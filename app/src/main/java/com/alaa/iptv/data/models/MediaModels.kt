@@ -3,6 +3,8 @@ package com.alaa.iptv.data.models
 import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
 
+// ======================== CHANNEL ========================
+
 @Parcelize
 data class Channel(
     val streamId: String,
@@ -21,14 +23,20 @@ data class Channel(
     var isFavorite: Boolean = false,
     var position: Int = 0
 ) : Parcelable {
+
     fun getStreamUrl(serverUrl: String, username: String, password: String): String {
         val cleanUrl = serverUrl.removeSuffix("/")
+
         return when (streamType) {
-            "live" -> "$cleanUrl/live/$username/$password/$streamId.m3u8"
-            else -> "$cleanUrl/$username/$password/$streamId"
+            "live" -> "$cleanUrl/live/$username/$password/$streamId.ts"
+            "movie" -> "$cleanUrl/movie/$username/$password/$streamId.ts"
+            "series" -> "$cleanUrl/series/$username/$password/$streamId.ts"
+            else -> "$cleanUrl/live/$username/$password/$streamId.ts"
         }
     }
 }
+
+// ======================== CATEGORY ========================
 
 @Parcelize
 data class Category(
@@ -36,6 +44,8 @@ data class Category(
     val categoryName: String,
     val parentId: Int = 0
 ) : Parcelable
+
+// ======================== MOVIE ========================
 
 @Parcelize
 data class Movie(
@@ -55,11 +65,15 @@ data class Movie(
     val categoryId: String?,
     var isFavorite: Boolean = false
 ) : Parcelable {
+
     fun getStreamUrl(serverUrl: String, username: String, password: String): String {
         val cleanUrl = serverUrl.removeSuffix("/")
-        return "$cleanUrl/movie/$username/$password/$streamId.$containerExtension"
+        val extension = containerExtension ?: "ts"
+        return "$cleanUrl/movie/$username/$password/$streamId.$extension"
     }
 }
+
+// ======================== SERIES ========================
 
 @Parcelize
 data class Series(
@@ -76,6 +90,8 @@ data class Series(
     var isFavorite: Boolean = false
 ) : Parcelable
 
+// ======================== EPISODE ========================
+
 @Parcelize
 data class Episode(
     val id: String,
@@ -85,11 +101,15 @@ data class Episode(
     val info: EpisodeInfo?,
     val seasonNumber: Int
 ) : Parcelable {
+
     fun getStreamUrl(serverUrl: String, username: String, password: String): String {
         val cleanUrl = serverUrl.removeSuffix("/")
-        return "$cleanUrl/series/$username/$password/$id.$containerExtension"
+        val extension = containerExtension ?: "ts"
+        return "$cleanUrl/series/$username/$password/$id.$extension"
     }
 }
+
+// ======================== EXTRA MODELS ========================
 
 @Parcelize
 data class EpisodeInfo(
@@ -124,4 +144,3 @@ data class RecentItem(
     val categoryId: String?,
     val timestamp: Long
 ) : Parcelable
-
