@@ -66,7 +66,8 @@ data class Channel(
 data class Category(
     val categoryId: String,
     val categoryName: String,
-    val parentId: Int = 0
+    val parentId: Int = 0,
+    val channelCount: Int = 0
 ) : Parcelable
 
 // ======================== MOVIE ========================
