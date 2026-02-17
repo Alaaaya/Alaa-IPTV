@@ -80,8 +80,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.categoriesRecyclerView.apply {
-            layoutManager =
-                LinearLayoutManager(this@MainActivity, LinearLayoutManager.HORIZONTAL, false)
+            layoutManager = LinearLayoutManager(this@MainActivity)
             adapter = categoryAdapter
         }
 
@@ -134,6 +133,10 @@ class MainActivity : AppCompatActivity() {
     private fun setupButtons() {
         binding.playButton.setOnClickListener {
             selectedChannel?.let { channel -> playChannel(channel) }
+        }
+        
+        binding.backButton.setOnClickListener {
+            finish()
         }
     }
 
@@ -247,6 +250,8 @@ class MainActivity : AppCompatActivity() {
         selectedChannel = channel
         binding.previewTitle.text = channel.name
         binding.previewInfo.text = channel.streamType ?: ""
+        binding.epgInfoTitle.text = channel.name
+        binding.categoryTitle.text = channel.categoryName ?: ""
 
         Glide.with(this)
             .load(channel.streamIcon)

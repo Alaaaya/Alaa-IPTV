@@ -1,169 +1,303 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout 
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/main_layout"
+    android:background="@color/dark_background"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="horizontal"
-    android:background="@color/dark_background"
-    android:focusable="true"
-    android:focusableInTouchMode="true">
+    android:animateLayoutChanges="false">
 
-    <!-- ================= LEFT PANEL ================= -->
-    <LinearLayout
+    <!-- ================= BACK BUTTON ================= -->
+    <ImageView
+        android:id="@+id/backButton"
+        android:layout_width="40dp"
+        android:layout_height="0dp"
+        android:layout_margin="8dp"
+        android:padding="8dp"
+        android:background="@drawable/channel_item_background"
+        android:focusable="true"
+        android:clickable="true"
+        android:src="@drawable/app_banner"
+        android:scaleType="fitCenter"
+        android:contentDescription="@string/app_name"
+        app:layout_constraintBottom_toTopOf="@+id/h_guideline1"
+        app:layout_constraintDimensionRatio="1:1"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"/>
+
+    <!-- ================= CATEGORY TITLE ================= -->
+    <TextView
+        android:id="@+id/categoryTitle"
         android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_weight="1.2"
-        android:orientation="vertical"
-        android:padding="16dp">
+        android:layout_height="0dp"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
+        android:gravity="center"
+        android:textColor="@color/text_primary"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@+id/backButton"
+        app:layout_constraintEnd_toStartOf="@+id/moduleTitle"
+        app:layout_constraintStart_toEndOf="@+id/backButton"
+        app:layout_constraintTop_toTopOf="@+id/backButton"/>
 
-        <!-- ===== TOP TABS ===== -->
-        <LinearLayout
-            android:layout_width="match_parent"
+    <!-- ================= MODULE TITLE ================= -->
+    <TextView
+        android:id="@+id/moduleTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:gravity="center"
+        android:text="@string/live_tv"
+        android:textColor="@color/text_primary"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@+id/h_guideline1"
+        app:layout_constraintEnd_toEndOf="@+id/v_guideline3"
+        app:layout_constraintTop_toTopOf="parent"/>
+
+    <!-- ================= CATEGORIES SECTION ================= -->
+    <View
+        android:id="@+id/categoriesSectionBackground"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="@color/card_background"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@+id/v_guideline1"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"/>
+
+    <!-- ================= TABS ================= -->
+    <LinearLayout
+        android:id="@+id/tabsLayout"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:gravity="center"
+        app:layout_constraintEnd_toEndOf="@+id/v_guideline1"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <Button
+            android:id="@+id/liveTvTab"
+            style="@style/PrimaryButton"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:background="@drawable/glassmorphism_background"
-            android:padding="8dp"
-            android:layout_marginBottom="16dp">
-
-            <Button
-                android:id="@+id/liveTvTab"
-                style="@style/PrimaryButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/live_tv"
-                android:nextFocusRight="@id/moviesTab"
-                android:nextFocusDown="@id/categoriesRecyclerView" />
-
-            <Button
-                android:id="@+id/moviesTab"
-                style="@style/PrimaryButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/movies"
-                android:nextFocusLeft="@id/liveTvTab"
-                android:nextFocusRight="@id/seriesTab"
-                android:nextFocusDown="@id/categoriesRecyclerView" />
-
-            <Button
-                android:id="@+id/seriesTab"
-                style="@style/PrimaryButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/series"
-                android:nextFocusLeft="@id/moviesTab"
-                android:nextFocusDown="@id/categoriesRecyclerView" />
-        </LinearLayout>
-
-        <!-- ===== CATEGORIES ===== -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/categoriesRecyclerView"
-            android:layout_width="match_parent"
-            android:layout_height="72dp"
-            android:layout_marginBottom="12dp"
-            android:clipToPadding="false"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"
-            android:nextFocusUp="@id/liveTvTab"
-            android:nextFocusDown="@id/channelsRecyclerView" />
-
-        <!-- ===== CHANNELS LIST ===== -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/channelsRecyclerView"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
             android:layout_weight="1"
-            android:clipToPadding="false"
-            android:paddingTop="8dp"
-            android:paddingBottom="8dp"
-            android:nextFocusUp="@id/categoriesRecyclerView" />
+            android:text="@string/live_tv"
+            android:textSize="12sp"
+            android:padding="8dp"
+            android:nextFocusRight="@id/moviesTab"
+            android:nextFocusDown="@id/categoriesRecyclerView"/>
 
+        <Button
+            android:id="@+id/moviesTab"
+            style="@style/PrimaryButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/movies"
+            android:textSize="12sp"
+            android:padding="8dp"
+            android:nextFocusLeft="@id/liveTvTab"
+            android:nextFocusRight="@id/seriesTab"
+            android:nextFocusDown="@id/categoriesRecyclerView"/>
+
+        <Button
+            android:id="@+id/seriesTab"
+            style="@style/PrimaryButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/series"
+            android:textSize="12sp"
+            android:padding="8dp"
+            android:nextFocusLeft="@id/moviesTab"
+            android:nextFocusDown="@id/categoriesRecyclerView"/>
     </LinearLayout>
 
-    <!-- ================= RIGHT PREVIEW PANEL ================= -->
-    <FrameLayout
+    <!-- ================= CATEGORIES LIST ================= -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/categoriesRecyclerView"
         android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_weight="0.8"
-        android:padding="16dp">
+        android:layout_height="0dp"
+        android:focusable="true"
+        android:nextFocusLeft="@id/categoriesRecyclerView"
+        android:nextFocusRight="@id/channelsRecyclerView"
+        android:nextFocusUp="@id/liveTvTab"
+        android:nextFocusDown="@id/categoriesRecyclerView"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/v_guideline1"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/h_guideline1"/>
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:background="@drawable/glassmorphism_background"
-            android:padding="20dp">
+    <!-- ================= CHANNELS LIST ================= -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/channelsRecyclerView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="#66000000"
+        android:paddingStart="4dp"
+        android:paddingEnd="4dp"
+        android:nextFocusLeft="@id/categoriesRecyclerView"
+        android:nextFocusRight="@id/playButton"
+        android:nextFocusUp="@id/backButton"
+        android:nextFocusDown="@id/channelsRecyclerView"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/v_guideline2"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/h_guideline1"/>
 
-            <!-- PREVIEW IMAGE -->
-            <ImageView
-                android:id="@+id/previewImage"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1"
-                android:scaleType="centerCrop"
-                android:background="@color/card_background"
-                android:contentDescription="@string/app_name" />
+    <!-- ================= PLAYER VIEW ================= -->
+    <ImageView
+        android:id="@+id/previewImage"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:scaleType="centerCrop"
+        android:background="@color/card_background"
+        android:contentDescription="@string/app_name"
+        app:layout_constraintBottom_toTopOf="@+id/channelNameLayout"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/channelsRecyclerView"
+        app:layout_constraintTop_toBottomOf="@+id/moduleTitle"/>
 
-            <!-- TITLE -->
-            <TextView
-                android:id="@+id/previewTitle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:textColor="@color/text_primary"
-                android:textSize="22sp"
-                android:textStyle="bold"
-                android:maxLines="2"
-                android:ellipsize="end" />
+    <!-- ================= CHANNEL NAME LAYOUT ================= -->
+    <LinearLayout
+        android:id="@+id/channelNameLayout"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="#66000000"
+        android:padding="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/channelsRecyclerView"
+        app:layout_constraintTop_toBottomOf="@+id/h_guideline2">
 
-            <!-- INFO -->
-            <TextView
-                android:id="@+id/previewInfo"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:textColor="@color/text_secondary"
-                android:textSize="15sp"
-                android:maxLines="3"
-                android:ellipsize="end" />
+        <TextView
+            android:id="@+id/previewTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:padding="4dp"
+            android:text="Channel Name"
+            android:textColor="@color/text_primary"
+            android:textSize="14sp"
+            android:textStyle="bold"/>
 
-            <!-- ACTIONS -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="14dp">
+        <ImageView
+            android:id="@+id/favoriteButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:background="@drawable/channel_item_background"
+            android:padding="8dp"
+            android:focusable="true"
+            android:clickable="true"
+            android:src="@drawable/app_banner"
+            android:contentDescription="@string/app_name"
+            android:nextFocusLeft="@id/channelsRecyclerView"
+            android:nextFocusRight="@id/favoriteButton"
+            android:nextFocusUp="@id/backButton"
+            android:nextFocusDown="@id/favoriteButton"/>
+    </LinearLayout>
 
-                <Button
-                    android:id="@+id/playButton"
-                    style="@style/PrimaryButton"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/play"
-                    android:nextFocusRight="@id/favoriteButton" />
+    <!-- ================= EPG INFO TITLE ================= -->
+    <TextView
+        android:id="@+id/epgInfoTitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:paddingTop="8dp"
+        android:paddingBottom="4dp"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:lines="1"
+        android:textColor="@color/text_primary"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="@+id/v_guideline3"
+        app:layout_constraintStart_toEndOf="@+id/channelsRecyclerView"
+        app:layout_constraintTop_toBottomOf="@+id/channelNameLayout"/>
 
-                <Button
-                    android:id="@+id/favoriteButton"
-                    style="@style/PrimaryButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="❤"
-                    android:nextFocusLeft="@id/playButton" />
-            </LinearLayout>
+    <!-- ================= EPG INFO DESCRIPTION ================= -->
+    <TextView
+        android:id="@+id/previewInfo"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:paddingBottom="4dp"
+        android:textColor="@color/text_secondary"
+        android:textSize="11sp"
+        app:layout_constraintBottom_toTopOf="@+id/playButton"
+        app:layout_constraintEnd_toEndOf="@+id/v_guideline3"
+        app:layout_constraintStart_toEndOf="@+id/channelsRecyclerView"
+        app:layout_constraintTop_toBottomOf="@+id/epgInfoTitle"/>
 
-        </LinearLayout>
+    <!-- ================= PLAY BUTTON ================= -->
+    <Button
+        android:id="@+id/playButton"
+        style="@style/PrimaryButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        android:text="@string/play"
+        android:nextFocusLeft="@id/channelsRecyclerView"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/channelsRecyclerView"/>
 
-        <!-- LOADING -->
-        <ProgressBar
-            android:id="@+id/loadingProgress"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_gravity="center"
-            android:indeterminateTint="@color/accent_blue"
-            android:visibility="gone" />
+    <!-- ================= LOADING PROGRESS ================= -->
+    <ProgressBar
+        android:id="@+id/loadingProgress"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_gravity="center"
+        android:indeterminateTint="@color/accent_blue"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"/>
 
-    </FrameLayout>
+    <!-- ================= GUIDELINES ================= -->
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/h_guideline1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent="0.15"/>
 
-</LinearLayout>
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/h_guideline2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent="0.65"/>
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/v_guideline1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_percent="0.35"/>
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/v_guideline2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_percent="0.50"/>
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/v_guideline3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_percent="0.97"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

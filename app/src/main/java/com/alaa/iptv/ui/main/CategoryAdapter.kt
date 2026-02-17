@@ -33,6 +33,11 @@ class CategoryAdapter(
             binding.root.setOnFocusChangeListener { view, hasFocus ->
                 if (hasFocus) {
                     animateFocusChange(view, true)
+                    val position = bindingAdapterPosition
+                    if (position != RecyclerView.NO_POSITION) {
+                        setSelectedPosition(position)
+                        onCategoryClick(categories[position])
+                    }
                 } else {
                     animateFocusChange(view, false)
                 }
@@ -40,7 +45,7 @@ class CategoryAdapter(
         }
 
         private fun animateFocusChange(view: View, focused: Boolean) {
-            val scale = if (focused) 1.1f else 1.0f
+            val scale = if (focused) 1.05f else 1.0f
             val duration = 200L
 
             ObjectAnimator.ofFloat(view, "scaleX", view.scaleX, scale).apply {
@@ -56,14 +61,22 @@ class CategoryAdapter(
             }
         }
 
-        fun bind(category: Category, isSelected: Boolean) {
+        fun bind(category: Category, isSelected: Boolean, position: Int) {
             binding.categoryName.text = category.categoryName
+            
+            // Set position number (1-indexed)
+            binding.categoryPosition.text = (position + 1).toString()
+            
+            // Set category count
+            binding.categoryCount.text = category.channelCount.toString()
             
             // Highlight selected
             if (isSelected) {
-                binding.root.setBackgroundColor(Color.parseColor("#2196F3"))
+                binding.innerLayout.setBackgroundColor(Color.parseColor("#99D32F2F"))
+                binding.rootLayout.setBackgroundColor(Color.parseColor("#332196F3"))
             } else {
-                binding.root.setBackgroundColor(Color.parseColor("#26FFFFFF"))
+                binding.innerLayout.setBackgroundColor(Color.parseColor("#66D32F2F"))
+                binding.rootLayout.setBackgroundColor(Color.parseColor("#26FFFFFF"))
             }
         }
     }
@@ -78,7 +91,7 @@ class CategoryAdapter(
     }
 
     override fun onBindViewHolder(holder: CategoryViewHolder, position: Int) {
-        holder.bind(categories[position], position == selectedPosition)
+        holder.bind(categories[position], position == selectedPosition, position)
     }
 
     override fun getItemCount() = categories.size
