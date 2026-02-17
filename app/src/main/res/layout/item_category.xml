@@ -3,11 +3,8 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/rootLayout"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="horizontal"
+    android:layout_height="35dp"
     android:background="@drawable/channel_item_background"
-    android:paddingTop="4dp"
-    android:paddingBottom="4dp"
     android:focusable="true"
     android:clickable="true"
     android:animateLayoutChanges="false">
@@ -15,24 +12,21 @@
     <LinearLayout
         android:id="@+id/innerLayout"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:minHeight="40dp"
+        android:layout_height="match_parent"
         android:orientation="horizontal"
-        android:background="#66D32F2F"
+        android:background="#CC990000"
         android:animateLayoutChanges="false">
 
-        <!-- CATEGORY POSITION -->
         <TextView
             android:id="@+id/categoryPosition"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="0.15"
             android:gravity="center"
-            android:textColor="@color/text_primary"
-            android:textSize="12sp"
+            android:textColor="@color/white"
+            android:textSize="10sp"
             android:animateLayoutChanges="false"/>
 
-        <!-- CATEGORY TITLE -->
         <TextView
             android:id="@+id/categoryName"
             android:layout_width="0dp"
@@ -40,14 +34,12 @@
             android:layout_weight="0.7"
             android:gravity="start|center_vertical"
             android:text="Category Name"
-            android:textColor="@color/text_primary"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"
+            android:textColor="@color/white"
+            android:textSize="10sp"
+            android:paddingStart="6dp"
+            android:paddingEnd="6dp"
             android:animateLayoutChanges="false"/>
 
-        <!-- CATEGORY COUNT -->
         <TextView
             android:id="@+id/categoryCount"
             android:layout_width="0dp"
@@ -55,19 +47,17 @@
             android:layout_weight="0.2"
             android:gravity="center"
             android:text="0"
-            android:textColor="@color/text_primary"
-            android:textSize="12sp"
+            android:textColor="@color/white"
+            android:textSize="10sp"
             android:animateLayoutChanges="false"/>
 
-        <!-- POINTER ARROW -->
         <ImageView
             android:id="@+id/pointerImageView"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="0.1"
-            android:src="@drawable/app_banner"
+            android:src="@drawable/ic_logo"
             android:scaleType="fitCenter"
-            android:contentDescription="@string/app_name"
             android:animateLayoutChanges="false"/>
     </LinearLayout>
 

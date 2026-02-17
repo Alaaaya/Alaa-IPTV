@@ -29,7 +29,6 @@ class CategoryAdapter(
                 }
             }
 
-            // Enhanced focus handling with smooth animations
             binding.root.setOnFocusChangeListener { view, hasFocus ->
                 if (hasFocus) {
                     animateFocusChange(view, true)
@@ -46,7 +45,7 @@ class CategoryAdapter(
 
         private fun animateFocusChange(view: View, focused: Boolean) {
             val scale = if (focused) 1.05f else 1.0f
-            val duration = 200L
+            val duration = 150L
 
             ObjectAnimator.ofFloat(view, "scaleX", view.scaleX, scale).apply {
                 this.duration = duration
@@ -63,20 +62,15 @@ class CategoryAdapter(
 
         fun bind(category: Category, isSelected: Boolean, position: Int) {
             binding.categoryName.text = category.categoryName
-            
-            // Set position number (1-indexed)
             binding.categoryPosition.text = (position + 1).toString()
-            
-            // Set category count
             binding.categoryCount.text = category.channelCount.toString()
             
-            // Highlight selected
             if (isSelected) {
-                binding.innerLayout.setBackgroundColor(Color.parseColor("#99D32F2F"))
-                binding.rootLayout.setBackgroundColor(Color.parseColor("#332196F3"))
+                binding.innerLayout.setBackgroundColor(Color.parseColor("#CC990000")) // Red Overlay
+                binding.rootLayout.setBackgroundResource(com.alaa.iptv.R.drawable.focused_item_background)
             } else {
-                binding.innerLayout.setBackgroundColor(Color.parseColor("#66D32F2F"))
-                binding.rootLayout.setBackgroundColor(Color.parseColor("#26FFFFFF"))
+                binding.innerLayout.setBackgroundColor(Color.TRANSPARENT)
+                binding.rootLayout.setBackgroundResource(com.alaa.iptv.R.drawable.channel_item_background)
             }
         }
     }
