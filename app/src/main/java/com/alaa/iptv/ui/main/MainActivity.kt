@@ -44,7 +44,6 @@ class MainActivity : AppCompatActivity() {
         prefs = AppPreferences(this)
         repository = MediaRepository(prefs, this)
 
-        // MODE من Dashboard
         val mode = intent.getStringExtra("MODE") ?: "live"
         currentMode = when (mode) {
             "movies" -> MediaMode.MOVIES
@@ -53,20 +52,19 @@ class MainActivity : AppCompatActivity() {
         }
 
         setupRecyclerViews()
-        setupTabs()
         setupButtons()
 
         when (currentMode) {
             MediaMode.MOVIES -> {
-                highlightTab(binding.moviesTab)
+                binding.moduleTitle.text = "الأفلام"
                 loadMovies()
             }
             MediaMode.SERIES -> {
-                highlightTab(binding.seriesTab)
+                binding.moduleTitle.text = "المسلسلات"
                 loadSeries()
             }
             MediaMode.LIVE_TV -> {
-                highlightTab(binding.liveTvTab)
+                binding.moduleTitle.text = "القنوات"
                 loadLiveTV()
             }
         }
@@ -75,6 +73,7 @@ class MainActivity : AppCompatActivity() {
     private fun setupRecyclerViews() {
         categoryAdapter = CategoryAdapter(emptyList()) { category: Category ->
             if (currentMode == MediaMode.LIVE_TV) {
+                binding.categoryTitle.text = category.categoryName
                 loadChannelsByCategory(category)
             }
         }
@@ -88,13 +87,8 @@ class MainActivity : AppCompatActivity() {
             emptyList(),
             onChannelClick = { channel: Channel -> updatePreview(channel) },
             onChannelLongClick = {
-                Toast.makeText(
-                    this,
-                    getString(R.string.long_press_to_reorder),
-                    Toast.LENGTH_SHORT
-                ).show()
-            },
-            onReorderRequest = { _, _ -> }
+                // Handle long click if needed
+            }
         )
 
         binding.channelsRecyclerView.apply {
@@ -103,51 +97,17 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupTabs() {
-        binding.liveTvTab.setOnClickListener {
-            currentMode = MediaMode.LIVE_TV
-            highlightTab(binding.liveTvTab)
-            loadLiveTV()
-        }
-
-        binding.moviesTab.setOnClickListener {
-            currentMode = MediaMode.MOVIES
-            highlightTab(binding.moviesTab)
-            loadMovies()
-        }
-
-        binding.seriesTab.setOnClickListener {
-            currentMode = MediaMode.SERIES
-            highlightTab(binding.seriesTab)
-            loadSeries()
-        }
-    }
-
-    private fun highlightTab(tab: View) {
-        listOf(binding.liveTvTab, binding.moviesTab, binding.seriesTab).forEach {
-            it.alpha = 0.6f
-        }
-        tab.alpha = 1f
-    }
-
     private fun setupButtons() {
-        binding.playButton.setOnClickListener {
-            selectedChannel?.let { channel -> playChannel(channel) }
-        }
-        
         binding.backButton.setOnClickListener {
             finish()
         }
     }
 
-    // ================= LIVE TV =================
-
     private fun loadLiveTV() {
-        showLoading(true)
         lifecycleScope.launch {
             repository.getLiveCategories().onSuccess { categories: List<Category> ->
                 categoryAdapter.updateCategories(
-                    listOf(Category("0", getString(R.string.all_channels), 0)) + categories
+                    listOf(Category("0", "كل القنوات", 0)) + categories
                 )
             }
 
@@ -155,10 +115,6 @@ class MainActivity : AppCompatActivity() {
                 allChannels = channels
                 channelAdapter.updateChannels(channels)
                 if (channels.isNotEmpty()) updatePreview(channels[0])
-                showLoading(false)
-            }.onFailure {
-                showLoading(false)
-                Toast.makeText(this@MainActivity, it.message, Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -178,10 +134,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // ================= MOVIES =================
-
     private fun loadMovies() {
-        showLoading(true)
         lifecycleScope.launch {
             repository.getMovies(null).onSuccess { movies: List<Movie> ->
                 val channels = movies.map { movie ->
@@ -197,11 +150,7 @@ class MainActivity : AppCompatActivity() {
                         categoryName = null,
                         customSid = null,
                         tvArchive = 0,
-                        directSource = movie.getStreamUrl(
-                            prefs.serverUrl,
-                            prefs.username,
-                            prefs.password
-                        ),
+                        directSource = movie.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password),
                         tvArchiveDuration = 0,
                         isFavorite = movie.isFavorite
                     )
@@ -209,15 +158,11 @@ class MainActivity : AppCompatActivity() {
                 allChannels = channels
                 channelAdapter.updateChannels(channels)
                 if (channels.isNotEmpty()) updatePreview(channels[0])
-                showLoading(false)
             }
         }
     }
 
-    // ================= SERIES =================
-
     private fun loadSeries() {
-        showLoading(true)
         lifecycleScope.launch {
             repository.getSeries(null).onSuccess { seriesList: List<Series> ->
                 val channels = seriesList.map { series ->
@@ -241,7 +186,6 @@ class MainActivity : AppCompatActivity() {
                 allChannels = channels
                 channelAdapter.updateChannels(channels)
                 if (channels.isNotEmpty()) updatePreview(channels[0])
-                showLoading(false)
             }
         }
     }
@@ -249,9 +193,6 @@ class MainActivity : AppCompatActivity() {
     private fun updatePreview(channel: Channel) {
         selectedChannel = channel
         binding.previewTitle.text = channel.name
-        binding.previewInfo.text = channel.streamType ?: ""
-        binding.epgInfoTitle.text = channel.name
-        binding.categoryTitle.text = channel.categoryName ?: ""
 
         Glide.with(this)
             .load(channel.streamIcon)
@@ -268,9 +209,5 @@ class MainActivity : AppCompatActivity() {
                 .putExtra("STREAM_URL", url)
                 .putExtra("CHANNEL_NAME", channel.name)
         )
-    }
-
-    private fun showLoading(show: Boolean) {
-        binding.loadingProgress.visibility = if (show) View.VISIBLE else View.GONE
     }
 }
