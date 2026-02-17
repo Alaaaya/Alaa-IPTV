@@ -1,11 +1,9 @@
 package com.alaa.iptv.ui.main
 
-import android.animation.ObjectAnimator
 import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.animation.DecelerateInterpolator
 import androidx.recyclerview.widget.RecyclerView
 import com.alaa.iptv.data.models.Category
 import com.alaa.iptv.databinding.ItemCategoryBinding
@@ -29,34 +27,15 @@ class CategoryAdapter(
                 }
             }
 
-            binding.root.setOnFocusChangeListener { view, hasFocus ->
+            binding.root.setOnFocusChangeListener { _, hasFocus ->
+                updateUI(hasFocus)
                 if (hasFocus) {
-                    animateFocusChange(view, true)
                     val position = bindingAdapterPosition
                     if (position != RecyclerView.NO_POSITION) {
                         setSelectedPosition(position)
                         onCategoryClick(categories[position])
                     }
-                } else {
-                    animateFocusChange(view, false)
                 }
-            }
-        }
-
-        private fun animateFocusChange(view: View, focused: Boolean) {
-            val scale = if (focused) 1.05f else 1.0f
-            val duration = 150L
-
-            ObjectAnimator.ofFloat(view, "scaleX", view.scaleX, scale).apply {
-                this.duration = duration
-                interpolator = DecelerateInterpolator()
-                start()
-            }
-
-            ObjectAnimator.ofFloat(view, "scaleY", view.scaleY, scale).apply {
-                this.duration = duration
-                interpolator = DecelerateInterpolator()
-                start()
             }
         }
 
@@ -65,12 +44,24 @@ class CategoryAdapter(
             binding.categoryPosition.text = (position + 1).toString()
             binding.categoryCount.text = category.channelCount.toString()
             
-            if (isSelected) {
-                binding.innerLayout.setBackgroundColor(Color.parseColor("#CC990000")) // Red Overlay
-                binding.rootLayout.setBackgroundResource(com.alaa.iptv.R.drawable.focused_item_background)
+            // Initial state based on selection
+            updateUI(isSelected)
+        }
+
+        private fun updateUI(hasFocus: Boolean) {
+            if (hasFocus) {
+                // Cyan background for focused item as seen in Universe image
+                binding.rootLayout.setBackgroundColor(Color.parseColor("#3498DB")) 
+                binding.pointerImageView.visibility = View.VISIBLE
+                binding.categoryName.setTextColor(Color.WHITE)
+                binding.categoryPosition.setTextColor(Color.WHITE)
+                binding.categoryCount.setTextColor(Color.WHITE)
             } else {
-                binding.innerLayout.setBackgroundColor(Color.TRANSPARENT)
-                binding.rootLayout.setBackgroundResource(com.alaa.iptv.R.drawable.channel_item_background)
+                binding.rootLayout.setBackgroundColor(Color.TRANSPARENT)
+                binding.pointerImageView.visibility = View.INVISIBLE
+                binding.categoryName.setTextColor(Color.WHITE)
+                binding.categoryPosition.setTextColor(Color.WHITE)
+                binding.categoryCount.setTextColor(Color.WHITE)
             }
         }
     }
