@@ -3,15 +3,13 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/rootLayout"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="28dp"
     android:orientation="horizontal"
     android:background="@drawable/channel_item_background"
-    android:padding="4dp"
-    android:minHeight="32dp"
+    android:padding="2dp"
     android:focusable="true"
     android:clickable="true">
 
-    <!-- CHANNEL POSITION/NUMBER -->
     <TextView
         android:id="@+id/channelNumber"
         android:layout_width="0dp"
@@ -19,24 +17,21 @@
         android:layout_weight="0.15"
         android:gravity="center"
         android:text="123"
-        android:textColor="@color/text_primary"
-        android:textSize="11sp"
+        android:textColor="@color/white"
+        android:textSize="9sp"
         android:singleLine="true"
-        android:layout_marginStart="4dp"/>
+        android:layout_marginStart="2dp"/>
 
-    <!-- CHANNEL LOGO -->
     <ImageView
         android:id="@+id/channelIcon"
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:layout_weight="0.1"
-        android:layout_margin="2dp"
-        android:padding="2dp"
-        android:background="@color/text_secondary"
-        android:scaleType="fitCenter"
-        android:contentDescription="@string/app_name"/>
+        android:layout_margin="1dp"
+        android:padding="1dp"
+        android:background="#33FFFFFF"
+        android:scaleType="fitCenter"/>
 
-    <!-- CHANNEL NAME -->
     <TextView
         android:id="@+id/channelName"
         android:layout_width="0dp"
@@ -44,30 +39,26 @@
         android:layout_weight="0.9"
         android:gravity="start|center_vertical"
         android:text="Channel Name"
-        android:textColor="@color/text_primary"
-        android:textSize="11sp"
-        android:textStyle="bold"
+        android:textColor="@color/white"
+        android:textSize="9sp"
         android:singleLine="true"
         android:ellipsize="marquee"
         android:scrollHorizontally="true"
         android:marqueeRepeatLimit="marquee_forever"
         android:focusable="true"
-        android:layout_marginStart="8dp"/>
+        android:layout_marginStart="6dp"/>
 
-    <!-- FAVORITE ICON -->
     <ImageView
         android:id="@+id/favoriteIndicator"
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:layout_weight="0.1"
-        android:padding="4dp"
+        android:padding="3dp"
         android:focusable="false"
-        android:src="@drawable/app_banner"
+        android:src="@drawable/ic_logo"
         android:scaleType="fitCenter"
-        android:contentDescription="@string/app_name"
         android:visibility="gone"/>
 
-    <!-- REORDER INDICATOR (hidden by default) -->
     <TextView
         android:id="@+id/reorderIndicator"
         android:layout_width="wrap_content"
@@ -75,9 +66,8 @@
         android:layout_gravity="center_vertical"
         android:text="►"
         android:textColor="@color/accent_blue"
-        android:textSize="16sp"
-        android:textStyle="bold"
+        android:textSize="14sp"
         android:visibility="gone"
-        android:layout_marginStart="4dp"/>
+        android:layout_marginStart="3dp"/>
 
 </LinearLayout>
