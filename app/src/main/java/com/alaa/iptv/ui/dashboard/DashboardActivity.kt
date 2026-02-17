@@ -2,45 +2,90 @@ package com.alaa.iptv.ui.dashboard
 
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Button
+import android.os.Handler
+import android.os.Looper
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.alaa.iptv.R
+import com.alaa.iptv.databinding.ActivityDashboardBinding
 import com.alaa.iptv.ui.main.MainActivity
+import java.text.SimpleDateFormat
+import java.util.*
 
 class DashboardActivity : AppCompatActivity() {
 
+    private lateinit var binding: ActivityDashboardBinding
+    private val handler = Handler(Looper.getMainLooper())
+    
+    private val updateTimeRunnable = object : Runnable {
+        override fun run() {
+            updateDateTime()
+            handler.postDelayed(this, 1000)
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_dashboard)
+        binding = ActivityDashboardBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        val btnLive = findViewById<Button>(R.id.btnLive)
-        val btnMovies = findViewById<Button>(R.id.btnMovies)
-        val btnSeries = findViewById<Button>(R.id.btnSeries)
+        setupDashboardMenu()
+        startClock()
+    }
 
-        // ✅ فوكس افتراضي (مهم للتلفزيون)
-        btnLive.requestFocus()
+    private fun setupDashboardMenu() {
+        val items = listOf(
+            DashboardItem("القنوات", R.drawable.ic_live_tv) { openMain("live") },
+            DashboardItem("الأفلام", R.drawable.ic_movies) { openMain("movies") },
+            DashboardItem("المسلسلات", R.drawable.ic_series) { openMain("series") },
+            DashboardItem("قائمة التشغيل", R.drawable.ic_logo) { /* TODO */ },
+            DashboardItem("الإعدادات", R.drawable.ic_logo) { /* TODO */ },
+            DashboardItem("تحديث قائمة التشغيل", R.drawable.ic_logo) { /* TODO */ }
+        )
 
-        btnLive.setOnClickListener {
-            openMain("live")
+        val adapter = DashboardAdapter(items)
+        binding.dashboardRecyclerView.apply {
+            layoutManager = LinearLayoutManager(this@DashboardActivity, LinearLayoutManager.HORIZONTAL, false)
+            this.adapter = adapter
+            
+            // Focus on first item for TV
+            post {
+                val firstView = layoutManager?.findViewByPosition(0)
+                firstView?.requestFocus()
+            }
         }
+    }
 
-        btnMovies.setOnClickListener {
-            openMain("movies")
-        }
+    private fun startClock() {
+        handler.post(updateTimeRunnable)
+    }
 
-        btnSeries.setOnClickListener {
-            openMain("series")
-        }
+    private fun updateDateTime() {
+        val now = Date()
+        
+        // Time Format: 10:28 م
+        val timeFormat = SimpleDateFormat("hh:mm a", Locale("ar"))
+        binding.time_tv.text = timeFormat.format(now)
+
+        // Date Format: الجمعة 20 أكتوبر 2026
+        val dateFormat = SimpleDateFormat("EEEE dd MMMM yyyy", Locale("ar"))
+        binding.hijri_date.text = dateFormat.format(now)
+
+        // Short Date: 14/02/2025
+        val shortDateFormat = SimpleDateFormat("dd/MM/yyyy", Locale("ar"))
+        binding.gregorian_date.text = shortDateFormat.format(now)
     }
 
     private fun openMain(mode: String) {
         val intent = Intent(this, MainActivity::class.java).apply {
             putExtra("MODE", mode)
-
-            // ✅ حتى لا يرجع للداشبورد عند الضغط Back
-            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
         }
         startActivity(intent)
-        finish() // ✅ مهم جداً
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        handler.removeCallbacks(updateTimeRunnable)
     }
 }

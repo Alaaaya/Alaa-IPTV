@@ -10,7 +10,13 @@ class DashboardAdapter(
 ) : RecyclerView.Adapter<DashboardAdapter.ViewHolder>() {
 
     inner class ViewHolder(val binding: ItemDashboardBinding) :
-        RecyclerView.ViewHolder(binding.root)
+        RecyclerView.ViewHolder(binding.root) {
+        
+        init {
+            binding.root.isFocusable = true
+            binding.root.isFocusableInTouchMode = true
+        }
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = ItemDashboardBinding.inflate(
