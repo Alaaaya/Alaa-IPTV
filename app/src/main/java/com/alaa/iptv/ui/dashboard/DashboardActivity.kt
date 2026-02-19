@@ -6,7 +6,6 @@ import android.os.Handler
 import android.os.Looper
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.alaa.iptv.R
 import com.alaa.iptv.databinding.ActivityDashboardBinding
 import com.alaa.iptv.ui.main.MainActivity
@@ -32,6 +31,7 @@ class DashboardActivity : AppCompatActivity() {
 
         setupDashboardMenu()
         startClock()
+        setupStaticInfo()
     }
 
     private fun setupDashboardMenu() {
@@ -39,9 +39,9 @@ class DashboardActivity : AppCompatActivity() {
             DashboardItem("القنوات", R.drawable.ic_live_tv) { openMain("live") },
             DashboardItem("الأفلام", R.drawable.ic_movies) { openMain("movies") },
             DashboardItem("المسلسلات", R.drawable.ic_series) { openMain("series") },
-            DashboardItem("قائمة التشغيل", R.drawable.ic_logo) { /* TODO */ },
-            DashboardItem("الإعدادات", R.drawable.ic_logo) { /* TODO */ },
-            DashboardItem("تحديث قائمة التشغيل", R.drawable.ic_logo) { /* TODO */ }
+            DashboardItem("قائمة التشغيل", R.drawable.ic_playlist) { /* TODO */ },
+            DashboardItem("الإعدادات", R.drawable.ic_settings) { /* TODO */ },
+            DashboardItem("تحديث قائمة التشغيل", R.drawable.ic_refresh) { /* TODO */ }
         )
 
         val adapter = DashboardAdapter(items)
@@ -55,6 +55,17 @@ class DashboardActivity : AppCompatActivity() {
                 firstView?.requestFocus()
             }
         }
+    }
+
+    private fun setupStaticInfo() {
+        // Logo
+        binding.appLogo.setImageResource(R.drawable.app_logo_universe)
+        
+        // Static info to match image 100%
+        binding.ramadan_tv.text = "ramadan2025"
+        binding.days_left.text = "(Days Left: 622)"
+        binding.location_tv.text = "Oberhausen, DE"
+        binding.weather_desc.text = "Feels Like Clouds"
     }
 
     private fun startClock() {
