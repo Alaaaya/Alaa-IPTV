@@ -3,6 +3,7 @@ package com.alaa.iptv.ui.dashboard
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
+import com.alaa.iptv.R
 import com.alaa.iptv.databinding.ItemDashboardBinding
 
 class DashboardAdapter(
@@ -15,6 +16,14 @@ class DashboardAdapter(
         init {
             binding.root.isFocusable = true
             binding.root.isFocusableInTouchMode = true
+            
+            binding.root.setOnFocusChangeListener { _, hasFocus ->
+                if (hasFocus) {
+                    binding.root.setBackgroundResource(R.drawable.bg_dashboard_focus)
+                } else {
+                    binding.root.setBackgroundResource(android.R.color.transparent)
+                }
+            }
         }
     }
 
