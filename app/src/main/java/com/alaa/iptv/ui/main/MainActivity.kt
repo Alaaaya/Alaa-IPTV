@@ -72,15 +72,16 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupRecyclerViews() {
         categoryAdapter = CategoryAdapter(emptyList()) { category: Category ->
-            if (currentMode == MediaMode.LIVE_TV) {
-                binding.categoryTitle.text = category.categoryName
-                loadChannelsByCategory(category)
-            }
+            binding.categoryTitle.text = category.categoryName
+            loadChannelsByCategory(category)
         }
 
         binding.categoriesRecyclerView.apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             adapter = categoryAdapter
+            // Important for TV navigation
+            isFocusable = true
+            isFocusableInTouchMode = true
         }
 
         channelAdapter = ChannelAdapter(
@@ -94,6 +95,9 @@ class MainActivity : AppCompatActivity() {
         binding.channelsRecyclerView.apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             adapter = channelAdapter
+            // Important for TV navigation
+            isFocusable = true
+            isFocusableInTouchMode = true
         }
     }
 
@@ -106,9 +110,11 @@ class MainActivity : AppCompatActivity() {
     private fun loadLiveTV() {
         lifecycleScope.launch {
             repository.getLiveCategories().onSuccess { categories: List<Category> ->
-                categoryAdapter.updateCategories(
-                    listOf(Category("0", "كل القنوات", 0)) + categories
-                )
+                val allCats = listOf(Category("0", "كل القنوات", 0)) + categories
+                categoryAdapter.updateCategories(allCats)
+                
+                // Request focus to show categories
+                binding.categoriesRecyclerView.requestFocus()
             }
 
             repository.getLiveStreams(null).onSuccess { channels: List<Channel> ->
@@ -158,6 +164,9 @@ class MainActivity : AppCompatActivity() {
                 allChannels = channels
                 channelAdapter.updateChannels(channels)
                 if (channels.isNotEmpty()) updatePreview(channels[0])
+                
+                // Request focus
+                binding.channelsRecyclerView.requestFocus()
             }
         }
     }
@@ -186,6 +195,9 @@ class MainActivity : AppCompatActivity() {
                 allChannels = channels
                 channelAdapter.updateChannels(channels)
                 if (channels.isNotEmpty()) updatePreview(channels[0])
+                
+                // Request focus
+                binding.channelsRecyclerView.requestFocus()
             }
         }
     }
