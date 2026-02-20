@@ -14,7 +14,8 @@ import java.util.*
 
 class DashboardActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityDashboardBinding
+    private var _binding: ActivityDashboardBinding? = null
+    private val binding get() = _binding!!
     private val handler = Handler(Looper.getMainLooper())
     
     private val updateTimeRunnable = object : Runnable {
@@ -26,7 +27,7 @@ class DashboardActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityDashboardBinding.inflate(layoutInflater)
+        _binding = ActivityDashboardBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         setupDashboardMenu()
@@ -62,10 +63,10 @@ class DashboardActivity : AppCompatActivity() {
         binding.appLogo.setImageResource(R.drawable.app_logo_universe)
         
         // Static info to match image 100%
-        binding.ramadan_tv.text = "ramadan2025"
-        binding.days_left.text = "(Days Left: 622)"
-        binding.location_tv.text = "Oberhausen, DE"
-        binding.weather_desc.text = "Feels Like Clouds"
+        binding.ramadanTv.text = "ramadan2025"
+        binding.daysLeft.text = "(Days Left: 622)"
+        binding.locationTv.text = "Oberhausen, DE"
+        binding.weatherDesc.text = "Feels Like Clouds"
     }
 
     private fun startClock() {
@@ -77,15 +78,15 @@ class DashboardActivity : AppCompatActivity() {
         
         // Time Format: 10:28 م
         val timeFormat = SimpleDateFormat("hh:mm a", Locale("ar"))
-        binding.time_tv.text = timeFormat.format(now)
+        binding.timeTv.text = timeFormat.format(now)
 
         // Date Format: الجمعة 20 أكتوبر 2026
         val dateFormat = SimpleDateFormat("EEEE dd MMMM yyyy", Locale("ar"))
-        binding.hijri_date.text = dateFormat.format(now)
+        binding.hijriDate.text = dateFormat.format(now)
 
         // Short Date: 14/02/2025
         val shortDateFormat = SimpleDateFormat("dd/MM/yyyy", Locale("ar"))
-        binding.gregorian_date.text = shortDateFormat.format(now)
+        binding.gregorianDate.text = shortDateFormat.format(now)
     }
 
     private fun openMain(mode: String) {
@@ -98,5 +99,6 @@ class DashboardActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         handler.removeCallbacks(updateTimeRunnable)
+        _binding = null
     }
 }
