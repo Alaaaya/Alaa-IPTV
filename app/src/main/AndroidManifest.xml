@@ -21,9 +21,10 @@
         android:banner="@drawable/app_banner"
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true"
+        android:networkSecurityConfig="@xml/network_security_config"
         tools:targetApi="31">
 
-        <!-- 🔐 Login (أول شاشة) -->
+        <!-- 🔐 Login -->
         <activity
             android:name=".ui.login.LoginActivity"
             android:exported="true"
@@ -38,14 +39,14 @@
 
         </activity>
 
-        <!-- 🏠 Dashboard (القائمة الرئيسية الجديدة) -->
+        <!-- 🏠 Dashboard -->
         <activity
             android:name=".ui.dashboard.DashboardActivity"
             android:exported="true"
             android:screenOrientation="landscape"
             android:configChanges="orientation|keyboardHidden|screenSize" />
 
-        <!-- 📺 Live TV / Main -->
+        <!-- 📺 Main -->
         <activity
             android:name=".ui.main.MainActivity"
             android:exported="false"
