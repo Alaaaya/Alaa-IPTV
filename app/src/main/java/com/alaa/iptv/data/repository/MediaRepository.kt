@@ -37,17 +37,20 @@ class MediaRepository(
 
                 val response = api.authenticate(username, password)
 
-                if (!response.isSuccessful || response.body() == null) {
-                    throw Exception("Authentication failed")
+                if (!response.isSuccessful) {
+                    throw Exception("HTTP ${response.code()}")
                 }
 
-                // 🔥🔥🔥 أهم سطرين بالمشروع كله
+                val body = response.body()
+                    ?: throw Exception("Empty response")
+
+                // 🔥 نحفظ البيانات بعد نجاح الدخول
                 prefs.serverUrl = cleanUrl
                 prefs.username = username
                 prefs.password = password
                 prefs.isLoggedIn = true
 
-                response.body()!!
+                body
             }
         }
 
@@ -62,11 +65,13 @@ class MediaRepository(
                     prefs.password
                 )
 
-                if (!response.isSuccessful || response.body() == null) {
-                    throw Exception("Failed to load categories")
+                if (!response.isSuccessful) {
+                    throw Exception("HTTP ${response.code()}")
                 }
 
-                response.body()!!.map {
+                val body = response.body() ?: emptyList()
+
+                body.map {
                     Category(
                         categoryId = it.categoryId,
                         categoryName = it.categoryName,
@@ -97,11 +102,13 @@ class MediaRepository(
                     )
                 }
 
-                if (!response.isSuccessful || response.body() == null) {
-                    throw Exception("Failed to load streams")
+                if (!response.isSuccessful) {
+                    throw Exception("HTTP ${response.code()}")
                 }
 
-                response.body()!!.map { stream ->
+                val body = response.body() ?: emptyList()
+
+                body.map { stream ->
                     Channel(
                         streamId = stream.streamId?.toString() ?: "",
                         num = stream.num?.toString() ?: "",
@@ -124,7 +131,7 @@ class MediaRepository(
     override suspend fun getLiveStreamsFromCache(categoryId: String?) =
         emptyList<Channel>()
 
-    // ====== باقي الدوال كما هي ======
+    // ================= STUB METHODS =================
 
     override suspend fun getFavorites() = emptyList<String>()
     override suspend fun isFavorite(itemId: String) = false
@@ -193,6 +200,7 @@ class MediaRepository(
     ) = emptyList<EpgProgram>()
 
     override suspend fun getCurrentProgram(channelId: String) = null
+
     override suspend fun getUpcomingPrograms(channelId: String, limit: Int) =
         emptyList<EpgProgram>()
 
@@ -220,6 +228,7 @@ class MediaRepository(
     override suspend fun syncSeries() = Result.success(Unit)
 
     override suspend fun updateChannelPosition(channelId: String, newPosition: Int) {}
+
     override suspend fun getChannelsOrdered(categoryId: String?) =
         emptyList<Channel>()
 
