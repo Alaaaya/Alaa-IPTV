@@ -21,17 +21,22 @@ object ApiClient {
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
+            .retryOnConnectionFailure(true)
             .build()
+    }
+
+    private fun normalizeBaseUrl(baseUrl: String): String {
+        return baseUrl
+            .trim()
+            .removeSuffix("/")
+            .plus("/")
     }
 
     fun getClient(baseUrl: String): Retrofit {
 
-        // تنظيف الرابط
-        val cleanUrl = baseUrl
-            .trim()
-            .removeSuffix("/")
-            .plus("/")
+        val cleanUrl = normalizeBaseUrl(baseUrl)
 
+        // إذا تغير السيرفر نعيد بناء Retrofit
         if (retrofit == null || currentBaseUrl != cleanUrl) {
 
             retrofit = Retrofit.Builder()
