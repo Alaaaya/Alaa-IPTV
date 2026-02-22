@@ -1,7 +1,6 @@
 package com.alaa.iptv.data.api
 
-import okhttp3.OkHttpClient
-import okhttp3.Request
+import okhttp3.*
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -12,6 +11,20 @@ object ApiClient {
     private var retrofit: Retrofit? = null
     private var currentBaseUrl: String? = null
 
+    // 🔥 نحفظ الكوكيز
+    private val cookieJar = object : CookieJar {
+
+        private val cookieStore = HashMap<HttpUrl, List<Cookie>>()
+
+        override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
+            cookieStore[url] = cookies
+        }
+
+        override fun loadForRequest(url: HttpUrl): List<Cookie> {
+            return cookieStore[url] ?: emptyList()
+        }
+    }
+
     private fun buildClient(): OkHttpClient {
 
         val logging = HttpLoggingInterceptor().apply {
@@ -19,20 +32,15 @@ object ApiClient {
         }
 
         return OkHttpClient.Builder()
-
-            // 🔥 نضيف User-Agent متصفح
+            .cookieJar(cookieJar) // 🔥 أهم سطر
             .addInterceptor { chain ->
-                val request: Request = chain.request().newBuilder()
-                    .addHeader(
-                        "User-Agent",
-                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0 Safari/537.36"
-                    )
+                val request = chain.request().newBuilder()
+                    .addHeader("User-Agent", "IPTVPlayer/1.0")
                     .addHeader("Accept", "application/json")
                     .build()
 
                 chain.proceed(request)
             }
-
             .addInterceptor(logging)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
