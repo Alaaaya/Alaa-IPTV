@@ -12,6 +12,7 @@ object ApiClient {
     private var currentBaseUrl: String? = null
 
     private fun buildClient(): OkHttpClient {
+
         val logging = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
