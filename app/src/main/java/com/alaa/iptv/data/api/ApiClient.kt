@@ -1,6 +1,7 @@
 package com.alaa.iptv.data.api
 
 import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -18,6 +19,20 @@ object ApiClient {
         }
 
         return OkHttpClient.Builder()
+
+            // 🔥 نضيف User-Agent متصفح
+            .addInterceptor { chain ->
+                val request: Request = chain.request().newBuilder()
+                    .addHeader(
+                        "User-Agent",
+                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0 Safari/537.36"
+                    )
+                    .addHeader("Accept", "application/json")
+                    .build()
+
+                chain.proceed(request)
+            }
+
             .addInterceptor(logging)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
@@ -37,7 +52,6 @@ object ApiClient {
 
         val cleanUrl = normalizeBaseUrl(baseUrl)
 
-        // إذا تغير السيرفر نعيد بناء Retrofit
         if (retrofit == null || currentBaseUrl != cleanUrl) {
 
             retrofit = Retrofit.Builder()
