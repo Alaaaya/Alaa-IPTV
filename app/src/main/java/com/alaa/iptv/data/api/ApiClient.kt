@@ -11,9 +11,7 @@ object ApiClient {
     private var retrofit: Retrofit? = null
     private var currentBaseUrl: String? = null
 
-    // 🔥 نحفظ الكوكيز
     private val cookieJar = object : CookieJar {
-
         private val cookieStore = HashMap<HttpUrl, List<Cookie>>()
 
         override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
@@ -26,19 +24,19 @@ object ApiClient {
     }
 
     private fun buildClient(): OkHttpClient {
-
         val logging = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
 
         return OkHttpClient.Builder()
-            .cookieJar(cookieJar) // 🔥 أهم سطر
+            .cookieJar(cookieJar)
             .addInterceptor { chain ->
                 val request = chain.request().newBuilder()
-                    .addHeader("User-Agent", "IPTVPlayer/1.0")
-                    .addHeader("Accept", "application/json")
+                    .addHeader("User-Agent", "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.0.36")
+                    .addHeader("Accept", "application/json, text/plain, */*")
+                    .addHeader("Accept-Encoding", "gzip")
+                    .addHeader("Connection", "keep-alive")
                     .build()
-
                 chain.proceed(request)
             }
             .addInterceptor(logging)
@@ -57,25 +55,20 @@ object ApiClient {
     }
 
     fun getClient(baseUrl: String): Retrofit {
-
         val cleanUrl = normalizeBaseUrl(baseUrl)
 
         if (retrofit == null || currentBaseUrl != cleanUrl) {
-
             retrofit = Retrofit.Builder()
                 .baseUrl(cleanUrl)
                 .client(buildClient())
                 .addConverterFactory(GsonConverterFactory.create())
                 .build()
-
             currentBaseUrl = cleanUrl
         }
-
         return retrofit!!
     }
 
     fun getXtreamApiService(baseUrl: String): XtreamApiService {
-        return getClient(baseUrl)
-            .create(XtreamApiService::class.java)
+        return getClient(baseUrl).create(XtreamApiService::class.java)
     }
 }
