@@ -32,14 +32,19 @@ object ApiClient {
             .cookieJar(cookieJar)
             .addInterceptor { chain ->
                 val request = chain.request().newBuilder()
-                    .addHeader("User-Agent", "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.0.36")
-                    .addHeader("Accept", "application/json, text/plain, */*")
-                    .addHeader("Accept-Encoding", "gzip")
+                    // ✅ User-Agent صحيح (Chrome حقيقي)
+                    .addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                    .addHeader("Accept", "application/json, text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+                    .addHeader("Accept-Language", "en-US,en;q=0.9,ar;q=0.8")
+                    .addHeader("Accept-Encoding", "gzip, deflate, br")
                     .addHeader("Connection", "keep-alive")
+                    .addHeader("Upgrade-Insecure-Requests", "1")
                     .build()
                 chain.proceed(request)
             }
             .addInterceptor(logging)
+            .followRedirects(true)           // ✅ تابع الـ Redirects
+            .followSslRedirects(true)        // ✅ تابع SSL Redirects
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
@@ -48,15 +53,21 @@ object ApiClient {
     }
 
     private fun normalizeBaseUrl(baseUrl: String): String {
-        return baseUrl
-            .trim()
-            .removeSuffix("/")
-            .plus("/")
+        var cleanUrl = baseUrl.trim()
+        
+        // ✅ أضف http:// تلقائياً إذا لم يكن موجوداً
+        if (!cleanUrl.startsWith("http://") && !cleanUrl.startsWith("https://")) {
+            cleanUrl = "http://$cleanUrl"
+        }
+        
+        // ✅ تأكد من / في النهاية
+        return cleanUrl.removeSuffix("/") + "/"
     }
 
     fun getClient(baseUrl: String): Retrofit {
         val cleanUrl = normalizeBaseUrl(baseUrl)
 
+        // ✅ إعادة البناء إذا تغير الـ URL
         if (retrofit == null || currentBaseUrl != cleanUrl) {
             retrofit = Retrofit.Builder()
                 .baseUrl(cleanUrl)
