@@ -1,6 +1,7 @@
 package com.alaa.iptv.data.repository
 
 import android.content.Context
+import android.util.Log
 import com.alaa.iptv.data.api.ApiClient
 import com.alaa.iptv.data.api.XtreamApiService
 import com.alaa.iptv.data.models.*
@@ -14,9 +15,8 @@ class MediaRepository(
     context: Context
 ) : IMediaRepository {
 
-    // لا نخزن API ثابت
-    private fun getApi(): XtreamApiService {
-        return ApiClient.getXtreamApiService(prefs.serverUrl)
+    companion object {
+        private const val TAG = "MediaRepository"
     }
 
     // ================= AUTH =================
@@ -29,20 +29,20 @@ class MediaRepository(
         withContext(Dispatchers.IO) {
             runCatching {
 
-                val cleanUrl =
-                    if (serverUrl.endsWith("/")) serverUrl
-                    else "$serverUrl/"
+                val cleanUrl = serverUrl.trim().removeSuffix("/")
 
-                val api = ApiClient.getXtreamApiService(cleanUrl)
-
-                val response = api.authenticate(username, password)
-
-                if (!response.isSuccessful) {
-                    throw Exception("HTTP ${response.code()}")
+                // ✅ استخدم executeSmart للتجربة التلقائية
+                val result = ApiClient.executeSmart(cleanUrl) { api ->
+                    val response = api.authenticate(username, password)
+                    
+                    if (!response.isSuccessful) {
+                        throw Exception("HTTP ${response.code()}")
+                    }
+                    
+                    response.body() ?: throw Exception("Empty response")
                 }
 
-                val body = response.body()
-                    ?: throw Exception("Empty response")
+                val body = result.getOrThrow()
 
                 // 🔥 نحفظ البيانات بعد نجاح الدخول
                 prefs.serverUrl = cleanUrl
@@ -59,17 +59,24 @@ class MediaRepository(
     override suspend fun getLiveCategories(): Result<List<Category>> =
         withContext(Dispatchers.IO) {
             runCatching {
+                
+                Log.d(TAG, "Fetching live categories...")
 
-                val response = getApi().getLiveCategories(
-                    prefs.username,
-                    prefs.password
-                )
+                // ✅ استخدم executeSmart مع Fallback تلقائي
+                val result = ApiClient.executeSmart(prefs.serverUrl) { api ->
+                    val response = api.getLiveCategories(
+                        prefs.username,
+                        prefs.password
+                    )
 
-                if (!response.isSuccessful) {
-                    throw Exception("HTTP ${response.code()}")
+                    if (!response.isSuccessful) {
+                        throw Exception("HTTP ${response.code()}")
+                    }
+
+                    response.body() ?: emptyList()
                 }
 
-                val body = response.body() ?: emptyList()
+                val body = result.getOrThrow()
 
                 body.map {
                     Category(
@@ -87,26 +94,28 @@ class MediaRepository(
         withContext(Dispatchers.IO) {
             runCatching {
 
-                val api = getApi()
+                Log.d(TAG, "Fetching live streams for category: $categoryId")
 
-                val response = if (categoryId == null || categoryId == "0") {
-                    api.getLiveStreams(
-                        prefs.username,
-                        prefs.password
-                    )
-                } else {
-                    api.getLiveStreamsByCategory(
-                        prefs.username,
-                        prefs.password,
-                        categoryId = categoryId
-                    )
+                val result = ApiClient.executeSmart(prefs.serverUrl) { api ->
+                    
+                    val response = if (categoryId == null || categoryId == "0") {
+                        api.getLiveStreams(prefs.username, prefs.password)
+                    } else {
+                        api.getLiveStreamsByCategory(
+                            prefs.username,
+                            prefs.password,
+                            categoryId = categoryId
+                        )
+                    }
+
+                    if (!response.isSuccessful) {
+                        throw Exception("HTTP ${response.code()}")
+                    }
+
+                    response.body() ?: emptyList()
                 }
 
-                if (!response.isSuccessful) {
-                    throw Exception("HTTP ${response.code()}")
-                }
-
-                val body = response.body() ?: emptyList()
+                val body = result.getOrThrow()
 
                 body.map { stream ->
                     Channel(
@@ -128,16 +137,176 @@ class MediaRepository(
             }
         }
 
-    override suspend fun getLiveStreamsFromCache(categoryId: String?) =
-        emptyList<Channel>()
+    // ================= VOD CATEGORIES =================
 
-    // ================= STUB METHODS =================
+    override suspend fun getMovieCategories(): Result<List<Category>> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                
+                val result = ApiClient.executeSmart(prefs.serverUrl) { api ->
+                    val response = api.getVodCategories(prefs.username, prefs.password)
+                    
+                    if (!response.isSuccessful) {
+                        throw Exception("HTTP ${response.code()}")
+                    }
+                    
+                    response.body() ?: emptyList()
+                }
 
+                result.getOrThrow().map {
+                    Category(
+                        categoryId = it.categoryId,
+                        categoryName = it.categoryName,
+                        parentId = it.parentId
+                    )
+                }
+            }
+        }
+
+    // ================= VOD MOVIES =================
+
+    override suspend fun getMovies(categoryId: String?): Result<List<Movie>> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+
+                val result = ApiClient.executeSmart(prefs.serverUrl) { api ->
+                    
+                    val response = if (categoryId == null || categoryId == "0") {
+                        api.getVodStreams(prefs.username, prefs.password)
+                    } else {
+                        api.getVodStreamsByCategory(
+                            prefs.username,
+                            prefs.password,
+                            categoryId = categoryId
+                        )
+                    }
+
+                    if (!response.isSuccessful) {
+                        throw Exception("HTTP ${response.code()}")
+                    }
+
+                    response.body() ?: emptyList()
+                }
+
+                result.getOrThrow().map { stream ->
+                    Movie(
+                        streamId = stream.streamId?.toString() ?: "",
+                        name = stream.name ?: "Movie",
+                        streamIcon = stream.streamIcon,
+                        categoryId = stream.categoryId,
+                        rating = stream.rating,
+                        genre = stream.genre,
+                        plot = stream.plot,
+                        cast = stream.cast,
+                        director = stream.director,
+                        releasedate = stream.releasedate,
+                        duration = stream.duration,
+                        containerExtension = stream.containerExtension
+                    )
+                }
+            }
+        }
+
+    // ================= SERIES CATEGORIES =================
+
+    override suspend fun getSeriesCategories(): Result<List<Category>> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                
+                val result = ApiClient.executeSmart(prefs.serverUrl) { api ->
+                    val response = api.getSeriesCategories(prefs.username, prefs.password)
+                    
+                    if (!response.isSuccessful) {
+                        throw Exception("HTTP ${response.code()}")
+                    }
+                    
+                    response.body() ?: emptyList()
+                }
+
+                result.getOrThrow().map {
+                    Category(
+                        categoryId = it.categoryId,
+                        categoryName = it.categoryName,
+                        parentId = it.parentId
+                    )
+                }
+            }
+        }
+
+    // ================= SERIES =================
+
+    override suspend fun getSeries(categoryId: String?): Result<List<Series>> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+
+                val result = ApiClient.executeSmart(prefs.serverUrl) { api ->
+                    
+                    val response = if (categoryId == null || categoryId == "0") {
+                        api.getSeries(prefs.username, prefs.password)
+                    } else {
+                        api.getSeriesByCategory(
+                            prefs.username,
+                            prefs.password,
+                            categoryId = categoryId
+                        )
+                    }
+
+                    if (!response.isSuccessful) {
+                        throw Exception("HTTP ${response.code()}")
+                    }
+
+                    response.body() ?: emptyList()
+                }
+
+                result.getOrThrow().map { series ->
+                    Series(
+                        seriesId = series.seriesId?.toString() ?: "",
+                        name = series.name ?: "Series",
+                        cover = series.cover,
+                        plot = series.plot,
+                        cast = series.cast,
+                        director = series.director,
+                        genre = series.genre,
+                        rating = series.rating,
+                        categoryId = series.categoryId,
+                        releaseDate = series.releaseDate
+                    )
+                }
+            }
+        }
+
+    // ================= SERIES INFO =================
+
+    override suspend fun getSeriesInfo(seriesId: String): Result<List<Episode>> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+
+                val result = ApiClient.executeSmart(prefs.serverUrl) { api ->
+                    val response = api.getSeriesInfo(
+                        prefs.username,
+                        prefs.password,
+                        seriesId = seriesId
+                    )
+
+                    if (!response.isSuccessful) {
+                        throw Exception("HTTP ${response.code()}")
+                    }
+
+                    response.body()?.episodes?.values?.flatten() ?: emptyList()
+                }
+
+                result.getOrThrow()
+            }
+        }
+
+    // ================= STUB METHODS (غير مستخدمة حالياً) =================
+
+    override suspend fun getLiveStreamsFromCache(categoryId: String?) = emptyList<Channel>()
     override suspend fun getFavorites() = emptyList<String>()
     override suspend fun isFavorite(itemId: String) = false
     override suspend fun addFavorite(itemId: String) {}
     override suspend fun removeBasicFavorite(itemId: String) {}
-
+    
     override suspend fun addFavorite(
         contentId: String,
         name: String,
@@ -146,12 +315,8 @@ class MediaRepository(
         categoryId: String?
     ) = Result.success(Unit)
 
-    override suspend fun removeFavorite(contentId: String) =
-        Result.success(Unit)
-
-    override suspend fun getFavoritesWithDetails() =
-        Result.success(emptyList<FavoriteItem>())
-
+    override suspend fun removeFavorite(contentId: String) = Result.success(Unit)
+    override suspend fun getFavoritesWithDetails() = Result.success(emptyList<FavoriteItem>())
     override suspend fun addRecent(itemId: String, itemType: String) {}
     override suspend fun getRecents() = emptyList<Recent>()
 
@@ -163,36 +328,12 @@ class MediaRepository(
         categoryId: String?
     ) = Result.success(Unit)
 
-    override suspend fun getRecentViews() =
-        Result.success(emptyList<RecentItem>())
-
-    override suspend fun getMovieCategories() =
-        Result.success(emptyList<Category>())
-
-    override suspend fun getMovies(categoryId: String?) =
-        Result.success(emptyList<Movie>())
-
-    override suspend fun getMoviesFromCache(categoryId: String?) =
-        emptyList<Movie>()
-
-    override suspend fun getSeriesCategories() =
-        Result.success(emptyList<Category>())
-
-    override suspend fun getSeries(categoryId: String?) =
-        Result.success(emptyList<Series>())
-
-    override suspend fun getSeriesFromCache(categoryId: String?) =
-        emptyList<Series>()
-
-    override suspend fun getSeriesInfo(seriesId: String) =
-        Result.success(emptyList<Episode>())
-
-    override suspend fun getEpisodesFromCache(seriesId: String) =
-        emptyList<Episode>()
-
-    override suspend fun getEpgForChannel(channelId: String) =
-        emptyList<EpgProgram>()
-
+    override suspend fun getRecentViews() = Result.success(emptyList<RecentItem>())
+    override suspend fun getMoviesFromCache(categoryId: String?) = emptyList<Movie>()
+    override suspend fun getSeriesFromCache(categoryId: String?) = emptyList<Series>()
+    override suspend fun getEpisodesFromCache(seriesId: String) = emptyList<Episode>()
+    override suspend fun getEpgForChannel(channelId: String) = emptyList<EpgProgram>()
+    
     override suspend fun getEpgForChannelInTimeRange(
         channelId: String,
         startTime: Long,
@@ -200,43 +341,21 @@ class MediaRepository(
     ) = emptyList<EpgProgram>()
 
     override suspend fun getCurrentProgram(channelId: String) = null
-
-    override suspend fun getUpcomingPrograms(channelId: String, limit: Int) =
-        emptyList<EpgProgram>()
-
+    override suspend fun getUpcomingPrograms(channelId: String, limit: Int) = emptyList<EpgProgram>()
     override suspend fun cacheEpgPrograms(programs: List<EpgProgram>) {}
     override suspend fun cleanupOldEpgData(cutoffTime: Long) {}
-
-    override suspend fun searchChannels(query: String, categoryId: String?) =
-        emptyList<Channel>()
-
-    override suspend fun searchMovies(query: String, categoryId: String?) =
-        emptyList<Movie>()
-
-    override suspend fun searchSeries(query: String, categoryId: String?) =
-        emptyList<Series>()
-
-    override suspend fun searchMoviesByGenre(genre: String) =
-        emptyList<Movie>()
-
-    override suspend fun searchSeriesByGenre(genre: String) =
-        emptyList<Series>()
-
+    override suspend fun searchChannels(query: String, categoryId: String?) = emptyList<Channel>()
+    override suspend fun searchMovies(query: String, categoryId: String?) = emptyList<Movie>()
+    override suspend fun searchSeries(query: String, categoryId: String?) = emptyList<Series>()
+    override suspend fun searchMoviesByGenre(genre: String) = emptyList<Movie>()
+    override suspend fun searchSeriesByGenre(genre: String) = emptyList<Series>()
     override suspend fun syncAllData() = Result.success(Unit)
     override suspend fun syncLiveTV() = Result.success(Unit)
     override suspend fun syncMovies() = Result.success(Unit)
     override suspend fun syncSeries() = Result.success(Unit)
-
     override suspend fun updateChannelPosition(channelId: String, newPosition: Int) {}
-
-    override suspend fun getChannelsOrdered(categoryId: String?) =
-        emptyList<Channel>()
-
-    override suspend fun loadM3UPlaylist(m3uContent: String) =
-        Result.success(emptyList<Channel>())
-
-    override suspend fun loadM3UPlaylistFromUrl(url: String) =
-        Result.success(emptyList<Channel>())
-
+    override suspend fun getChannelsOrdered(categoryId: String?) = emptyList<Channel>()
+    override suspend fun loadM3UPlaylist(m3uContent: String) = Result.success(emptyList<Channel>())
+    override suspend fun loadM3UPlaylistFromUrl(url: String) = Result.success(emptyList<Channel>())
     override suspend fun mergeM3UChannels(channels: List<Channel>) {}
 }
