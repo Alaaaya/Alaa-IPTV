@@ -31,7 +31,6 @@ class MediaRepository(
 
                 val cleanUrl = serverUrl.trim().removeSuffix("/")
 
-                // ✅ استخدم executeSmart للتجربة التلقائية
                 val result = ApiClient.executeSmart(cleanUrl) { api ->
                     val response = api.authenticate(username, password)
                     
@@ -44,7 +43,6 @@ class MediaRepository(
 
                 val body = result.getOrThrow()
 
-                // 🔥 نحفظ البيانات بعد نجاح الدخول
                 prefs.serverUrl = cleanUrl
                 prefs.username = username
                 prefs.password = password
@@ -62,7 +60,6 @@ class MediaRepository(
                 
                 Log.d(TAG, "Fetching live categories...")
 
-                // ✅ استخدم executeSmart مع Fallback تلقائي
                 val result = ApiClient.executeSmart(prefs.serverUrl) { api ->
                     val response = api.getLiveCategories(
                         prefs.username,
@@ -163,7 +160,7 @@ class MediaRepository(
             }
         }
 
-    // ================= VOD MOVIES =================
+    // ================= VOD MOVIES (✅ مُصلح) =================
 
     override suspend fun getMovies(categoryId: String?): Result<List<Movie>> =
         withContext(Dispatchers.IO) {
@@ -193,15 +190,18 @@ class MediaRepository(
                         streamId = stream.streamId?.toString() ?: "",
                         name = stream.name ?: "Movie",
                         streamIcon = stream.streamIcon,
-                        categoryId = stream.categoryId,
                         rating = stream.rating,
-                        genre = stream.genre,
+                        year = stream.year,                    // ✅ أضفنا
                         plot = stream.plot,
                         cast = stream.cast,
                         director = stream.director,
-                        releasedate = stream.releasedate,
+                        genre = stream.genre,
+                        releaseDate = stream.releaseDate,      // ✅ صح: releaseDate (D كبيرة)
+                        durationSecs = stream.durationSecs,    // ✅ أضفنا
                         duration = stream.duration,
-                        containerExtension = stream.containerExtension
+                        containerExtension = stream.containerExtension,
+                        categoryId = stream.categoryId,
+                        isFavorite = false
                     )
                 }
             }
@@ -275,7 +275,7 @@ class MediaRepository(
             }
         }
 
-    // ================= SERIES INFO =================
+    // ================= SERIES INFO (✅ مُصلح) =================
 
     override suspend fun getSeriesInfo(seriesId: String): Result<List<Episode>> =
         withContext(Dispatchers.IO) {
@@ -292,14 +292,38 @@ class MediaRepository(
                         throw Exception("HTTP ${response.code()}")
                     }
 
-                    response.body()?.episodes?.values?.flatten() ?: emptyList()
+                    response.body()
                 }
 
-                result.getOrThrow()
+                val seriesInfo = result.getOrThrow()
+                
+                // ✅ تحويل XtreamEpisode إلى Episode
+                val episodes = mutableListOf<Episode>()
+                
+                seriesInfo?.episodes?.forEach { (seasonNum, episodeList) ->
+                    episodeList?.forEach { xtreamEpisode ->
+                        episodes.add(
+                            Episode(
+                                id = xtreamEpisode.id,
+                                episodeNum = xtreamEpisode.episodeNum,
+                                title = xtreamEpisode.title ?: "Episode ${xtreamEpisode.episodeNum}",
+                                containerExtension = xtreamEpisode.containerExtension,
+                                info = EpisodeInfo(
+                                    plot = xtreamEpisode.info?.plot,
+                                    duration = xtreamEpisode.info?.duration,
+                                    rating = xtreamEpisode.info?.rating
+                                ),
+                                seasonNumber = seasonNum.toIntOrNull() ?: 1
+                            )
+                        )
+                    }
+                }
+                
+                episodes
             }
         }
 
-    // ================= STUB METHODS (غير مستخدمة حالياً) =================
+    // ================= STUB METHODS =================
 
     override suspend fun getLiveStreamsFromCache(categoryId: String?) = emptyList<Channel>()
     override suspend fun getFavorites() = emptyList<String>()
