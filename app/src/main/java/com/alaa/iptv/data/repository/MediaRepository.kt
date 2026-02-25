@@ -31,17 +31,15 @@ class MediaRepository(
 
                 val cleanUrl = serverUrl.trim().removeSuffix("/")
 
-                val result = ApiClient.executeSmart(cleanUrl) { api ->
-                    val response = api.authenticate(username, password)
-                    
-                    if (!response.isSuccessful) {
-                        throw Exception("HTTP ${response.code()}")
-                    }
-                    
-                    response.body() ?: throw Exception("Empty response")
+                // ✅ الطريقة البسيطة
+                val api = ApiClient.getXtreamApiService(cleanUrl)
+                val response = api.authenticate(username, password)
+                
+                if (!response.isSuccessful) {
+                    throw Exception("HTTP ${response.code()}")
                 }
-
-                val body = result.getOrThrow()
+                
+                val body = response.body() ?: throw Exception("Empty response")
 
                 prefs.serverUrl = cleanUrl
                 prefs.username = username
@@ -60,20 +58,18 @@ class MediaRepository(
                 
                 Log.d(TAG, "Fetching live categories...")
 
-                val result = ApiClient.executeSmart(prefs.serverUrl) { api ->
-                    val response = api.getLiveCategories(
-                        prefs.username,
-                        prefs.password
-                    )
+                // ✅ الطريقة البسيطة
+                val api = ApiClient.getXtreamApiService(prefs.serverUrl)
+                val response = api.getLiveCategories(
+                    prefs.username,
+                    prefs.password
+                )
 
-                    if (!response.isSuccessful) {
-                        throw Exception("HTTP ${response.code()}")
-                    }
-
-                    response.body() ?: emptyList()
+                if (!response.isSuccessful) {
+                    throw Exception("HTTP ${response.code()}")
                 }
 
-                val body = result.getOrThrow()
+                val body = response.body() ?: emptyList()
 
                 body.map {
                     Category(
@@ -93,26 +89,24 @@ class MediaRepository(
 
                 Log.d(TAG, "Fetching live streams for category: $categoryId")
 
-                val result = ApiClient.executeSmart(prefs.serverUrl) { api ->
-                    
-                    val response = if (categoryId == null || categoryId == "0") {
-                        api.getLiveStreams(prefs.username, prefs.password)
-                    } else {
-                        api.getLiveStreamsByCategory(
-                            prefs.username,
-                            prefs.password,
-                            categoryId = categoryId
-                        )
-                    }
-
-                    if (!response.isSuccessful) {
-                        throw Exception("HTTP ${response.code()}")
-                    }
-
-                    response.body() ?: emptyList()
+                // ✅ الطريقة البسيطة
+                val api = ApiClient.getXtreamApiService(prefs.serverUrl)
+                
+                val response = if (categoryId == null || categoryId == "0") {
+                    api.getLiveStreams(prefs.username, prefs.password)
+                } else {
+                    api.getLiveStreamsByCategory(
+                        prefs.username,
+                        prefs.password,
+                        categoryId = categoryId
+                    )
                 }
 
-                val body = result.getOrThrow()
+                if (!response.isSuccessful) {
+                    throw Exception("HTTP ${response.code()}")
+                }
+
+                val body = response.body() ?: emptyList()
 
                 body.map { stream ->
                     Channel(
@@ -140,17 +134,17 @@ class MediaRepository(
         withContext(Dispatchers.IO) {
             runCatching {
                 
-                val result = ApiClient.executeSmart(prefs.serverUrl) { api ->
-                    val response = api.getVodCategories(prefs.username, prefs.password)
-                    
-                    if (!response.isSuccessful) {
-                        throw Exception("HTTP ${response.code()}")
-                    }
-                    
-                    response.body() ?: emptyList()
+                // ✅ الطريقة البسيطة
+                val api = ApiClient.getXtreamApiService(prefs.serverUrl)
+                val response = api.getVodCategories(prefs.username, prefs.password)
+                
+                if (!response.isSuccessful) {
+                    throw Exception("HTTP ${response.code()}")
                 }
+                
+                val body = response.body() ?: emptyList()
 
-                result.getOrThrow().map {
+                body.map {
                     Category(
                         categoryId = it.categoryId,
                         categoryName = it.categoryName,
@@ -160,44 +154,44 @@ class MediaRepository(
             }
         }
 
-    // ================= VOD MOVIES (✅ مُصلح) =================
+    // ================= VOD MOVIES =================
 
     override suspend fun getMovies(categoryId: String?): Result<List<Movie>> =
         withContext(Dispatchers.IO) {
             runCatching {
 
-                val result = ApiClient.executeSmart(prefs.serverUrl) { api ->
-                    
-                    val response = if (categoryId == null || categoryId == "0") {
-                        api.getVodStreams(prefs.username, prefs.password)
-                    } else {
-                        api.getVodStreamsByCategory(
-                            prefs.username,
-                            prefs.password,
-                            categoryId = categoryId
-                        )
-                    }
-
-                    if (!response.isSuccessful) {
-                        throw Exception("HTTP ${response.code()}")
-                    }
-
-                    response.body() ?: emptyList()
+                // ✅ الطريقة البسيطة
+                val api = ApiClient.getXtreamApiService(prefs.serverUrl)
+                
+                val response = if (categoryId == null || categoryId == "0") {
+                    api.getVodStreams(prefs.username, prefs.password)
+                } else {
+                    api.getVodStreamsByCategory(
+                        prefs.username,
+                        prefs.password,
+                        categoryId = categoryId
+                    )
                 }
 
-                result.getOrThrow().map { stream ->
+                if (!response.isSuccessful) {
+                    throw Exception("HTTP ${response.code()}")
+                }
+
+                val body = response.body() ?: emptyList()
+
+                body.map { stream ->
                     Movie(
                         streamId = stream.streamId?.toString() ?: "",
                         name = stream.name ?: "Movie",
                         streamIcon = stream.streamIcon,
                         rating = stream.rating,
-                        year = stream.year,                    // ✅ أضفنا
+                        year = stream.year,
                         plot = stream.plot,
                         cast = stream.cast,
                         director = stream.director,
                         genre = stream.genre,
-                        releaseDate = stream.releaseDate,      // ✅ صح: releaseDate (D كبيرة)
-                        durationSecs = stream.durationSecs,    // ✅ أضفنا
+                        releaseDate = stream.releaseDate,
+                        durationSecs = stream.durationSecs,
                         duration = stream.duration,
                         containerExtension = stream.containerExtension,
                         categoryId = stream.categoryId,
@@ -213,17 +207,17 @@ class MediaRepository(
         withContext(Dispatchers.IO) {
             runCatching {
                 
-                val result = ApiClient.executeSmart(prefs.serverUrl) { api ->
-                    val response = api.getSeriesCategories(prefs.username, prefs.password)
-                    
-                    if (!response.isSuccessful) {
-                        throw Exception("HTTP ${response.code()}")
-                    }
-                    
-                    response.body() ?: emptyList()
+                // ✅ الطريقة البسيطة
+                val api = ApiClient.getXtreamApiService(prefs.serverUrl)
+                val response = api.getSeriesCategories(prefs.username, prefs.password)
+                
+                if (!response.isSuccessful) {
+                    throw Exception("HTTP ${response.code()}")
                 }
+                
+                val body = response.body() ?: emptyList()
 
-                result.getOrThrow().map {
+                body.map {
                     Category(
                         categoryId = it.categoryId,
                         categoryName = it.categoryName,
@@ -239,26 +233,26 @@ class MediaRepository(
         withContext(Dispatchers.IO) {
             runCatching {
 
-                val result = ApiClient.executeSmart(prefs.serverUrl) { api ->
-                    
-                    val response = if (categoryId == null || categoryId == "0") {
-                        api.getSeries(prefs.username, prefs.password)
-                    } else {
-                        api.getSeriesByCategory(
-                            prefs.username,
-                            prefs.password,
-                            categoryId = categoryId
-                        )
-                    }
-
-                    if (!response.isSuccessful) {
-                        throw Exception("HTTP ${response.code()}")
-                    }
-
-                    response.body() ?: emptyList()
+                // ✅ الطريقة البسيطة
+                val api = ApiClient.getXtreamApiService(prefs.serverUrl)
+                
+                val response = if (categoryId == null || categoryId == "0") {
+                    api.getSeries(prefs.username, prefs.password)
+                } else {
+                    api.getSeriesByCategory(
+                        prefs.username,
+                        prefs.password,
+                        categoryId = categoryId
+                    )
                 }
 
-                result.getOrThrow().map { series ->
+                if (!response.isSuccessful) {
+                    throw Exception("HTTP ${response.code()}")
+                }
+
+                val body = response.body() ?: emptyList()
+
+                body.map { series ->
                     Series(
                         seriesId = series.seriesId?.toString() ?: "",
                         name = series.name ?: "Series",
@@ -275,29 +269,27 @@ class MediaRepository(
             }
         }
 
-    // ================= SERIES INFO (✅ مُصلح) =================
+    // ================= SERIES INFO =================
 
     override suspend fun getSeriesInfo(seriesId: String): Result<List<Episode>> =
         withContext(Dispatchers.IO) {
             runCatching {
 
-                val result = ApiClient.executeSmart(prefs.serverUrl) { api ->
-                    val response = api.getSeriesInfo(
-                        prefs.username,
-                        prefs.password,
-                        seriesId = seriesId
-                    )
+                // ✅ الطريقة البسيطة
+                val api = ApiClient.getXtreamApiService(prefs.serverUrl)
+                val response = api.getSeriesInfo(
+                    prefs.username,
+                    prefs.password,
+                    seriesId = seriesId
+                )
 
-                    if (!response.isSuccessful) {
-                        throw Exception("HTTP ${response.code()}")
-                    }
-
-                    response.body()
+                if (!response.isSuccessful) {
+                    throw Exception("HTTP ${response.code()}")
                 }
 
-                val seriesInfo = result.getOrThrow()
+                val seriesInfo = response.body()
                 
-                // ✅ تحويل XtreamEpisode إلى Episode
+                // تحويل XtreamEpisode إلى Episode
                 val episodes = mutableListOf<Episode>()
                 
                 seriesInfo?.episodes?.forEach { (seasonNum, episodeList) ->
