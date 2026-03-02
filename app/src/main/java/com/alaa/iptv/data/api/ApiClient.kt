@@ -11,56 +11,64 @@ object ApiClient {
     private var retrofit: Retrofit? = null
     private var currentBaseUrl: String? = null
 
-    private val cookieJar = object : CookieJar {
-        private val cookieStore = HashMap<HttpUrl, List<Cookie>>()
-        override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
-            cookieStore[url] = cookies
-        }
-        override fun loadForRequest(url: HttpUrl): List<Cookie> {
-            return cookieStore[url] ?: emptyList()
-        }
-    }
-
     private fun buildClient(): OkHttpClient {
+
         val logging = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
 
         return OkHttpClient.Builder()
-            .cookieJar(cookieJar)
+
+            // 🔥 أهم شي لحل 511
+            .followRedirects(true)
+            .followSslRedirects(true)
+            .retryOnConnectionFailure(true)
+
+            // 🔥 هيدر مثل تطبيق IPTV حقيقي
             .addInterceptor { chain ->
                 val request = chain.request().newBuilder()
-                    .header("User-Agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15")
-                    .header("Accept", "application/json, */*")
+                    .header("User-Agent", "IPTV Smarters Pro")
+                    .header("Accept", "application/json")
+                    .header("Connection", "keep-alive")
                     .build()
+
                 chain.proceed(request)
             }
+
             .addInterceptor(logging)
-            .followRedirects(true)
-            .connectTimeout(15, TimeUnit.SECONDS)
+
+            .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+
             .build()
     }
 
     private fun normalizeBaseUrl(baseUrl: String): String {
         var cleanUrl = baseUrl.trim()
-        if (!cleanUrl.startsWith("http://") && !cleanUrl.startsWith("https://")) {
-            cleanUrl = "http://$cleanUrl"
+
+        // 🔥 نجبره يستخدم HTTPS دائماً
+        if (!cleanUrl.startsWith("http")) {
+            cleanUrl = "https://$cleanUrl"
         }
+
         return cleanUrl.removeSuffix("/") + "/"
     }
 
     fun getXtreamApiService(baseUrl: String): XtreamApiService {
+
         val cleanUrl = normalizeBaseUrl(baseUrl)
-        
+
         if (retrofit == null || currentBaseUrl != cleanUrl) {
             retrofit = Retrofit.Builder()
                 .baseUrl(cleanUrl)
                 .client(buildClient())
                 .addConverterFactory(GsonConverterFactory.create())
                 .build()
+
             currentBaseUrl = cleanUrl
         }
+
         return retrofit!!.create(XtreamApiService::class.java)
     }
 }
