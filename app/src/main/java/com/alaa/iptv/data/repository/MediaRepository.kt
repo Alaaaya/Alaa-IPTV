@@ -2,12 +2,13 @@ package com.alaa.iptv.data.repository
 
 import android.content.Context
 import android.util.Log
-import com.alaa.iptv.data.api.ApiClient
 import com.alaa.iptv.data.models.*
 import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.domain.repository.IMediaRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
 
 class MediaRepository(
     private val prefs: AppPreferences,
@@ -18,7 +19,9 @@ class MediaRepository(
         private const val TAG = "MediaRepository"
     }
 
-    // ================= AUTH =================
+    private val client = OkHttpClient()
+
+    // ================= AUTH (M3U MODE) =================
 
     override suspend fun authenticate(
         serverUrl: String,
@@ -30,31 +33,95 @@ class MediaRepository(
 
                 val cleanUrl = serverUrl.trim().removeSuffix("/")
 
-                Log.e(TAG, "==== AUTH REQUEST ====")
-                Log.e(TAG, "SERVER: $cleanUrl")
-                Log.e(TAG, "USER: $username")
-
-                val api = ApiClient.getXtreamApiService(cleanUrl)
-                val response = api.authenticate(username, password)
-
-                Log.e(TAG, "AUTH HTTP: ${response.code()}")
-
-                if (!response.isSuccessful) {
-                    val error = response.errorBody()?.string()
-                    Log.e(TAG, "AUTH ERROR: $error")
-                    throw Exception("HTTP ${response.code()}")
-                }
-
-                val body = response.body() ?: throw Exception("Empty body")
-
                 prefs.serverUrl = cleanUrl
                 prefs.username = username
                 prefs.password = password
                 prefs.isLoggedIn = true
 
-                body
+                Log.e(TAG, "M3U MODE LOGIN SUCCESS")
+
+                XtreamAuthResponse(null, null)
             }
         }
+
+    // ================= LOAD M3U =================
+
+    private suspend fun loadM3U(): List<Channel> =
+        withContext(Dispatchers.IO) {
+
+            val m3uUrl =
+                "${prefs.serverUrl}/get.php?username=${prefs.username}&password=${prefs.password}&type=m3u_plus&output=ts"
+
+            Log.e(TAG, "Loading M3U: $m3uUrl")
+
+            val request = Request.Builder()
+                .url(m3uUrl)
+                .header("User-Agent", "IPTV Smarters Pro")
+                .build()
+
+            val response = client.newCall(request).execute()
+
+            if (!response.isSuccessful) {
+                throw Exception("M3U HTTP ${response.code}")
+            }
+
+            val body = response.body?.string() ?: ""
+
+            parseM3U(body)
+        }
+
+    // ================= PARSER =================
+
+    private fun parseM3U(content: String): List<Channel> {
+
+        val channels = mutableListOf<Channel>()
+
+        val lines = content.split("\n")
+
+        var name = ""
+        var logo: String? = null
+        var group: String? = null
+
+        for (line in lines) {
+
+            if (line.startsWith("#EXTINF")) {
+
+                val nameMatch = Regex(",(.*)").find(line)
+                name = nameMatch?.groupValues?.get(1) ?: "Channel"
+
+                val logoMatch = Regex("""tvg-logo="(.*?)"""").find(line)
+                logo = logoMatch?.groupValues?.get(1)
+
+                val groupMatch = Regex("""group-title="(.*?)"""").find(line)
+                group = groupMatch?.groupValues?.get(1)
+            }
+
+            if (line.startsWith("http")) {
+
+                channels.add(
+                    Channel(
+                        streamId = line.hashCode().toString(),
+                        num = "",
+                        name = name,
+                        streamType = "live",
+                        streamIcon = logo,
+                        epgChannelId = null,
+                        added = null,
+                        categoryId = group,
+                        categoryName = group,
+                        customSid = null,
+                        tvArchive = 0,
+                        directSource = line,
+                        tvArchiveDuration = 0
+                    )
+                )
+            }
+        }
+
+        Log.e(TAG, "Parsed channels: ${channels.size}")
+
+        return channels
+    }
 
     // ================= LIVE CATEGORIES =================
 
@@ -62,44 +129,19 @@ class MediaRepository(
         withContext(Dispatchers.IO) {
             runCatching {
 
-                Log.e(TAG, "====== LIVE CATEGORIES REQUEST ======")
-                Log.e(TAG, "SERVER: ${prefs.serverUrl}")
-                Log.e(TAG, "USER: ${prefs.username}")
-                Log.e(TAG, "PASS: ${prefs.password}")
+                val channels = loadM3U()
 
-                if (prefs.serverUrl.isBlank()) {
-                    Log.e(TAG, "SERVER URL EMPTY")
-                    throw Exception("Server URL empty")
-                }
+                val groups = channels
+                    .mapNotNull { it.categoryName }
+                    .distinct()
 
-                val api = ApiClient.getXtreamApiService(prefs.serverUrl)
-
-                val response = api.getLiveCategories(
-                    prefs.username,
-                    prefs.password
-                )
-
-                Log.e(TAG, "HTTP CODE: ${response.code()}")
-                Log.e(TAG, "IS SUCCESS: ${response.isSuccessful}")
-
-                if (!response.isSuccessful) {
-                    val errorText = response.errorBody()?.string()
-                    Log.e(TAG, "ERROR BODY: $errorText")
-                    throw Exception("HTTP ${response.code()}")
-                }
-
-                val body = response.body()
-
-                Log.e(TAG, "BODY NULL: ${body == null}")
-                Log.e(TAG, "BODY SIZE: ${body?.size ?: 0}")
-
-                body?.map {
+                groups.map {
                     Category(
-                        categoryId = it.categoryId,
-                        categoryName = it.categoryName,
-                        parentId = it.parentId
+                        categoryId = it,
+                        categoryName = it,
+                        parentId = 0
                     )
-                } ?: emptyList()
+                }
             }
         }
 
@@ -109,49 +151,12 @@ class MediaRepository(
         withContext(Dispatchers.IO) {
             runCatching {
 
-                Log.e(TAG, "====== LIVE STREAMS REQUEST ======")
-                Log.e(TAG, "CATEGORY: $categoryId")
+                val channels = loadM3U()
 
-                val api = ApiClient.getXtreamApiService(prefs.serverUrl)
-
-                val response = if (categoryId == null || categoryId == "0") {
-                    api.getLiveStreams(prefs.username, prefs.password)
+                if (categoryId == null) {
+                    channels
                 } else {
-                    api.getLiveStreamsByCategory(
-                        prefs.username,
-                        prefs.password,
-                        categoryId = categoryId
-                    )
-                }
-
-                Log.e(TAG, "HTTP CODE: ${response.code()}")
-
-                if (!response.isSuccessful) {
-                    val errorText = response.errorBody()?.string()
-                    Log.e(TAG, "ERROR BODY: $errorText")
-                    throw Exception("HTTP ${response.code()}")
-                }
-
-                val body = response.body() ?: emptyList()
-
-                Log.e(TAG, "STREAM COUNT: ${body.size}")
-
-                body.map { stream ->
-                    Channel(
-                        streamId = stream.streamId?.toString() ?: "",
-                        num = stream.num?.toString() ?: "",
-                        name = stream.name ?: "Channel",
-                        streamType = "live",
-                        streamIcon = stream.streamIcon,
-                        epgChannelId = stream.epgChannelId,
-                        added = stream.added,
-                        categoryId = stream.categoryId,
-                        categoryName = null,
-                        customSid = stream.customSid,
-                        tvArchive = stream.tvArchive ?: 0,
-                        directSource = stream.directSource,
-                        tvArchiveDuration = stream.tvArchiveDuration ?: 0
-                    )
+                    channels.filter { it.categoryName == categoryId }
                 }
             }
         }
