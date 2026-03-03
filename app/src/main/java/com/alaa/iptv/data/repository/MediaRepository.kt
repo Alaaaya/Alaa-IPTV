@@ -9,6 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.util.concurrent.TimeUnit
 
 class MediaRepository(
     private val prefs: AppPreferences,
@@ -19,7 +20,11 @@ class MediaRepository(
         private const val TAG = "MediaRepository"
     }
 
-    private val client = OkHttpClient()
+    private val client = OkHttpClient.Builder()
+        .connectTimeout(20, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .retryOnConnectionFailure(true)
+        .build()
 
     // ================= AUTH (M3U MODE) =================
 
@@ -56,12 +61,21 @@ class MediaRepository(
 
             val request = Request.Builder()
                 .url(m3uUrl)
-                .header("User-Agent", "IPTV Smarters Pro")
+                .header(
+                    "User-Agent",
+                    "Dalvik/2.1.0 (Linux; U; Android 9; Android TV Build/PPR1.180610.011)"
+                )
+                .header("Accept", "*/*")
+                .header("Connection", "Keep-Alive")
                 .build()
 
             val response = client.newCall(request).execute()
 
+            Log.e(TAG, "M3U HTTP CODE: ${response.code}")
+
             if (!response.isSuccessful) {
+                val errorText = response.body?.string()
+                Log.e(TAG, "M3U ERROR BODY: $errorText")
                 throw Exception("M3U HTTP ${response.code}")
             }
 
@@ -75,7 +89,6 @@ class MediaRepository(
     private fun parseM3U(content: String): List<Channel> {
 
         val channels = mutableListOf<Channel>()
-
         val lines = content.split("\n")
 
         var name = ""
@@ -87,7 +100,7 @@ class MediaRepository(
             if (line.startsWith("#EXTINF")) {
 
                 val nameMatch = Regex(",(.*)").find(line)
-                name = nameMatch?.groupValues?.get(1) ?: "Channel"
+                name = nameMatch?.groupValues?.get(1)?.trim() ?: "Channel"
 
                 val logoMatch = Regex("""tvg-logo="(.*?)"""").find(line)
                 logo = logoMatch?.groupValues?.get(1)
@@ -111,7 +124,7 @@ class MediaRepository(
                         categoryName = group,
                         customSid = null,
                         tvArchive = 0,
-                        directSource = line,
+                        directSource = line.trim(),
                         tvArchiveDuration = 0
                     )
                 )
@@ -183,24 +196,4 @@ class MediaRepository(
     override suspend fun getSeriesFromCache(categoryId: String?) = emptyList<Series>()
     override suspend fun getSeriesInfo(seriesId: String) = Result.success(emptyList<Episode>())
     override suspend fun getEpisodesFromCache(seriesId: String) = emptyList<Episode>()
-    override suspend fun getEpgForChannel(channelId: String) = emptyList<EpgProgram>()
-    override suspend fun getEpgForChannelInTimeRange(channelId: String, startTime: Long, endTime: Long) = emptyList<EpgProgram>()
-    override suspend fun getCurrentProgram(channelId: String) = null
-    override suspend fun getUpcomingPrograms(channelId: String, limit: Int) = emptyList<EpgProgram>()
-    override suspend fun cacheEpgPrograms(programs: List<EpgProgram>) {}
-    override suspend fun cleanupOldEpgData(cutoffTime: Long) {}
-    override suspend fun searchChannels(query: String, categoryId: String?) = emptyList<Channel>()
-    override suspend fun searchMovies(query: String, categoryId: String?) = emptyList<Movie>()
-    override suspend fun searchSeries(query: String, categoryId: String?) = emptyList<Series>()
-    override suspend fun searchMoviesByGenre(genre: String) = emptyList<Movie>()
-    override suspend fun searchSeriesByGenre(genre: String) = emptyList<Series>()
-    override suspend fun syncAllData() = Result.success(Unit)
-    override suspend fun syncLiveTV() = Result.success(Unit)
-    override suspend fun syncMovies() = Result.success(Unit)
-    override suspend fun syncSeries() = Result.success(Unit)
-    override suspend fun updateChannelPosition(channelId: String, newPosition: Int) {}
-    override suspend fun getChannelsOrdered(categoryId: String?) = emptyList<Channel>()
-    override suspend fun loadM3UPlaylist(m3uContent: String) = Result.success(emptyList<Channel>())
-    override suspend fun loadM3UPlaylistFromUrl(url: String) = Result.success(emptyList<Channel>())
-    override suspend fun mergeM3UChannels(channels: List<Channel>) {}
 }
