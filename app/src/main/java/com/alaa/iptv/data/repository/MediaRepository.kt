@@ -7,10 +7,8 @@ import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.domain.repository.IMediaRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import java.util.concurrent.TimeUnit
 
@@ -29,13 +27,21 @@ class MediaRepository(
         .retryOnConnectionFailure(true)
         .build()
 
+    // ================= CONFIG =================
+    // عدّل هذا النمط إذا سيرفرك يحتاج صيغة ستريم مختلفة
+    // أمثلة:
+    // 1) "${prefs.serverUrl}/live/${prefs.username}/${prefs.password}/${streamId}.m3u8"
+    // 2) "${prefs.serverUrl}/get.php?username=${prefs.username}&password=${prefs.password}&stream=${streamId}"
+    private val streamUrlFormat: (String) -> String = { streamId ->
+        "${prefs.serverUrl}/${prefs.username}/${prefs.password}/$streamId"
+    }
+
     // ================= CACHE =================
 
     private var cachedLiveChannels: List<Channel>? = null
     private var cachedLiveCategories: List<Category>? = null
 
     fun forceRefresh() {
-        // استدعاء يدوي لمسح الكاش (يمكن استدعاؤه من ViewModel أو UI)
         cachedLiveChannels = null
         cachedLiveCategories = null
     }
@@ -63,7 +69,7 @@ class MediaRepository(
             }
         }
 
-    // ================= HTTP helper with retry =================
+    // ================= HTTP helper with retry & detailed logging =================
 
     private suspend fun executeRequestWithRetry(request: Request, maxAttempts: Int = 3): String =
         withContext(Dispatchers.IO) {
@@ -77,18 +83,21 @@ class MediaRepository(
                     val body = response.body?.string() ?: ""
 
                     if (!response.isSuccessful) {
-                        val snippet = if (body.length > 500) body.substring(0, 500) + "..." else body
+                        val snippet = if (body.length > 1000) body.substring(0, 1000) + "..." else body
                         val msg = "HTTP $code: $snippet"
                         Log.e(TAG, "Request failed: $msg | URL=${request.url}")
                         throw Exception(msg)
                     }
 
+                    Log.d(TAG, "Request success: code=$code | URL=${request.url}")
+                    // طباعة مقتطف من body لتسهيل تتبع الأخطاء (لا تطبع كامل body لو كبير)
+                    val snippet = if (body.length > 2000) body.substring(0, 2000) + "..." else body
+                    Log.v(TAG, "Response body snippet: $snippet")
                     return@withContext body
                 } catch (ex: Exception) {
                     lastEx = ex
                     attempt++
-                    Log.w(TAG, "Request attempt $attempt failed: ${ex.message}")
-                    // backoff بسيط
+                    Log.w(TAG, "Request attempt $attempt failed: ${ex.message} | URL=${request.url}")
                     try {
                         Thread.sleep((attempt * 500).toLong())
                     } catch (_: InterruptedException) { /* ignore */ }
@@ -119,15 +128,9 @@ class MediaRepository(
             val list = mutableListOf<Category>()
             for (i in 0 until arr.length()) {
                 val obj = arr.getJSONObject(i)
-                val id = obj.optString("category_id", obj.optString("category_id", ""))
+                val id = obj.optString("category_id", "")
                 val name = obj.optString("category_name", "Other")
-                list.add(
-                    Category(
-                        categoryId = id,
-                        categoryName = name,
-                        parentId = 0
-                    )
-                )
+                list.add(Category(categoryId = id, categoryName = name, parentId = 0))
             }
             Log.i(TAG, "Loaded JSON categories: ${list.size}")
             list
@@ -151,7 +154,7 @@ class MediaRepository(
             for (i in 0 until arr.length()) {
                 val obj = arr.getJSONObject(i)
 
-                val streamId = obj.optString("stream_id", obj.optString("stream_id", ""))
+                val streamId = obj.optString("stream_id", "")
                 val num = obj.optString("num", "")
                 val name = obj.optString("name", "Channel")
                 val streamType = obj.optString("stream_type", "live")
@@ -184,9 +187,7 @@ class MediaRepository(
         }
 
     private fun buildLiveStreamUrl(streamId: String): String {
-        // صيغة ستريم Xtream شائعة؛ عدّل إذا سيرفرك يحتاج صيغة مختلفة
-        // مثال بديل: "${prefs.serverUrl}/live/${prefs.username}/${prefs.password}/${streamId}.m3u8"
-        return "${prefs.serverUrl}/${prefs.username}/${prefs.password}/$streamId"
+        return streamUrlFormat(streamId)
     }
 
     // ================= M3U FALLBACK =================
@@ -232,7 +233,6 @@ class MediaRepository(
                 if (group.isNullOrBlank()) group = "Other"
             }
 
-            // next non-empty line that looks like URL
             if (line.startsWith("http", ignoreCase = true) || line.startsWith("rtmp", ignoreCase = true)) {
                 channels.add(
                     Channel(
@@ -263,11 +263,9 @@ class MediaRepository(
     private suspend fun ensureLiveDataLoaded() {
         if (cachedLiveChannels != null && cachedLiveCategories != null) return
 
-        // جرّب JSON أولاً (أفضل)
         try {
             val categories = loadJsonLiveCategories()
             val channels = loadJsonLiveStreams()
-
             cachedLiveCategories = categories
             cachedLiveChannels = channels
             Log.i(TAG, "Using JSON endpoints for live data")
@@ -276,19 +274,12 @@ class MediaRepository(
             Log.w(TAG, "JSON endpoints failed, falling back to M3U: ${ex.message}")
         }
 
-        // فولباك إلى M3U
         val m3uChannels = loadM3U()
         cachedLiveChannels = m3uChannels
 
         val cats = m3uChannels.mapNotNull { it.categoryName }
             .distinct()
-            .map { cat ->
-                Category(
-                    categoryId = cat,
-                    categoryName = cat,
-                    parentId = 0
-                )
-            }
+            .map { cat -> Category(categoryId = cat, categoryName = cat, parentId = 0) }
 
         cachedLiveCategories = cats
         Log.i(TAG, "Using M3U fallback for live data")
@@ -341,7 +332,7 @@ class MediaRepository(
     override suspend fun getMoviesFromCache(categoryId: String?) = emptyList<Movie>()
     override suspend fun getSeriesCategories() = Result.success(emptyList<Category>())
     override suspend fun getSeries(categoryId: String?) = Result.success(emptyList<Series>())
-    override suspend fun getSeriesFromCache(seriesId: String?) = emptyList<Series>()
+    override suspend fun getSeriesFromCache(seriesId: String) = emptyList<Series>()
     override suspend fun getSeriesInfo(seriesId: String) = Result.success(emptyList<Episode>())
     override suspend fun getEpisodesFromCache(seriesId: String) = emptyList<Episode>()
     override suspend fun getEpgForChannel(channelId: String) = emptyList<EpgProgram>()
