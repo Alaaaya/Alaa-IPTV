@@ -1,7 +1,6 @@
 package com.alaa.iptv.data.repository
 
 import android.content.Context
-import android.util.Log
 import com.alaa.iptv.data.models.*
 import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.domain.repository.IMediaRepository
@@ -15,10 +14,6 @@ class MediaRepository(
     private val prefs: AppPreferences,
     context: Context
 ) : IMediaRepository {
-
-    companion object {
-        private const val TAG = "MediaRepository"
-    }
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(20, TimeUnit.SECONDS)
@@ -43,16 +38,16 @@ class MediaRepository(
             }
         }
 
-    // ================= LOAD M3U =================
+    // ================= M3U =================
 
     private suspend fun loadM3U(): List<Channel> =
         withContext(Dispatchers.IO) {
 
-            val m3uUrl =
+            val url =
                 "${prefs.serverUrl}/get.php?username=${prefs.username}&password=${prefs.password}&type=m3u_plus&output=ts"
 
             val request = Request.Builder()
-                .url(m3uUrl)
+                .url(url)
                 .header("User-Agent", "VLC/3.0.18 LibVLC/3.0.18")
                 .header("Accept", "*/*")
                 .build()
@@ -122,11 +117,7 @@ class MediaRepository(
                 channels.mapNotNull { it.categoryName }
                     .distinct()
                     .map {
-                        Category(
-                            categoryId = it,
-                            categoryName = it,
-                            parentId = 0
-                        )
+                        Category(it, it, 0)
                     }
             }
         }
@@ -140,7 +131,7 @@ class MediaRepository(
             }
         }
 
-    // ================= REQUIRED STUBS =================
+    // ================= REQUIRED OVERRIDES =================
 
     override suspend fun getLiveStreamsFromCache(categoryId: String?) = emptyList<Channel>()
     override suspend fun getFavorites() = emptyList<String>()
@@ -170,4 +161,24 @@ class MediaRepository(
     override suspend fun getSeriesFromCache(categoryId: String?) = emptyList<Series>()
     override suspend fun getSeriesInfo(seriesId: String) = Result.success(emptyList<Episode>())
     override suspend fun getEpisodesFromCache(seriesId: String) = emptyList<Episode>()
+    override suspend fun getEpgForChannel(channelId: String) = emptyList<EpgProgram>()
+    override suspend fun getEpgForChannelInTimeRange(channelId: String, startTime: Long, endTime: Long) = emptyList<EpgProgram>()
+    override suspend fun getCurrentProgram(channelId: String) = null
+    override suspend fun getUpcomingPrograms(channelId: String, limit: Int) = emptyList<EpgProgram>()
+    override suspend fun cacheEpgPrograms(programs: List<EpgProgram>) {}
+    override suspend fun cleanupOldEpgData(cutoffTime: Long) {}
+    override suspend fun searchChannels(query: String, categoryId: String?) = emptyList<Channel>()
+    override suspend fun searchMovies(query: String, categoryId: String?) = emptyList<Movie>()
+    override suspend fun searchSeries(query: String, categoryId: String?) = emptyList<Series>()
+    override suspend fun searchMoviesByGenre(genre: String) = emptyList<Movie>()
+    override suspend fun searchSeriesByGenre(genre: String) = emptyList<Series>()
+    override suspend fun syncAllData() = Result.success(Unit)
+    override suspend fun syncLiveTV() = Result.success(Unit)
+    override suspend fun syncMovies() = Result.success(Unit)
+    override suspend fun syncSeries() = Result.success(Unit)
+    override suspend fun updateChannelPosition(channelId: String, newPosition: Int) {}
+    override suspend fun getChannelsOrdered(categoryId: String?) = emptyList<Channel>()
+    override suspend fun loadM3UPlaylist(m3uContent: String) = Result.success(emptyList<Channel>())
+    override suspend fun loadM3UPlaylistFromUrl(url: String) = Result.success(emptyList<Channel>())
+    override suspend fun mergeM3UChannels(channels: List<Channel>) {}
 }
