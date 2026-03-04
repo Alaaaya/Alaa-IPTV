@@ -8,6 +8,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import org.json.JSONArray
+import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
 class MediaRepository(
@@ -20,6 +22,16 @@ class MediaRepository(
         .readTimeout(30, TimeUnit.SECONDS)
         .retryOnConnectionFailure(true)
         .build()
+
+    // ================= CACHE =================
+
+    private var cachedLiveChannels: List<Channel>? = null
+    private var cachedLiveCategories: List<Category>? = null
+
+    private fun clearCache() {
+        cachedLiveChannels = null
+        cachedLiveCategories = null
+    }
 
     // ================= AUTH =================
 
@@ -34,11 +46,108 @@ class MediaRepository(
                 prefs.username = username
                 prefs.password = password
                 prefs.isLoggedIn = true
+                clearCache()
                 XtreamAuthResponse(null, null)
             }
         }
 
-    // ================= M3U =================
+    // ================== JSON LIVE (Xtream Codes) ==================
+
+    private suspend fun loadJsonLiveCategories(): List<Category> =
+        withContext(Dispatchers.IO) {
+            val url =
+                "${prefs.serverUrl}/player_api.php?username=${prefs.username}&password=${prefs.password}&action=get_live_categories"
+
+            val request = Request.Builder()
+                .url(url)
+                .header("User-Agent", "IPTV-Client")
+                .header("Accept", "application/json")
+                .build()
+
+            val response = client.newCall(request).execute()
+            if (!response.isSuccessful) {
+                throw Exception("JSON categories HTTP ${response.code}")
+            }
+
+            val body = response.body?.string() ?: "[]"
+            val arr = JSONArray(body)
+
+            val list = mutableListOf<Category>()
+            for (i in 0 until arr.length()) {
+                val obj = arr.getJSONObject(i)
+                val id = obj.optString("category_id")
+                val name = obj.optString("category_name", "Other")
+                list.add(
+                    Category(
+                        categoryId = id,
+                        categoryName = name,
+                        parentId = 0
+                    )
+                )
+            }
+            list
+        }
+
+    private suspend fun loadJsonLiveStreams(): List<Channel> =
+        withContext(Dispatchers.IO) {
+            val url =
+                "${prefs.serverUrl}/player_api.php?username=${prefs.username}&password=${prefs.password}&action=get_live_streams"
+
+            val request = Request.Builder()
+                .url(url)
+                .header("User-Agent", "IPTV-Client")
+                .header("Accept", "application/json")
+                .build()
+
+            val response = client.newCall(request).execute()
+            if (!response.isSuccessful) {
+                throw Exception("JSON streams HTTP ${response.code}")
+            }
+
+            val body = response.body?.string() ?: "[]"
+            val arr = JSONArray(body)
+
+            val list = mutableListOf<Channel>()
+            for (i in 0 until arr.length()) {
+                val obj = arr.getJSONObject(i)
+
+                val streamId = obj.optString("stream_id")
+                val num = obj.optString("num", "")
+                val name = obj.optString("name", "Channel")
+                val streamType = obj.optString("stream_type", "live")
+                val icon = obj.optString("stream_icon", null)
+                val categoryId = obj.optString("category_id", "")
+                val categoryName = obj.optString("category_name", null) ?: categoryId
+
+                val directSource = buildLiveStreamUrl(streamId)
+
+                list.add(
+                    Channel(
+                        streamId = streamId,
+                        num = num,
+                        name = name,
+                        streamType = streamType,
+                        streamIcon = icon,
+                        epgChannelId = null,
+                        added = null,
+                        categoryId = categoryId,
+                        categoryName = categoryName,
+                        customSid = null,
+                        tvArchive = 0,
+                        directSource = directSource,
+                        tvArchiveDuration = 0
+                    )
+                )
+            }
+            list
+        }
+
+    private fun buildLiveStreamUrl(streamId: String): String {
+        // صيغة ستريم Xtream العادية
+        return "${prefs.serverUrl}/${prefs.username}/${prefs.password}/$streamId"
+    }
+
+    // ================= M3U FALLBACK =================
 
     private suspend fun loadM3U(): List<Channel> =
         withContext(Dispatchers.IO) {
@@ -74,14 +183,17 @@ class MediaRepository(
         for (line in lines) {
 
             if (line.startsWith("#EXTINF")) {
+
                 val nameMatch = Regex(",(.*)").find(line)
                 name = nameMatch?.groupValues?.get(1)?.trim() ?: "Channel"
 
-                val logoMatch = Regex("""tvg-logo="(.*?)"""").find(line)
+                val logoMatch = Regex("""tvg-logo="([^"]*)"""").find(line)
                 logo = logoMatch?.groupValues?.get(1)
 
-                val groupMatch = Regex("""group-title="(.*?)"""").find(line)
+                val groupMatch = Regex("""group-title="([^"]*)"""").find(line)
                 group = groupMatch?.groupValues?.get(1)
+
+                if (group.isNullOrBlank()) group = "Other"
             }
 
             if (line.startsWith("http")) {
@@ -108,26 +220,57 @@ class MediaRepository(
         return channels
     }
 
-    // ================= LIVE =================
+    // ================= LIVE (UNIFIED) =================
+
+    private suspend fun ensureLiveDataLoaded() {
+        if (cachedLiveChannels != null && cachedLiveCategories != null) return
+
+        // جرّب JSON أولاً
+        try {
+            val categories = loadJsonLiveCategories()
+            val channels = loadJsonLiveStreams()
+
+            cachedLiveCategories = categories
+            cachedLiveChannels = channels
+            return
+        } catch (_: Exception) {
+            // نكمل للفولباك
+        }
+
+        // فولباك إلى M3U
+        val m3uChannels = loadM3U()
+        cachedLiveChannels = m3uChannels
+
+        val cats = m3uChannels.mapNotNull { it.categoryName }
+            .distinct()
+            .map { cat ->
+                Category(
+                    categoryId = cat,
+                    categoryName = cat,
+                    parentId = 0
+                )
+            }
+
+        cachedLiveCategories = cats
+    }
 
     override suspend fun getLiveCategories(): Result<List<Category>> =
         withContext(Dispatchers.IO) {
             runCatching {
-                val channels = loadM3U()
-                channels.mapNotNull { it.categoryName }
-                    .distinct()
-                    .map {
-                        Category(it, it, 0)
-                    }
+                ensureLiveDataLoaded()
+                cachedLiveCategories ?: emptyList()
             }
         }
 
     override suspend fun getLiveStreams(categoryId: String?): Result<List<Channel>> =
         withContext(Dispatchers.IO) {
             runCatching {
-                val channels = loadM3U()
-                if (categoryId == null) channels
-                else channels.filter { it.categoryName == categoryId }
+                ensureLiveDataLoaded()
+                val channels = cachedLiveChannels ?: emptyList()
+                if (categoryId.isNullOrEmpty()) channels
+                else channels.filter {
+                    it.categoryId == categoryId || it.categoryName == categoryId
+                }
             }
         }
 
@@ -158,7 +301,7 @@ class MediaRepository(
     override suspend fun getMoviesFromCache(categoryId: String?) = emptyList<Movie>()
     override suspend fun getSeriesCategories() = Result.success(emptyList<Category>())
     override suspend fun getSeries(categoryId: String?) = Result.success(emptyList<Series>())
-    override suspend fun getSeriesFromCache(categoryId: String?) = emptyList<Series>()
+    override suspend fun getSeriesFromCache(seriesId: String?) = emptyList<Series>()
     override suspend fun getSeriesInfo(seriesId: String) = Result.success(emptyList<Episode>())
     override suspend fun getEpisodesFromCache(seriesId: String) = emptyList<Episode>()
     override suspend fun getEpgForChannel(channelId: String) = emptyList<EpgProgram>()
