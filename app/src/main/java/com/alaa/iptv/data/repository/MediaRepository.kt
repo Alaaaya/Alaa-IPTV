@@ -1,21 +1,27 @@
 package com.alaa.iptv.data.repository
 
 import android.content.Context
+import android.util.Log
 import com.alaa.iptv.data.models.*
 import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.domain.repository.IMediaRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
-import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
 class MediaRepository(
     private val prefs: AppPreferences,
     context: Context
 ) : IMediaRepository {
+
+    companion object {
+        private const val TAG = "MediaRepository"
+    }
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(20, TimeUnit.SECONDS)
@@ -27,6 +33,12 @@ class MediaRepository(
 
     private var cachedLiveChannels: List<Channel>? = null
     private var cachedLiveCategories: List<Category>? = null
+
+    fun forceRefresh() {
+        // استدعاء يدوي لمسح الكاش (يمكن استدعاؤه من ViewModel أو UI)
+        cachedLiveChannels = null
+        cachedLiveCategories = null
+    }
 
     private fun clearCache() {
         cachedLiveChannels = null
@@ -51,6 +63,43 @@ class MediaRepository(
             }
         }
 
+    // ================= HTTP helper with retry =================
+
+    private suspend fun executeRequestWithRetry(request: Request, maxAttempts: Int = 3): String =
+        withContext(Dispatchers.IO) {
+            var attempt = 0
+            var lastEx: Exception? = null
+
+            while (attempt < maxAttempts) {
+                try {
+                    val response = client.newCall(request).execute()
+                    val code = response.code
+                    val body = response.body?.string() ?: ""
+
+                    if (!response.isSuccessful) {
+                        val snippet = if (body.length > 500) body.substring(0, 500) + "..." else body
+                        val msg = "HTTP $code: $snippet"
+                        Log.e(TAG, "Request failed: $msg | URL=${request.url}")
+                        throw Exception(msg)
+                    }
+
+                    return@withContext body
+                } catch (ex: Exception) {
+                    lastEx = ex
+                    attempt++
+                    Log.w(TAG, "Request attempt $attempt failed: ${ex.message}")
+                    // backoff بسيط
+                    try {
+                        Thread.sleep((attempt * 500).toLong())
+                    } catch (_: InterruptedException) { /* ignore */ }
+                }
+            }
+
+            val err = Exception("Request failed after $maxAttempts attempts. Last error: ${lastEx?.message}")
+            Log.e(TAG, err.message ?: "Unknown error")
+            throw err
+        }
+
     // ================== JSON LIVE (Xtream Codes) ==================
 
     private suspend fun loadJsonLiveCategories(): List<Category> =
@@ -64,18 +113,13 @@ class MediaRepository(
                 .header("Accept", "application/json")
                 .build()
 
-            val response = client.newCall(request).execute()
-            if (!response.isSuccessful) {
-                throw Exception("JSON categories HTTP ${response.code}")
-            }
-
-            val body = response.body?.string() ?: "[]"
+            val body = executeRequestWithRetry(request)
             val arr = JSONArray(body)
 
             val list = mutableListOf<Category>()
             for (i in 0 until arr.length()) {
                 val obj = arr.getJSONObject(i)
-                val id = obj.optString("category_id")
+                val id = obj.optString("category_id", obj.optString("category_id", ""))
                 val name = obj.optString("category_name", "Other")
                 list.add(
                     Category(
@@ -85,6 +129,7 @@ class MediaRepository(
                     )
                 )
             }
+            Log.i(TAG, "Loaded JSON categories: ${list.size}")
             list
         }
 
@@ -99,19 +144,14 @@ class MediaRepository(
                 .header("Accept", "application/json")
                 .build()
 
-            val response = client.newCall(request).execute()
-            if (!response.isSuccessful) {
-                throw Exception("JSON streams HTTP ${response.code}")
-            }
-
-            val body = response.body?.string() ?: "[]"
+            val body = executeRequestWithRetry(request)
             val arr = JSONArray(body)
 
             val list = mutableListOf<Channel>()
             for (i in 0 until arr.length()) {
                 val obj = arr.getJSONObject(i)
 
-                val streamId = obj.optString("stream_id")
+                val streamId = obj.optString("stream_id", obj.optString("stream_id", ""))
                 val num = obj.optString("num", "")
                 val name = obj.optString("name", "Channel")
                 val streamType = obj.optString("stream_type", "live")
@@ -139,11 +179,13 @@ class MediaRepository(
                     )
                 )
             }
+            Log.i(TAG, "Loaded JSON streams: ${list.size}")
             list
         }
 
     private fun buildLiveStreamUrl(streamId: String): String {
-        // صيغة ستريم Xtream العادية
+        // صيغة ستريم Xtream شائعة؛ عدّل إذا سيرفرك يحتاج صيغة مختلفة
+        // مثال بديل: "${prefs.serverUrl}/live/${prefs.username}/${prefs.password}/${streamId}.m3u8"
         return "${prefs.serverUrl}/${prefs.username}/${prefs.password}/$streamId"
     }
 
@@ -161,13 +203,7 @@ class MediaRepository(
                 .header("Accept", "*/*")
                 .build()
 
-            val response = client.newCall(request).execute()
-
-            if (!response.isSuccessful) {
-                throw Exception("M3U HTTP ${response.code}")
-            }
-
-            val body = response.body?.string() ?: ""
+            val body = executeRequestWithRetry(request)
             parseM3U(body)
         }
 
@@ -180,9 +216,9 @@ class MediaRepository(
         var logo: String? = null
         var group: String? = null
 
-        for (line in lines) {
-
-            if (line.startsWith("#EXTINF")) {
+        for (i in lines.indices) {
+            val line = lines[i].trim()
+            if (line.startsWith("#EXTINF", ignoreCase = true)) {
 
                 val nameMatch = Regex(",(.*)").find(line)
                 name = nameMatch?.groupValues?.get(1)?.trim() ?: "Channel"
@@ -196,7 +232,8 @@ class MediaRepository(
                 if (group.isNullOrBlank()) group = "Other"
             }
 
-            if (line.startsWith("http")) {
+            // next non-empty line that looks like URL
+            if (line.startsWith("http", ignoreCase = true) || line.startsWith("rtmp", ignoreCase = true)) {
                 channels.add(
                     Channel(
                         streamId = line.hashCode().toString(),
@@ -217,6 +254,7 @@ class MediaRepository(
             }
         }
 
+        Log.i(TAG, "Parsed M3U channels: ${channels.size}")
         return channels
     }
 
@@ -225,16 +263,17 @@ class MediaRepository(
     private suspend fun ensureLiveDataLoaded() {
         if (cachedLiveChannels != null && cachedLiveCategories != null) return
 
-        // جرّب JSON أولاً
+        // جرّب JSON أولاً (أفضل)
         try {
             val categories = loadJsonLiveCategories()
             val channels = loadJsonLiveStreams()
 
             cachedLiveCategories = categories
             cachedLiveChannels = channels
+            Log.i(TAG, "Using JSON endpoints for live data")
             return
-        } catch (_: Exception) {
-            // نكمل للفولباك
+        } catch (ex: Exception) {
+            Log.w(TAG, "JSON endpoints failed, falling back to M3U: ${ex.message}")
         }
 
         // فولباك إلى M3U
@@ -252,6 +291,7 @@ class MediaRepository(
             }
 
         cachedLiveCategories = cats
+        Log.i(TAG, "Using M3U fallback for live data")
     }
 
     override suspend fun getLiveCategories(): Result<List<Category>> =
