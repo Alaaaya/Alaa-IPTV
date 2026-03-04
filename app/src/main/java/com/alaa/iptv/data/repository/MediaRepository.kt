@@ -26,6 +26,8 @@ class MediaRepository(
         .retryOnConnectionFailure(true)
         .build()
 
+    // ================= AUTH =================
+
     override suspend fun authenticate(
         serverUrl: String,
         username: String,
@@ -33,8 +35,7 @@ class MediaRepository(
     ): Result<XtreamAuthResponse> =
         withContext(Dispatchers.IO) {
             runCatching {
-                val cleanUrl = serverUrl.trim().removeSuffix("/")
-                prefs.serverUrl = cleanUrl
+                prefs.serverUrl = serverUrl.trim().removeSuffix("/")
                 prefs.username = username
                 prefs.password = password
                 prefs.isLoggedIn = true
@@ -42,13 +43,13 @@ class MediaRepository(
             }
         }
 
+    // ================= LOAD M3U =================
+
     private suspend fun loadM3U(): List<Channel> =
         withContext(Dispatchers.IO) {
 
             val m3uUrl =
                 "${prefs.serverUrl}/get.php?username=${prefs.username}&password=${prefs.password}&type=m3u_plus&output=ts"
-
-            Log.e(TAG, "Loading M3U: $m3uUrl")
 
             val request = Request.Builder()
                 .url(m3uUrl)
@@ -58,14 +59,11 @@ class MediaRepository(
 
             val response = client.newCall(request).execute()
 
-            Log.e(TAG, "M3U HTTP CODE: ${response.code}")
-
             if (!response.isSuccessful) {
                 throw Exception("M3U HTTP ${response.code}")
             }
 
             val body = response.body?.string() ?: ""
-
             parseM3U(body)
         }
 
@@ -81,7 +79,6 @@ class MediaRepository(
         for (line in lines) {
 
             if (line.startsWith("#EXTINF")) {
-
                 val nameMatch = Regex(",(.*)").find(line)
                 name = nameMatch?.groupValues?.get(1)?.trim() ?: "Channel"
 
@@ -93,7 +90,6 @@ class MediaRepository(
             }
 
             if (line.startsWith("http")) {
-
                 channels.add(
                     Channel(
                         streamId = line.hashCode().toString(),
@@ -117,40 +113,61 @@ class MediaRepository(
         return channels
     }
 
+    // ================= LIVE =================
+
     override suspend fun getLiveCategories(): Result<List<Category>> =
         withContext(Dispatchers.IO) {
             runCatching {
-
                 val channels = loadM3U()
-
-                val groups = channels
-                    .mapNotNull { it.categoryName }
+                channels.mapNotNull { it.categoryName }
                     .distinct()
-
-                groups.map {
-                    Category(
-                        categoryId = it,
-                        categoryName = it,
-                        parentId = 0
-                    )
-                }
+                    .map {
+                        Category(
+                            categoryId = it,
+                            categoryName = it,
+                            parentId = 0
+                        )
+                    }
             }
         }
 
     override suspend fun getLiveStreams(categoryId: String?): Result<List<Channel>> =
         withContext(Dispatchers.IO) {
             runCatching {
-
                 val channels = loadM3U()
-
                 if (categoryId == null) channels
                 else channels.filter { it.categoryName == categoryId }
             }
         }
+
+    // ================= REQUIRED STUBS =================
 
     override suspend fun getLiveStreamsFromCache(categoryId: String?) = emptyList<Channel>()
     override suspend fun getFavorites() = emptyList<String>()
     override suspend fun isFavorite(itemId: String) = false
     override suspend fun addFavorite(itemId: String) {}
     override suspend fun removeBasicFavorite(itemId: String) {}
+
+    override suspend fun addFavorite(
+        contentId: String,
+        name: String,
+        type: String,
+        icon: String?,
+        categoryId: String?
+    ) = Result.success(Unit)
+
+    override suspend fun removeFavorite(contentId: String) = Result.success(Unit)
+    override suspend fun getFavoritesWithDetails() = Result.success(emptyList<FavoriteItem>())
+    override suspend fun addRecent(itemId: String, itemType: String) {}
+    override suspend fun getRecents() = emptyList<Recent>()
+    override suspend fun addRecentView(contentId: String, name: String, type: String, icon: String?, categoryId: String?) = Result.success(Unit)
+    override suspend fun getRecentViews() = Result.success(emptyList<RecentItem>())
+    override suspend fun getMovieCategories() = Result.success(emptyList<Category>())
+    override suspend fun getMovies(categoryId: String?) = Result.success(emptyList<Movie>())
+    override suspend fun getMoviesFromCache(categoryId: String?) = emptyList<Movie>()
+    override suspend fun getSeriesCategories() = Result.success(emptyList<Category>())
+    override suspend fun getSeries(categoryId: String?) = Result.success(emptyList<Series>())
+    override suspend fun getSeriesFromCache(categoryId: String?) = emptyList<Series>()
+    override suspend fun getSeriesInfo(seriesId: String) = Result.success(emptyList<Episode>())
+    override suspend fun getEpisodesFromCache(seriesId: String) = emptyList<Episode>()
 }
