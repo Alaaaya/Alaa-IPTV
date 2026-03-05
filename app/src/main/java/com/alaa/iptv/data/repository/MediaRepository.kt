@@ -1,6 +1,6 @@
 package com.alaa.iptv.data.repository
 
-import .content.Context
+import android.content.Context
 import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
