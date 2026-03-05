@@ -2,357 +2,246 @@ package com.alaa.iptv.data.repository
 
 import android.content.Context
 import android.util.Log
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.alaa.iptv.data.models.*
-import com.alaa.iptv.data.preferences.AppPreferences
-import com.alaa.iptv.domain.repository.IMediaRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
-import okhttp3.Request
+import okhttp3.*
 import org.json.JSONArray
+import java.io.File
+import java.io.IOException
 import java.util.concurrent.TimeUnit
 
-class MediaRepository(
-    private val prefs: AppPreferences,
-    context: Context
-) : IMediaRepository {
+class IPTVRepository(
+    private val context: Context
+) {
 
     companion object {
-        private const val TAG = "MediaRepository"
+        private const val TAG = "IPTVRepository"
     }
 
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(20, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .retryOnConnectionFailure(true)
-        .build()
+    // ================= HTTP CLIENT =================
 
-    // ================= CONFIG =================
-    // عدّل هذا النمط إذا سيرفرك يحتاج صيغة ستريم مختلفة
-    // أمثلة:
-    // 1) "${prefs.serverUrl}/live/${prefs.username}/${prefs.password}/${streamId}.m3u8"
-    // 2) "${prefs.serverUrl}/get.php?username=${prefs.username}&password=${prefs.password}&stream=${streamId}"
-    private val streamUrlFormat: (String) -> String = { streamId ->
-        "${prefs.serverUrl}/${prefs.username}/${prefs.password}/$streamId"
+    private val client: OkHttpClient by lazy {
+
+        OkHttpClient.Builder()
+            .connectTimeout(20, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .callTimeout(40, TimeUnit.SECONDS)
+            .retryOnConnectionFailure(true)
+            .followRedirects(true)
+            .cache(Cache(File(context.cacheDir, "http_cache"), 25L * 1024 * 1024))
+            .build()
     }
 
-    // ================= CACHE =================
+    private val gson = Gson()
 
-    private var cachedLiveChannels: List<Channel>? = null
-    private var cachedLiveCategories: List<Category>? = null
+    // ================= MEMORY CACHE =================
 
-    fun forceRefresh() {
-        cachedLiveChannels = null
-        cachedLiveCategories = null
-    }
+    private var cachedChannels: List<Channel>? = null
+    private var cachedCategories: List<Category>? = null
+    private var cacheTime: Long = 0
 
-    private fun clearCache() {
-        cachedLiveChannels = null
-        cachedLiveCategories = null
-    }
+    private val cacheLifetime = 5 * 60 * 1000L
 
-    // ================= AUTH =================
+    // ================= REQUEST =================
 
-    override suspend fun authenticate(
-        serverUrl: String,
-        username: String,
-        password: String
-    ): Result<XtreamAuthResponse> =
+    private suspend fun request(url: String): String =
         withContext(Dispatchers.IO) {
-            runCatching {
-                prefs.serverUrl = serverUrl.trim().removeSuffix("/")
-                prefs.username = username
-                prefs.password = password
-                prefs.isLoggedIn = true
-                clearCache()
-                XtreamAuthResponse(null, null)
-            }
-        }
-
-    // ================= HTTP helper with retry & detailed logging =================
-
-    private suspend fun executeRequestWithRetry(request: Request, maxAttempts: Int = 3): String =
-        withContext(Dispatchers.IO) {
-            var attempt = 0
-            var lastEx: Exception? = null
-
-            while (attempt < maxAttempts) {
-                try {
-                    val response = client.newCall(request).execute()
-                    val code = response.code
-                    val body = response.body?.string() ?: ""
-
-                    if (!response.isSuccessful) {
-                        val snippet = if (body.length > 1000) body.substring(0, 1000) + "..." else body
-                        val msg = "HTTP $code: $snippet"
-                        Log.e(TAG, "Request failed: $msg | URL=${request.url}")
-                        throw Exception(msg)
-                    }
-
-                    Log.d(TAG, "Request success: code=$code | URL=${request.url}")
-                    // طباعة مقتطف من body لتسهيل تتبع الأخطاء (لا تطبع كامل body لو كبير)
-                    val snippet = if (body.length > 2000) body.substring(0, 2000) + "..." else body
-                    Log.v(TAG, "Response body snippet: $snippet")
-                    return@withContext body
-                } catch (ex: Exception) {
-                    lastEx = ex
-                    attempt++
-                    Log.w(TAG, "Request attempt $attempt failed: ${ex.message} | URL=${request.url}")
-                    try {
-                        Thread.sleep((attempt * 500).toLong())
-                    } catch (_: InterruptedException) { /* ignore */ }
-                }
-            }
-
-            val err = Exception("Request failed after $maxAttempts attempts. Last error: ${lastEx?.message}")
-            Log.e(TAG, err.message ?: "Unknown error")
-            throw err
-        }
-
-    // ================== JSON LIVE (Xtream Codes) ==================
-
-    private suspend fun loadJsonLiveCategories(): List<Category> =
-        withContext(Dispatchers.IO) {
-            val url =
-                "${prefs.serverUrl}/player_api.php?username=${prefs.username}&password=${prefs.password}&action=get_live_categories"
 
             val request = Request.Builder()
                 .url(url)
-                .header("User-Agent", "IPTV-Client")
-                .header("Accept", "application/json")
-                .build()
-
-            val body = executeRequestWithRetry(request)
-            val arr = JSONArray(body)
-
-            val list = mutableListOf<Category>()
-            for (i in 0 until arr.length()) {
-                val obj = arr.getJSONObject(i)
-                val id = obj.optString("category_id", "")
-                val name = obj.optString("category_name", "Other")
-                list.add(Category(categoryId = id, categoryName = name, parentId = 0))
-            }
-            Log.i(TAG, "Loaded JSON categories: ${list.size}")
-            list
-        }
-
-    private suspend fun loadJsonLiveStreams(): List<Channel> =
-        withContext(Dispatchers.IO) {
-            val url =
-                "${prefs.serverUrl}/player_api.php?username=${prefs.username}&password=${prefs.password}&action=get_live_streams"
-
-            val request = Request.Builder()
-                .url(url)
-                .header("User-Agent", "IPTV-Client")
-                .header("Accept", "application/json")
-                .build()
-
-            val body = executeRequestWithRetry(request)
-            val arr = JSONArray(body)
-
-            val list = mutableListOf<Channel>()
-            for (i in 0 until arr.length()) {
-                val obj = arr.getJSONObject(i)
-
-                val streamId = obj.optString("stream_id", "")
-                val num = obj.optString("num", "")
-                val name = obj.optString("name", "Channel")
-                val streamType = obj.optString("stream_type", "live")
-                val icon = obj.optString("stream_icon", null)
-                val categoryId = obj.optString("category_id", "")
-                val categoryName = obj.optString("category_name", null) ?: categoryId
-
-                val directSource = buildLiveStreamUrl(streamId)
-
-                list.add(
-                    Channel(
-                        streamId = streamId,
-                        num = num,
-                        name = name,
-                        streamType = streamType,
-                        streamIcon = icon,
-                        epgChannelId = null,
-                        added = null,
-                        categoryId = categoryId,
-                        categoryName = categoryName,
-                        customSid = null,
-                        tvArchive = 0,
-                        directSource = directSource,
-                        tvArchiveDuration = 0
-                    )
-                )
-            }
-            Log.i(TAG, "Loaded JSON streams: ${list.size}")
-            list
-        }
-
-    private fun buildLiveStreamUrl(streamId: String): String {
-        return streamUrlFormat(streamId)
-    }
-
-    // ================= M3U FALLBACK =================
-
-    private suspend fun loadM3U(): List<Channel> =
-        withContext(Dispatchers.IO) {
-
-            val url =
-                "${prefs.serverUrl}/get.php?username=${prefs.username}&password=${prefs.password}&type=m3u_plus&output=ts"
-
-            val request = Request.Builder()
-                .url(url)
-                .header("User-Agent", "VLC/3.0.18 LibVLC/3.0.18")
+                .header("User-Agent", "IPTV Smarters Pro")
                 .header("Accept", "*/*")
                 .build()
 
-            val body = executeRequestWithRetry(request)
-            parseM3U(body)
-        }
+            val response = client.newCall(request).execute()
 
-    private fun parseM3U(content: String): List<Channel> {
-
-        val channels = mutableListOf<Channel>()
-        val lines = content.split("\n")
-
-        var name = ""
-        var logo: String? = null
-        var group: String? = null
-
-        for (i in lines.indices) {
-            val line = lines[i].trim()
-            if (line.startsWith("#EXTINF", ignoreCase = true)) {
-
-                val nameMatch = Regex(",(.*)").find(line)
-                name = nameMatch?.groupValues?.get(1)?.trim() ?: "Channel"
-
-                val logoMatch = Regex("""tvg-logo="([^"]*)"""").find(line)
-                logo = logoMatch?.groupValues?.get(1)
-
-                val groupMatch = Regex("""group-title="([^"]*)"""").find(line)
-                group = groupMatch?.groupValues?.get(1)
-
-                if (group.isNullOrBlank()) group = "Other"
+            if (!response.isSuccessful) {
+                throw IOException("HTTP ${response.code}")
             }
 
-            if (line.startsWith("http", ignoreCase = true) || line.startsWith("rtmp", ignoreCase = true)) {
-                channels.add(
-                    Channel(
-                        streamId = line.hashCode().toString(),
-                        num = "",
-                        name = name,
-                        streamType = "live",
-                        streamIcon = logo,
-                        epgChannelId = null,
-                        added = null,
-                        categoryId = group,
-                        categoryName = group,
-                        customSid = null,
-                        tvArchive = 0,
-                        directSource = line.trim(),
-                        tvArchiveDuration = 0
-                    )
-                )
-            }
+            response.body?.string() ?: ""
         }
 
-        Log.i(TAG, "Parsed M3U channels: ${channels.size}")
-        return channels
-    }
+    // ================= XTREAM =================
 
-    // ================= LIVE (UNIFIED) =================
-
-    private suspend fun ensureLiveDataLoaded() {
-        if (cachedLiveChannels != null && cachedLiveCategories != null) return
-
-        try {
-            val categories = loadJsonLiveCategories()
-            val channels = loadJsonLiveStreams()
-            cachedLiveCategories = categories
-            cachedLiveChannels = channels
-            Log.i(TAG, "Using JSON endpoints for live data")
-            return
-        } catch (ex: Exception) {
-            Log.w(TAG, "JSON endpoints failed, falling back to M3U: ${ex.message}")
-        }
-
-        val m3uChannels = loadM3U()
-        cachedLiveChannels = m3uChannels
-
-        val cats = m3uChannels.mapNotNull { it.categoryName }
-            .distinct()
-            .map { cat -> Category(categoryId = cat, categoryName = cat, parentId = 0) }
-
-        cachedLiveCategories = cats
-        Log.i(TAG, "Using M3U fallback for live data")
-    }
-
-    override suspend fun getLiveCategories(): Result<List<Category>> =
+    suspend fun loadXtream(
+        host: String,
+        username: String,
+        password: String
+    ): List<Channel> =
         withContext(Dispatchers.IO) {
-            runCatching {
-                ensureLiveDataLoaded()
-                cachedLiveCategories ?: emptyList()
-            }
-        }
 
-    override suspend fun getLiveStreams(categoryId: String?): Result<List<Channel>> =
-        withContext(Dispatchers.IO) {
-            runCatching {
-                ensureLiveDataLoaded()
-                val channels = cachedLiveChannels ?: emptyList()
-                if (categoryId.isNullOrEmpty()) channels
-                else channels.filter {
-                    it.categoryId == categoryId || it.categoryName == categoryId
+            val now = System.currentTimeMillis()
+
+            if (cachedChannels != null && now - cacheTime < cacheLifetime) {
+                return@withContext cachedChannels!!
+            }
+
+            try {
+
+                val base = normalizeHost(host)
+
+                val categoriesUrl =
+                    "$base/player_api.php?username=$username&password=$password&action=get_live_categories"
+
+                val streamsUrl =
+                    "$base/player_api.php?username=$username&password=$password&action=get_live_streams"
+
+                val categoriesBody = request(categoriesUrl)
+                val streamsBody = request(streamsUrl)
+
+                val categoriesArray = JSONArray(categoriesBody)
+                val streamsArray = JSONArray(streamsBody)
+
+                val categoryMap = mutableMapOf<String, String>()
+
+                for (i in 0 until categoriesArray.length()) {
+
+                    val obj = categoriesArray.getJSONObject(i)
+
+                    val id = obj.optString("category_id")
+                    val name = obj.optString("category_name")
+
+                    categoryMap[id] = name
                 }
+
+                val channels = mutableListOf<Channel>()
+
+                for (i in 0 until streamsArray.length()) {
+
+                    val obj = streamsArray.getJSONObject(i)
+
+                    val id = obj.optString("stream_id")
+                    val name = obj.optString("name")
+                    val icon = obj.optString("stream_icon")
+                    val categoryId = obj.optString("category_id")
+
+                    val direct = obj.optString("direct_source")
+
+                    val url =
+                        if (direct.isNotEmpty())
+                            direct
+                        else
+                            "$base/live/$username/$password/$id"
+
+                    channels.add(
+                        Channel(
+                            streamId = id,
+                            num = "",
+                            name = name,
+                            streamType = "live",
+                            streamIcon = icon,
+                            epgChannelId = null,
+                            added = null,
+                            categoryId = categoryId,
+                            categoryName = categoryMap[categoryId],
+                            customSid = null,
+                            tvArchive = 0,
+                            directSource = url,
+                            tvArchiveDuration = 0
+                        )
+                    )
+                }
+
+                cachedChannels = channels
+                cacheTime = now
+
+                channels
+
+            } catch (e: Exception) {
+
+                Log.e(TAG, "Xtream failed", e)
+
+                emptyList()
             }
         }
 
-    // ================= REQUIRED OVERRIDES =================
+    // ================= M3U =================
 
-    override suspend fun getLiveStreamsFromCache(categoryId: String?) = emptyList<Channel>()
-    override suspend fun getFavorites() = emptyList<String>()
-    override suspend fun isFavorite(itemId: String) = false
-    override suspend fun addFavorite(itemId: String) {}
-    override suspend fun removeBasicFavorite(itemId: String) {}
+    suspend fun loadM3U(url: String): List<Channel> =
+        withContext(Dispatchers.IO) {
 
-    override suspend fun addFavorite(
-        contentId: String,
-        name: String,
-        type: String,
-        icon: String?,
-        categoryId: String?
-    ) = Result.success(Unit)
+            val now = System.currentTimeMillis()
 
-    override suspend fun removeFavorite(contentId: String) = Result.success(Unit)
-    override suspend fun getFavoritesWithDetails() = Result.success(emptyList<FavoriteItem>())
-    override suspend fun addRecent(itemId: String, itemType: String) {}
-    override suspend fun getRecents() = emptyList<Recent>()
-    override suspend fun addRecentView(contentId: String, name: String, type: String, icon: String?, categoryId: String?) = Result.success(Unit)
-    override suspend fun getRecentViews() = Result.success(emptyList<RecentItem>())
-    override suspend fun getMovieCategories() = Result.success(emptyList<Category>())
-    override suspend fun getMovies(categoryId: String?) = Result.success(emptyList<Movie>())
-    override suspend fun getMoviesFromCache(categoryId: String?) = emptyList<Movie>()
-    override suspend fun getSeriesCategories() = Result.success(emptyList<Category>())
-    override suspend fun getSeries(categoryId: String?) = Result.success(emptyList<Series>())
-    override suspend fun getSeriesFromCache(seriesId: String) = emptyList<Series>()
-    override suspend fun getSeriesInfo(seriesId: String) = Result.success(emptyList<Episode>())
-    override suspend fun getEpisodesFromCache(seriesId: String) = emptyList<Episode>()
-    override suspend fun getEpgForChannel(channelId: String) = emptyList<EpgProgram>()
-    override suspend fun getEpgForChannelInTimeRange(channelId: String, startTime: Long, endTime: Long) = emptyList<EpgProgram>()
-    override suspend fun getCurrentProgram(channelId: String) = null
-    override suspend fun getUpcomingPrograms(channelId: String, limit: Int) = emptyList<EpgProgram>()
-    override suspend fun cacheEpgPrograms(programs: List<EpgProgram>) {}
-    override suspend fun cleanupOldEpgData(cutoffTime: Long) {}
-    override suspend fun searchChannels(query: String, categoryId: String?) = emptyList<Channel>()
-    override suspend fun searchMovies(query: String, categoryId: String?) = emptyList<Movie>()
-    override suspend fun searchSeries(query: String, categoryId: String?) = emptyList<Series>()
-    override suspend fun searchMoviesByGenre(genre: String) = emptyList<Movie>()
-    override suspend fun searchSeriesByGenre(genre: String) = emptyList<Series>()
-    override suspend fun syncAllData() = Result.success(Unit)
-    override suspend fun syncLiveTV() = Result.success(Unit)
-    override suspend fun syncMovies() = Result.success(Unit)
-    override suspend fun syncSeries() = Result.success(Unit)
-    override suspend fun updateChannelPosition(channelId: String, newPosition: Int) {}
-    override suspend fun getChannelsOrdered(categoryId: String?) = emptyList<Channel>()
-    override suspend fun loadM3UPlaylist(m3uContent: String) = Result.success(emptyList<Channel>())
-    override suspend fun loadM3UPlaylistFromUrl(url: String) = Result.success(emptyList<Channel>())
-    override suspend fun mergeM3UChannels(channels: List<Channel>) {}
+            if (cachedChannels != null && now - cacheTime < cacheLifetime) {
+                return@withContext cachedChannels!!
+            }
+
+            try {
+
+                val body = request(url)
+
+                val lines = body.split("\n")
+
+                val channels = mutableListOf<Channel>()
+
+                var name = ""
+                var logo: String? = null
+                var group: String? = null
+
+                for (line in lines) {
+
+                    if (line.startsWith("#EXTINF")) {
+
+                        val nameMatch = Regex(",(.*)").find(line)
+                        name = nameMatch?.groupValues?.get(1) ?: "Channel"
+
+                        val logoMatch = Regex("""tvg-logo="(.*?)"""").find(line)
+                        logo = logoMatch?.groupValues?.get(1)
+
+                        val groupMatch = Regex("""group-title="(.*?)"""").find(line)
+                        group = groupMatch?.groupValues?.get(1)
+                    }
+
+                    if (line.startsWith("http")) {
+
+                        channels.add(
+                            Channel(
+                                streamId = line.hashCode().toString(),
+                                num = "",
+                                name = name,
+                                streamType = "live",
+                                streamIcon = logo,
+                                epgChannelId = null,
+                                added = null,
+                                categoryId = group,
+                                categoryName = group,
+                                customSid = null,
+                                tvArchive = 0,
+                                directSource = line.trim(),
+                                tvArchiveDuration = 0
+                            )
+                        )
+                    }
+                }
+
+                cachedChannels = channels
+                cacheTime = now
+
+                channels
+
+            } catch (e: Exception) {
+
+                Log.e(TAG, "M3U failed", e)
+
+                emptyList()
+            }
+        }
+
+    // ================= UTIL =================
+
+    private fun normalizeHost(host: String): String {
+
+        var h = host.trim()
+
+        if (!h.startsWith("http://") && !h.startsWith("https://")) {
+            h = "http://$h"
+        }
+
+        return h.removeSuffix("/")
+    }
+
 }
