@@ -32,6 +32,9 @@ class MediaRepository(
             .build()
     }
 
+    private var cachedChannels: List<Channel>? = null
+    private var cacheTime = 0L
+
     // ================= REQUEST =================
 
     private suspend fun request(url: String): String =
@@ -39,8 +42,7 @@ class MediaRepository(
 
             val request = Request.Builder()
                 .url(url)
-                .header("User-Agent", "IPTV Smarters Pro")
-                .header("Accept", "*/*")
+                .header("User-Agent", "Mozilla/5.0")
                 .build()
 
             val response = client.newCall(request).execute()
@@ -63,46 +65,9 @@ class MediaRepository(
         return h.removeSuffix("/")
     }
 
-    // ================= LIVE CATEGORIES =================
-
-    suspend fun getLiveCategories(): Result<List<Category>> =
-        withContext(Dispatchers.IO) {
-
-            try {
-
-                val base = normalizeHost(prefs.serverUrl)
-
-                val url =
-                    "$base/player_api.php?username=${prefs.username}&password=${prefs.password}&action=get_live_categories"
-
-                val body = request(url)
-
-                val array = JSONArray(body)
-
-                val categories = mutableListOf<Category>()
-
-                for (i in 0 until array.length()) {
-
-                    val obj = array.getJSONObject(i)
-
-                    categories.add(
-                        Category(
-                            categoryId = obj.optString("category_id"),
-                            categoryName = obj.optString("category_name"),
-                            parentId = obj.optInt("parent_id")
-                        )
-                    )
-                }
-
-                Result.success(categories)
-
-            } catch (e: Exception) {
-
-                Log.e(TAG, "Categories error", e)
-
-                Result.failure(e)
-            }
-        }
+    private fun isM3U(url: String): Boolean {
+        return url.contains("get.php") || url.contains("m3u")
+    }
 
     // ================= LIVE STREAMS =================
 
@@ -111,14 +76,16 @@ class MediaRepository(
 
             try {
 
-                val base = normalizeHost(prefs.serverUrl)
+                val server = prefs.serverUrl
+
+                if (isM3U(server)) {
+                    return@withContext loadM3U(server)
+                }
+
+                val base = normalizeHost(server)
 
                 val url =
-                    if (categoryId.isNullOrBlank() || categoryId == "0") {
-                        "$base/player_api.php?username=${prefs.username}&password=${prefs.password}&action=get_live_streams"
-                    } else {
-                        "$base/player_api.php?username=${prefs.username}&password=${prefs.password}&action=get_live_streams&category_id=$categoryId"
-                    }
+                    "$base/player_api.php?username=${prefs.username}&password=${prefs.password}&action=get_live_streams"
 
                 val body = request(url)
 
@@ -133,7 +100,7 @@ class MediaRepository(
                     val id = obj.optString("stream_id")
 
                     val direct =
-                        "$base/live/${prefs.username}/${prefs.password}/$id"
+                        "$base/live/${prefs.username}/${prefs.password}/$id.m3u8"
 
                     channels.add(
                         Channel(
@@ -164,130 +131,12 @@ class MediaRepository(
             }
         }
 
-    // ================= MOVIES =================
-
-    suspend fun getMovies(categoryId: String?): Result<List<Movie>> =
-        withContext(Dispatchers.IO) {
-
-            try {
-
-                val base = normalizeHost(prefs.serverUrl)
-
-                val url =
-                    if (categoryId.isNullOrBlank() || categoryId == "0") {
-                        "$base/player_api.php?username=${prefs.username}&password=${prefs.password}&action=get_vod_streams"
-                    } else {
-                        "$base/player_api.php?username=${prefs.username}&password=${prefs.password}&action=get_vod_streams&category_id=$categoryId"
-                    }
-
-                val body = request(url)
-
-                val array = JSONArray(body)
-
-                val movies = mutableListOf<Movie>()
-
-                for (i in 0 until array.length()) {
-
-                    val obj = array.getJSONObject(i)
-
-                    movies.add(
-                        Movie(
-                            streamId = obj.optString("stream_id"),
-                            name = obj.optString("name"),
-                            streamIcon = obj.optString("stream_icon"),
-                            rating = obj.optString("rating"),
-                            year = obj.optString("year"),
-                            plot = obj.optString("plot"),
-                            cast = obj.optString("cast"),
-                            director = obj.optString("director"),
-                            genre = obj.optString("genre"),
-                            releaseDate = obj.optString("releaseDate"),
-                            durationSecs = null,
-                            duration = obj.optString("duration"),
-                            containerExtension = obj.optString("container_extension"),
-                            categoryId = obj.optString("category_id"),
-                            isFavorite = false
-                        )
-                    )
-                }
-
-                Result.success(movies)
-
-            } catch (e: Exception) {
-
-                Log.e(TAG, "Movies error", e)
-
-                Result.failure(e)
-            }
-        }
-
-    // ================= SERIES =================
-
-    suspend fun getSeries(categoryId: String?): Result<List<Series>> =
-        withContext(Dispatchers.IO) {
-
-            try {
-
-                val base = normalizeHost(prefs.serverUrl)
-
-                val url =
-                    if (categoryId.isNullOrBlank() || categoryId == "0") {
-                        "$base/player_api.php?username=${prefs.username}&password=${prefs.password}&action=get_series"
-                    } else {
-                        "$base/player_api.php?username=${prefs.username}&password=${prefs.password}&action=get_series&category_id=$categoryId"
-                    }
-
-                val body = request(url)
-
-                val array = JSONArray(body)
-
-                val seriesList = mutableListOf<Series>()
-
-                for (i in 0 until array.length()) {
-
-                    val obj = array.getJSONObject(i)
-
-                    seriesList.add(
-                        Series(
-                            seriesId = obj.optString("series_id"),
-                            name = obj.optString("name"),
-                            cover = obj.optString("cover"),
-                            plot = obj.optString("plot"),
-                            cast = obj.optString("cast"),
-                            director = obj.optString("director"),
-                            genre = obj.optString("genre"),
-                            releaseDate = obj.optString("releaseDate"),
-                            rating = obj.optString("rating"),
-                            categoryId = obj.optString("category_id"),
-                            isFavorite = false
-                        )
-                    )
-                }
-
-                Result.success(seriesList)
-
-            } catch (e: Exception) {
-
-                Log.e(TAG, "Series error", e)
-
-                Result.failure(e)
-            }
-        }
-
-    // ================= MEMORY CACHE =================
-
-    private var cachedChannels: List<Channel>? = null
-    private var cacheTime: Long = 0
-    private val cacheLifetime = 5 * 60 * 1000L
-
     // ================= LOAD M3U =================
 
     suspend fun loadM3U(url: String): Result<List<Channel>> =
         withContext(Dispatchers.IO) {
 
-            val now = System.currentTimeMillis()
-
-            if (cachedChannels != null && now - cacheTime < cacheLifetime) {
+            if (cachedChannels != null && System.currentTimeMillis() - cacheTime < 300000) {
                 return@withContext Result.success(cachedChannels!!)
             }
 
@@ -295,33 +144,33 @@ class MediaRepository(
 
                 val body = request(url)
 
-                val lines = body.split("\n")
-
                 val channels = mutableListOf<Channel>()
 
                 var name = ""
                 var logo: String? = null
                 var group: String? = null
 
-                for (line in lines) {
+                for (line in body.lineSequence()) {
 
-                    if (line.startsWith("#EXTINF")) {
+                    val l = line.trim()
 
-                        val nameMatch = Regex(",(.*)").find(line)
+                    if (l.startsWith("#EXTINF")) {
+
+                        val nameMatch = Regex(",(.*)").find(l)
                         name = nameMatch?.groupValues?.get(1) ?: "Channel"
 
-                        val logoMatch = Regex("""tvg-logo="(.*?)"""").find(line)
+                        val logoMatch = Regex("""tvg-logo="(.*?)"""").find(l)
                         logo = logoMatch?.groupValues?.get(1)
 
-                        val groupMatch = Regex("""group-title="(.*?)"""").find(line)
+                        val groupMatch = Regex("""group-title="(.*?)"""").find(l)
                         group = groupMatch?.groupValues?.get(1)
                     }
 
-                    if (line.startsWith("http")) {
+                    if (l.startsWith("http")) {
 
                         channels.add(
                             Channel(
-                                streamId = line.hashCode().toString(),
+                                streamId = l.hashCode().toString(),
                                 num = "",
                                 name = name,
                                 streamType = "live",
@@ -332,7 +181,7 @@ class MediaRepository(
                                 categoryName = group,
                                 customSid = null,
                                 tvArchive = 0,
-                                directSource = line.trim(),
+                                directSource = l,
                                 tvArchiveDuration = 0
                             )
                         )
@@ -340,52 +189,13 @@ class MediaRepository(
                 }
 
                 cachedChannels = channels
-                cacheTime = now
+                cacheTime = System.currentTimeMillis()
 
                 Result.success(channels)
 
             } catch (e: Exception) {
 
                 Log.e(TAG, "M3U error", e)
-
-                Result.failure(e)
-            }
-        }
-
-    // ================= LOAD DIRECT URL =================
-
-    suspend fun loadChannelsFromUrl(url: String): Result<List<Channel>> =
-        withContext(Dispatchers.IO) {
-
-            try {
-
-                if (url.contains("m3u")) {
-                    return@withContext loadM3U(url)
-                }
-
-                val channels = listOf(
-                    Channel(
-                        streamId = "1",
-                        num = "1",
-                        name = "Live Stream",
-                        streamType = "live",
-                        streamIcon = null,
-                        epgChannelId = null,
-                        added = null,
-                        categoryId = "Live",
-                        categoryName = "Live",
-                        customSid = null,
-                        tvArchive = 0,
-                        directSource = url,
-                        tvArchiveDuration = 0
-                    )
-                )
-
-                Result.success(channels)
-
-            } catch (e: Exception) {
-
-                Log.e(TAG, "URL load error", e)
 
                 Result.failure(e)
             }
