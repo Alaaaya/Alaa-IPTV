@@ -56,6 +56,7 @@ class MainActivity : AppCompatActivity() {
         setupButtons()
 
         when (currentMode) {
+
             MediaMode.MOVIES -> {
                 binding.moduleTitle.text = "الأفلام"
                 loadMovies()
@@ -76,13 +77,11 @@ class MainActivity : AppCompatActivity() {
     private fun setupRecyclerViews() {
 
         categoryAdapter = CategoryAdapter(emptyList()) { category ->
-
             binding.categoryTitle.text = category.categoryName
             loadChannelsByCategory(category)
         }
 
         binding.categoriesRecyclerView.apply {
-
             layoutManager = LinearLayoutManager(this@MainActivity)
             adapter = categoryAdapter
             isFocusable = true
@@ -96,7 +95,6 @@ class MainActivity : AppCompatActivity() {
         )
 
         binding.channelsRecyclerView.apply {
-
             layoutManager = LinearLayoutManager(this@MainActivity)
             adapter = channelAdapter
             isFocusable = true
@@ -105,7 +103,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupButtons() {
-
         binding.backButton.setOnClickListener {
             finish()
         }
@@ -122,6 +119,7 @@ class MainActivity : AppCompatActivity() {
 
                     allChannels = channels
 
+                    // استخراج الفئات من القنوات (M3U)
                     val categories =
                         channels
                             .mapNotNull { it.categoryName }
@@ -147,6 +145,7 @@ class MainActivity : AppCompatActivity() {
 
                     binding.categoriesRecyclerView.requestFocus()
                 }
+
                 .onFailure {
 
                     Toast.makeText(
@@ -224,6 +223,7 @@ class MainActivity : AppCompatActivity() {
 
                     binding.channelsRecyclerView.requestFocus()
                 }
+
                 .onFailure {
 
                     Toast.makeText(
@@ -274,6 +274,7 @@ class MainActivity : AppCompatActivity() {
 
                     binding.channelsRecyclerView.requestFocus()
                 }
+
                 .onFailure {
 
                     Toast.makeText(
