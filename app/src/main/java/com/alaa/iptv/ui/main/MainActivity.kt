@@ -2,7 +2,6 @@ package com.alaa.iptv.ui.main
 
 import android.content.Intent
 import android.os.Bundle
-import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -38,6 +37,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -45,6 +45,7 @@ class MainActivity : AppCompatActivity() {
         repository = MediaRepository(prefs, this)
 
         val mode = intent.getStringExtra("MODE") ?: "live"
+
         currentMode = when (mode) {
             "movies" -> MediaMode.MOVIES
             "series" -> MediaMode.SERIES
@@ -59,10 +60,12 @@ class MainActivity : AppCompatActivity() {
                 binding.moduleTitle.text = "الأفلام"
                 loadMovies()
             }
+
             MediaMode.SERIES -> {
                 binding.moduleTitle.text = "المسلسلات"
                 loadSeries()
             }
+
             MediaMode.LIVE_TV -> {
                 binding.moduleTitle.text = "القنوات"
                 loadLiveTV()
@@ -73,11 +76,13 @@ class MainActivity : AppCompatActivity() {
     private fun setupRecyclerViews() {
 
         categoryAdapter = CategoryAdapter(emptyList()) { category ->
+
             binding.categoryTitle.text = category.categoryName
             loadChannelsByCategory(category)
         }
 
         binding.categoriesRecyclerView.apply {
+
             layoutManager = LinearLayoutManager(this@MainActivity)
             adapter = categoryAdapter
             isFocusable = true
@@ -87,10 +92,11 @@ class MainActivity : AppCompatActivity() {
         channelAdapter = ChannelAdapter(
             emptyList(),
             onChannelClick = { channel -> updatePreview(channel) },
-            onChannelLongClick = { }
+            onChannelLongClick = { channel -> playChannel(channel) }
         )
 
         binding.channelsRecyclerView.apply {
+
             layoutManager = LinearLayoutManager(this@MainActivity)
             adapter = channelAdapter
             isFocusable = true
@@ -99,6 +105,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupButtons() {
+
         binding.backButton.setOnClickListener {
             finish()
         }
@@ -110,41 +117,41 @@ class MainActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
 
-            // ---------- CATEGORIES ----------
+            repository.getLiveStreams(null)
+                .onSuccess { channels ->
 
-            repository.getLiveCategories()
-                .onSuccess { categories ->
+                    allChannels = channels
+
+                    val categories =
+                        channels
+                            .mapNotNull { it.categoryName }
+                            .distinct()
+                            .map {
+                                Category(
+                                    categoryId = it,
+                                    categoryName = it,
+                                    parentId = 0
+                                )
+                            }
 
                     val allCats =
                         listOf(Category("0", "كل القنوات", 0)) + categories
 
                     categoryAdapter.updateCategories(allCats)
-                    binding.categoriesRecyclerView.requestFocus()
-                }
-                .onFailure { error ->
-                    Toast.makeText(
-                        this@MainActivity,
-                        "Categories error: ${error.message}",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
 
-            // ---------- STREAMS ----------
-
-            repository.getLiveStreams(null)
-                .onSuccess { channels ->
-
-                    allChannels = channels
                     channelAdapter.updateChannels(channels)
 
                     if (channels.isNotEmpty()) {
                         updatePreview(channels[0])
                     }
+
+                    binding.categoriesRecyclerView.requestFocus()
                 }
-                .onFailure { error ->
+                .onFailure {
+
                     Toast.makeText(
                         this@MainActivity,
-                        "Streams error: ${error.message}",
+                        "Failed to load channels",
                         Toast.LENGTH_LONG
                     ).show()
                 }
@@ -154,68 +161,74 @@ class MainActivity : AppCompatActivity() {
     private fun loadChannelsByCategory(category: Category) {
 
         if (category.categoryId == "0") {
+
             channelAdapter.updateChannels(allChannels)
-            if (allChannels.isNotEmpty()) updatePreview(allChannels[0])
+
+            if (allChannels.isNotEmpty())
+                updatePreview(allChannels[0])
+
             return
         }
 
-        lifecycleScope.launch {
-            repository.getLiveStreams(category.categoryId)
-                .onSuccess { channels ->
-                    channelAdapter.updateChannels(channels)
-                    if (channels.isNotEmpty()) updatePreview(channels[0])
-                }
-                .onFailure { error ->
-                    Toast.makeText(
-                        this@MainActivity,
-                        "Category streams error: ${error.message}",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-        }
+        val filtered =
+            allChannels.filter {
+                it.categoryName == category.categoryName
+            }
+
+        channelAdapter.updateChannels(filtered)
+
+        if (filtered.isNotEmpty())
+            updatePreview(filtered[0])
     }
 
     // ================= MOVIES =================
 
     private fun loadMovies() {
+
         lifecycleScope.launch {
+
             repository.getMovies(null)
                 .onSuccess { movies ->
 
-                    val channels = movies.map { movie ->
-                        Channel(
-                            streamId = movie.streamId,
-                            num = movie.streamId,
-                            name = movie.name,
-                            streamType = "movie",
-                            streamIcon = movie.streamIcon,
-                            epgChannelId = null,
-                            added = null,
-                            categoryId = movie.categoryId,
-                            categoryName = null,
-                            customSid = null,
-                            tvArchive = 0,
-                            directSource = movie.getStreamUrl(
-                                prefs.serverUrl,
-                                prefs.username,
-                                prefs.password
-                            ),
-                            tvArchiveDuration = 0,
-                            isFavorite = movie.isFavorite
-                        )
-                    }
+                    val channels =
+                        movies.map { movie ->
+
+                            Channel(
+                                streamId = movie.streamId,
+                                num = movie.streamId,
+                                name = movie.name,
+                                streamType = "movie",
+                                streamIcon = movie.streamIcon,
+                                epgChannelId = null,
+                                added = null,
+                                categoryId = movie.categoryId,
+                                categoryName = null,
+                                customSid = null,
+                                tvArchive = 0,
+                                directSource = movie.getStreamUrl(
+                                    prefs.serverUrl,
+                                    prefs.username,
+                                    prefs.password
+                                ),
+                                tvArchiveDuration = 0,
+                                isFavorite = movie.isFavorite
+                            )
+                        }
 
                     allChannels = channels
+
                     channelAdapter.updateChannels(channels)
 
-                    if (channels.isNotEmpty()) updatePreview(channels[0])
+                    if (channels.isNotEmpty())
+                        updatePreview(channels[0])
 
                     binding.channelsRecyclerView.requestFocus()
                 }
-                .onFailure { error ->
+                .onFailure {
+
                     Toast.makeText(
                         this@MainActivity,
-                        "Movies error: ${error.message}",
+                        "Movies load error",
                         Toast.LENGTH_LONG
                     ).show()
                 }
@@ -225,40 +238,47 @@ class MainActivity : AppCompatActivity() {
     // ================= SERIES =================
 
     private fun loadSeries() {
+
         lifecycleScope.launch {
+
             repository.getSeries(null)
                 .onSuccess { seriesList ->
 
-                    val channels = seriesList.map { series ->
-                        Channel(
-                            streamId = series.seriesId,
-                            num = series.seriesId,
-                            name = series.name,
-                            streamType = "series",
-                            streamIcon = series.cover,
-                            epgChannelId = null,
-                            added = null,
-                            categoryId = series.categoryId,
-                            categoryName = null,
-                            customSid = null,
-                            tvArchive = 0,
-                            directSource = null,
-                            tvArchiveDuration = 0,
-                            isFavorite = series.isFavorite
-                        )
-                    }
+                    val channels =
+                        seriesList.map { series ->
+
+                            Channel(
+                                streamId = series.seriesId,
+                                num = series.seriesId,
+                                name = series.name,
+                                streamType = "series",
+                                streamIcon = series.cover,
+                                epgChannelId = null,
+                                added = null,
+                                categoryId = series.categoryId,
+                                categoryName = null,
+                                customSid = null,
+                                tvArchive = 0,
+                                directSource = null,
+                                tvArchiveDuration = 0,
+                                isFavorite = series.isFavorite
+                            )
+                        }
 
                     allChannels = channels
+
                     channelAdapter.updateChannels(channels)
 
-                    if (channels.isNotEmpty()) updatePreview(channels[0])
+                    if (channels.isNotEmpty())
+                        updatePreview(channels[0])
 
                     binding.channelsRecyclerView.requestFocus()
                 }
-                .onFailure { error ->
+                .onFailure {
+
                     Toast.makeText(
                         this@MainActivity,
-                        "Series error: ${error.message}",
+                        "Series load error",
                         Toast.LENGTH_LONG
                     ).show()
                 }
@@ -268,7 +288,9 @@ class MainActivity : AppCompatActivity() {
     // ================= PREVIEW =================
 
     private fun updatePreview(channel: Channel) {
+
         selectedChannel = channel
+
         binding.previewTitle.text = channel.name
 
         Glide.with(this)
@@ -281,12 +303,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun playChannel(channel: Channel) {
 
-        val url = channel.directSource
-            ?: channel.getStreamUrl(
-                prefs.serverUrl,
-                prefs.username,
-                prefs.password
-            )
+        val url =
+            channel.directSource
+                ?: channel.getStreamUrl(
+                    prefs.serverUrl,
+                    prefs.username,
+                    prefs.password
+                )
 
         startActivity(
             Intent(this, PlayerActivity::class.java)
