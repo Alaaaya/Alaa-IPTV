@@ -82,7 +82,7 @@ class MediaRepository(
 
     private fun buildApiUrl(action: String, extra: String = ""): String {
         val base = normalizeHost(prefs.serverUrl)
-        return "$base/player_api.php?username=${prefs.username}&password=${prefs.password}&action=$action$extra"
+        return "$base/player_api.php?username=${prefs.username}&password=${prefs.password}&action=$action$extra"
     }
 
     // ================= LIVE STREAMS =================
@@ -273,6 +273,14 @@ class MediaRepository(
                             name = obj.optString("name"),
                             streamIcon = obj.optString("stream_icon"),
                             rating = obj.optString("rating"),
+                            year = obj.optString("year", ""),
+                            plot = obj.optString("plot", ""),
+                            cast = obj.optString("cast", ""),
+                            director = obj.optString("director", ""),
+                            genre = obj.optString("genre", ""),
+                            releaseDate = obj.optString("releaseDate", ""),
+                            durationSecs = obj.optString("durationSecs", ""),
+                            duration = obj.optString("duration", ""),
                             categoryId = obj.optString("category_id"),
                             containerExtension = obj.optString("container_extension", "mp4"),
                             isFavorite = false
@@ -323,7 +331,10 @@ class MediaRepository(
                             name = obj.optString("name"),
                             cover = obj.optString("cover"),
                             plot = obj.optString("plot"),
+                            cast = obj.optString("cast", ""),
+                            director = obj.optString("director", ""),
                             genre = obj.optString("genre"),
+                            releaseDate = obj.optString("releaseDate", ""),
                             categoryId = obj.optString("category_id"),
                             rating = obj.optString("rating"),
                             isFavorite = false
@@ -369,8 +380,8 @@ class MediaRepository(
 
                     if (l.startsWith("#EXTINF")) {
                         name = Regex(",(.+)$").find(l)?.groupValues?.get(1)?.trim() ?: "Channel"
-                        logo = Regex("""tvg-logo="([^"]*?)"""").find(l)?.groupValues?.get(1)
-                        group = Regex("""group-title="([^"]*?)"""").find(l)?.groupValues?.get(1)
+                        logo = Regex("""tvg-logo="([^"]*?)""").find(l)?.groupValues?.get(1)
+                        group = Regex("""group-title="([^"]*?)""").find(l)?.groupValues?.get(1)
                     }
 
                     if (l.startsWith("http://") || l.startsWith("https://") || l.startsWith("rtmp")) {
