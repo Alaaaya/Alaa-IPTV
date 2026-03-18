@@ -1,88 +1,88 @@
-<?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/dark_background"
-    android:padding="48dp">
+package com.alaa.iptv.ui.login
 
-    <LinearLayout
-        android:id="@+id/loginContainer"
-        android:layout_width="600dp"
-        android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
-        android:orientation="vertical"
-        android:background="@drawable/glassmorphism_background"
-        android:padding="48dp">
+import android.content.Intent
+import android.os.Bundle
+import android.view.View
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import com.alaa.iptv.data.preferences.AppPreferences
+import com.alaa.iptv.databinding.ActivityLoginBinding
+import com.alaa.iptv.ui.dashboard.DashboardActivity
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/login_title"
-            android:textColor="@color/text_primary"
-            android:textSize="32sp"
-            android:textStyle="bold"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginBottom="32dp" />
+class LoginActivity : AppCompatActivity() {
 
-        <EditText
-            android:id="@+id/serverUrlInput"
-            style="@style/InputField"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="@string/server_url"
-            android:inputType="textUri"
-            android:layout_marginBottom="16dp"
-            android:nextFocusDown="@id/usernameInput" />
+    private lateinit var binding: ActivityLoginBinding
+    private lateinit var prefs: AppPreferences
 
-        <EditText
-            android:id="@+id/usernameInput"
-            style="@style/InputField"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="@string/username"
-            android:inputType="text"
-            android:layout_marginBottom="16dp"
-            android:nextFocusUp="@id/serverUrlInput"
-            android:nextFocusDown="@id/passwordInput" />
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        binding = ActivityLoginBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        <EditText
-            android:id="@+id/passwordInput"
-            style="@style/InputField"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="@string/password"
-            android:inputType="textPassword"
-            android:layout_marginBottom="24dp"
-            android:nextFocusUp="@id/usernameInput"
-            android:nextFocusDown="@id/loginButton" />
+        prefs = AppPreferences(this)
 
-        <Button
-            android:id="@+id/loginButton"
-            style="@style/PrimaryButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/login"
-            android:nextFocusUp="@id/passwordInput" />
+        if (prefs.isLoggedIn) {
+            navigateToDashboard()
+            return
+        }
 
-        <ProgressBar
-            android:id="@+id/progressBar"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginTop="16dp"
-            android:visibility="gone"
-            android:indeterminateTint="@color/accent_blue" />
+        binding.serverUrlInput.setText(prefs.serverUrl)
+        binding.usernameInput.setText(prefs.username)
+        binding.passwordInput.setText(prefs.password)
+        binding.serverUrlInput.requestFocus()
 
-        <TextView
-            android:id="@+id/errorText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginTop="16dp"
-            android:textColor="@color/error_color"
-            android:textSize="14sp"
-            android:visibility="gone" />
+        binding.loginButton.setOnClickListener {
+            performLogin()
+        }
+    }
 
-    </LinearLayout>
+    private fun performLogin() {
+        val serverUrl = binding.serverUrlInput.text.toString().trim()
+        val username = binding.usernameInput.text.toString().trim()
+        val password = binding.passwordInput.text.toString().trim()
 
-</RelativeLayout>
+        if (serverUrl.isEmpty() || !serverUrl.startsWith("http")) {
+            showError("Please enter a valid server URL")
+            return
+        }
+        if (username.isEmpty()) {
+            showError("Please enter your username")
+            return
+        }
+        if (password.isEmpty()) {
+            showError("Please enter your password")
+            return
+        }
+
+        showLoading(true)
+
+        prefs.serverUrl = serverUrl
+        prefs.username = username
+        prefs.password = password
+        prefs.isLoggedIn = true
+
+        showLoading(false)
+        navigateToDashboard()
+    }
+
+    private fun showLoading(show: Boolean) {
+        binding.progressBar.visibility = if (show) View.VISIBLE else View.GONE
+        binding.loginButton.isEnabled = !show
+        binding.serverUrlInput.isEnabled = !show
+        binding.usernameInput.isEnabled = !show
+        binding.passwordInput.isEnabled = !show
+    }
+
+    private fun showError(message: String) {
+        binding.errorText.text = message
+        binding.errorText.visibility = View.VISIBLE
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+    }
+
+    private fun navigateToDashboard() {
+        val intent = Intent(this, DashboardActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(intent)
+        finish()
+    }
+}
