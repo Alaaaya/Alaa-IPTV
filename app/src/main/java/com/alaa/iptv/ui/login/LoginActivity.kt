@@ -40,17 +40,28 @@ class LoginActivity : AppCompatActivity() {
 
     private fun performLogin() {
         val serverUrl = binding.serverUrlInput.text.toString().trim()
+        val username = binding.usernameInput.text.toString().trim()
+        val password = binding.passwordInput.text.toString().trim()
 
-        // تحقق بسيط من رابط M3U
+        // التحقق من المدخلات
         if (serverUrl.isEmpty() || !serverUrl.startsWith("http")) {
-            showError("Please enter a valid M3U URL")
+            showError("الرجاء إدخال رابط سيرفر صحيح")
+            return
+        }
+
+        // إذا لم يكن رابط M3U مباشر، نتحقق من اسم المستخدم وكلمة المرور
+        val isM3U = serverUrl.contains(".m3u") || serverUrl.contains("get.php")
+        if (!isM3U && (username.isEmpty() || password.isEmpty())) {
+            showError("الرجاء إدخال اسم المستخدم وكلمة المرور")
             return
         }
 
         showLoading(true)
 
-        // نحفظ رابط M3U فقط
+        // حفظ البيانات في الإعدادات
         prefs.serverUrl = serverUrl
+        prefs.username = username
+        prefs.password = password
         prefs.isLoggedIn = true
 
         showLoading(false)
