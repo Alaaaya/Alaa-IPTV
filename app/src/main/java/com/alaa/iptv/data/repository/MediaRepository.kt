@@ -82,7 +82,7 @@ class MediaRepository(
 
     private fun buildApiUrl(action: String, extra: String = ""): String {
         val base = normalizeHost(prefs.serverUrl)
-        return "$base/player_api.php?username=${prefs.username}&password=${prefs.password}&action=$action$extra"
+        return "$base/player_api.php?username=${prefs.username}&password=${prefs.password}&action=$action$extra"
     }
 
     // ================= LIVE STREAMS =================
