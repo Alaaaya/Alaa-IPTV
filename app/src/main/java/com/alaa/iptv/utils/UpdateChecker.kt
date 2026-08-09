@@ -23,7 +23,7 @@ class UpdateChecker(private val context: Context) {
     companion object {
         private const val TAG = "UpdateChecker"
         private const val GITHUB_API = "https://api.github.com/repos/Alaaaya/Alaa-IPTV/releases/latest"
-        private const val CURRENT_VERSION = "2.0.0" // Change this with each release
+        private const val CURRENT_VERSION = "2.0.0"
     }
 
     suspend fun checkForUpdate(showToast: Boolean = false) {
@@ -94,18 +94,15 @@ class UpdateChecker(private val context: Context) {
         releaseUrl: String,
         releaseNotes: String
     ) {
+        val message = "Version $version is now available.\n\nCurrent: v$CURRENT_VERSION\n\nWould you like to update?"
+
         AlertDialog.Builder(context)
-            .setTitle("🎉 New Version Available!")
-            .setMessage("Version $version is now available.
-
-Current: v$CURRENT_VERSION
-
-Would you like to update?")
-            .setPositiveButton("📥 Download & Install") { _, _ ->
+            .setTitle("New Version Available!")
+            .setMessage(message)
+            .setPositiveButton("Download & Install") { _, _ ->
                 if (downloadUrl.isNotEmpty()) {
                     downloadAndInstall(downloadUrl, version)
                 } else {
-                    // Open release page if no direct download
                     context.startActivity(
                         Intent(Intent.ACTION_VIEW, Uri.parse(releaseUrl))
                     )
@@ -139,7 +136,6 @@ Would you like to update?")
 
         Toast.makeText(context, "Downloading update...", Toast.LENGTH_LONG).show()
 
-        // Listen for download completion
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
                 val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
