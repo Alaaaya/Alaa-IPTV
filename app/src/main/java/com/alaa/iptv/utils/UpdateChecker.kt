@@ -28,7 +28,7 @@ class UpdateChecker(private val context: Context) {
 
     suspend fun checkForUpdate(showToast: Boolean = false) {
         try {
-            val latestVersion = withContext(Dispatchers.IO) {
+            val releaseInfo = withContext(Dispatchers.IO) {
                 val connection = URL(GITHUB_API).openConnection()
                 connection.setRequestProperty("Accept", "application/vnd.github.v3+json")
                 connection.setRequestProperty("User-Agent", "Alaa-IPTV-App")
@@ -46,10 +46,11 @@ class UpdateChecker(private val context: Context) {
                 val releaseUrl = json.getString("html_url")
                 val releaseNotes = json.optString("body", "")
 
-                Triple(tagName, downloadUrl, releaseUrl)
+                Triple(tagName, downloadUrl, releaseUrl) to releaseNotes
             }
 
-            val (latestVersion, downloadUrl, releaseUrl) = latestVersion
+            val (versionInfo, releaseNotes) = releaseInfo
+            val (latestVersion, downloadUrl, releaseUrl) = versionInfo
 
             if (isNewerVersion(latestVersion, CURRENT_VERSION)) {
                 showUpdateDialog(latestVersion, downloadUrl, releaseUrl, releaseNotes)
@@ -95,7 +96,11 @@ class UpdateChecker(private val context: Context) {
     ) {
         AlertDialog.Builder(context)
             .setTitle("🎉 New Version Available!")
-            .setMessage("Version $version is now available.\n\nCurrent: v$CURRENT_VERSION\n\nWould you like to update?")
+            .setMessage("Version $version is now available.
+
+Current: v$CURRENT_VERSION
+
+Would you like to update?")
             .setPositiveButton("📥 Download & Install") { _, _ ->
                 if (downloadUrl.isNotEmpty()) {
                     downloadAndInstall(downloadUrl, version)
