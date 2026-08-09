@@ -12,7 +12,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.alaa.iptv.R
-import com.alaa.iptv.data.models.Category
 import com.alaa.iptv.data.models.Channel
 import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.data.repository.MediaRepository
@@ -42,8 +41,10 @@ class DashboardActivity : AppCompatActivity() {
 
     private val updateTimeRunnable = object : Runnable {
         override fun run() {
-            updateDateTime()
-            handler.postDelayed(this, 60000) // update every minute
+            if (_binding != null) {
+                updateDateTime()
+                handler.postDelayed(this, 60000)
+            }
         }
     }
 
@@ -61,7 +62,11 @@ class DashboardActivity : AppCompatActivity() {
         setupContinueWatching()
         setupBottomInfo()
         startClock()
-        loadContent()
+
+        // Load content with delay to ensure UI is ready
+        binding.root.post {
+            loadContent()
+        }
     }
 
     // ================= SIDEBAR =================
@@ -71,11 +76,11 @@ class DashboardActivity : AppCompatActivity() {
             SidebarItem("Live TV", R.drawable.ic_live_tv, true) { openMain(MainActivity.MODE_LIVE) },
             SidebarItem("Movies", R.drawable.ic_movies, false) { openMain(MainActivity.MODE_MOVIES) },
             SidebarItem("Series", R.drawable.ic_series, false) { openMain(MainActivity.MODE_SERIES) },
-            SidebarItem("Favorites", R.drawable.ic_favorite, false) { /* TODO */ },
-            SidebarItem("Recently", R.drawable.ic_recent, false) { /* TODO */ },
-            SidebarItem("Categories", R.drawable.ic_categories, false) { /* TODO */ },
-            SidebarItem("Change Server", R.drawable.ic_server, false) { /* TODO */ },
-            SidebarItem("Settings", R.drawable.ic_settings, false) { /* TODO */ }
+            SidebarItem("Favorites", R.drawable.ic_favorite, false) { showToast("Coming soon") },
+            SidebarItem("Recently", R.drawable.ic_recent, false) { showToast("Coming soon") },
+            SidebarItem("Categories", R.drawable.ic_categories, false) { showToast("Coming soon") },
+            SidebarItem("Change Server", R.drawable.ic_server, false) { showToast("Coming soon") },
+            SidebarItem("Settings", R.drawable.ic_settings, false) { showToast("Coming soon") }
         )
 
         val adapter = SidebarAdapter(items) { item ->
@@ -95,14 +100,12 @@ class DashboardActivity : AppCompatActivity() {
     // ================= HERO BANNER =================
 
     private fun setupHeroBanner() {
-        // Static hero for now - can be dynamic based on featured content
         binding.heroTitle.text = "Live TV"
         binding.heroSubtitle.text = "Watch 1000+ Live Channels"
         binding.heroWatchNow.setOnClickListener {
             openMain(MainActivity.MODE_LIVE)
         }
 
-        // Load hero background
         Glide.with(this)
             .load(R.drawable.bg_hero_sports)
             .placeholder(R.drawable.bg_dark_pattern)
@@ -112,15 +115,19 @@ class DashboardActivity : AppCompatActivity() {
     // ================= CATEGORIES =================
 
     private fun setupCategories() {
-        // Will be populated after loading content
+        // Placeholder - will be populated after loading
+        updateCategories(emptyList())
     }
 
     private fun updateCategories(categories: List<CategoryItem>) {
+        if (_binding == null) return
+
         val adapter = CategoryCardAdapter(categories) { category ->
             when (category.type) {
                 "live" -> openMain(MainActivity.MODE_LIVE)
                 "movie" -> openMain(MainActivity.MODE_MOVIES)
                 "series" -> openMain(MainActivity.MODE_SERIES)
+                else -> openMain(MainActivity.MODE_LIVE)
             }
         }
 
@@ -133,10 +140,12 @@ class DashboardActivity : AppCompatActivity() {
     // ================= CONTINUE WATCHING =================
 
     private fun setupContinueWatching() {
-        // Will show recent/mixed content
+        updateContinueWatching(emptyList())
     }
 
     private fun updateContinueWatching(items: List<ContinueWatchingItem>) {
+        if (_binding == null) return
+
         val adapter = ContinueWatchingAdapter(items) { item ->
             playContent(item)
         }
@@ -150,6 +159,7 @@ class DashboardActivity : AppCompatActivity() {
     // ================= BOTTOM INFO =================
 
     private fun setupBottomInfo() {
+        if (_binding == null) return
         binding.infoSecure.text = "Secure & Safe"
         binding.infoSecureDesc.text = "Your data is protected"
         binding.infoUptime.text = "99.9% Uptime"
@@ -168,122 +178,176 @@ class DashboardActivity : AppCompatActivity() {
     }
 
     private fun updateDateTime() {
-        val now = Date()
-        val timeFormat = SimpleDateFormat("hh:mm a", Locale("ar"))
-        binding.timeText.text = timeFormat.format(now)
+        if (_binding == null) return
+        try {
+            val now = Date()
+            val timeFormat = SimpleDateFormat("hh:mm a", Locale.getDefault())
+            binding.timeText.text = timeFormat.format(now)
 
-        val dateFormat = SimpleDateFormat("EEEE, dd MMMM yyyy", Locale("ar"))
-        binding.dateText.text = dateFormat.format(now)
+            val dateFormat = SimpleDateFormat("EEEE, dd MMMM yyyy", Locale.getDefault())
+            binding.dateText.text = dateFormat.format(now)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error updating date/time", e)
+        }
     }
 
     // ================= CONTENT LOADING =================
 
     private fun loadContent() {
         lifecycleScope.launch {
+            var hasError = false
+
+            // Load channels
             try {
-                // Load channels for counts
                 val channelsResult = repository.getLiveStreams(null)
-                val channels = channelsResult.getOrDefault(emptyList())
-                allChannels = channels
-
-                // Load movies
-                val moviesResult = repository.getMovies(null)
-                val movies = moviesResult.getOrDefault(emptyList())
-                allMovies = movies.map { movie ->
-                    Channel(
-                        streamId = movie.streamId,
-                        num = movie.streamId,
-                        name = movie.name,
-                        streamType = "movie",
-                        streamIcon = movie.streamIcon,
-                        epgChannelId = null,
-                        added = null,
-                        categoryId = movie.categoryId,
-                        categoryName = null,
-                        customSid = null,
-                        tvArchive = 0,
-                        directSource = movie.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password),
-                        tvArchiveDuration = 0,
-                        isFavorite = movie.isFavorite
-                    )
+                if (channelsResult.isSuccess) {
+                    allChannels = channelsResult.getOrDefault(emptyList())
+                    Log.d(TAG, "Loaded ${allChannels.size} channels")
+                } else {
+                    Log.e(TAG, "Failed to load channels: ${channelsResult.exceptionOrNull()?.message}")
+                    hasError = true
                 }
-
-                // Load series
-                val seriesResult = repository.getSeries(null)
-                val seriesList = seriesResult.getOrDefault(emptyList())
-                allSeries = seriesList.map { series ->
-                    Channel(
-                        streamId = series.seriesId,
-                        num = series.seriesId,
-                        name = series.name,
-                        streamType = "series",
-                        streamIcon = series.cover,
-                        epgChannelId = null,
-                        added = null,
-                        categoryId = series.categoryId,
-                        categoryName = null,
-                        customSid = null,
-                        tvArchive = 0,
-                        directSource = null,
-                        tvArchiveDuration = 0,
-                        isFavorite = series.isFavorite
-                    )
-                }
-
-                // Build category cards
-                val categories = mutableListOf<CategoryItem>()
-                categories.add(CategoryItem("All Channels", channels.size, R.drawable.ic_live_tv, "#E53935", "live"))
-                categories.add(CategoryItem("Sports", channels.count { it.categoryName?.contains("sport", true) == true || it.name.contains("sport", true) }, R.drawable.ic_sports, "#1E88E5", "live"))
-                categories.add(CategoryItem("News", channels.count { it.categoryName?.contains("news", true) == true || it.name.contains("news", true) }, R.drawable.ic_news, "#43A047", "live"))
-                categories.add(CategoryItem("Movies", movies.size, R.drawable.ic_movies, "#E53935", "movie"))
-                categories.add(CategoryItem("Kids", channels.count { it.categoryName?.contains("kids", true) == true || it.name.contains("kids", true) }, R.drawable.ic_kids, "#FB8C00", "live"))
-                categories.add(CategoryItem("Documentary", channels.count { it.categoryName?.contains("doc", true) == true || it.name.contains("doc", true) }, R.drawable.ic_documentary, "#00897B", "live"))
-                categories.add(CategoryItem("More", 0, R.drawable.ic_more, "#5E35B1", "live"))
-
-                updateCategories(categories)
-
-                // Build continue watching (mix of movies and series)
-                val continueItems = mutableListOf<ContinueWatchingItem>()
-                allMovies.take(5).forEach { movie ->
-                    continueItems.add(ContinueWatchingItem(
-                        id = movie.streamId,
-                        title = movie.name,
-                        subtitle = "Movie",
-                        imageUrl = movie.streamIcon,
-                        progress = (0..100).random(),
-                        channel = movie
-                    ))
-                }
-                allSeries.take(3).forEach { series ->
-                    continueItems.add(ContinueWatchingItem(
-                        id = series.streamId,
-                        title = series.name,
-                        subtitle = "Series",
-                        imageUrl = series.streamIcon,
-                        progress = (0..100).random(),
-                        channel = series
-                    ))
-                }
-
-                updateContinueWatching(continueItems)
-
-                // Update hero with first movie if available
-                if (allMovies.isNotEmpty()) {
-                    val featured = allMovies.first()
-                    binding.heroTitle.text = featured.name
-                    binding.heroSubtitle.text = "Featured Movie"
-                    if (!featured.streamIcon.isNullOrEmpty()) {
-                        Glide.with(this@DashboardActivity)
-                            .load(featured.streamIcon)
-                            .placeholder(R.drawable.bg_hero_sports)
-                            .into(binding.heroImage)
-                    }
-                }
-
             } catch (e: Exception) {
-                Log.e(TAG, "Error loading content", e)
-                Toast.makeText(this@DashboardActivity, "Error loading content", Toast.LENGTH_SHORT).show()
+                Log.e(TAG, "Exception loading channels", e)
+                hasError = true
             }
+
+            // Load movies
+            try {
+                val moviesResult = repository.getMovies(null)
+                if (moviesResult.isSuccess) {
+                    val movies = moviesResult.getOrDefault(emptyList())
+                    allMovies = movies.map { movie ->
+                        Channel(
+                            streamId = movie.streamId,
+                            num = movie.streamId,
+                            name = movie.name,
+                            streamType = "movie",
+                            streamIcon = movie.streamIcon,
+                            epgChannelId = null,
+                            added = null,
+                            categoryId = movie.categoryId,
+                            categoryName = null,
+                            customSid = null,
+                            tvArchive = 0,
+                            directSource = movie.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password),
+                            tvArchiveDuration = 0,
+                            isFavorite = movie.isFavorite
+                        )
+                    }
+                    Log.d(TAG, "Loaded ${allMovies.size} movies")
+                } else {
+                    Log.e(TAG, "Failed to load movies: ${moviesResult.exceptionOrNull()?.message}")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Exception loading movies", e)
+            }
+
+            // Load series
+            try {
+                val seriesResult = repository.getSeries(null)
+                if (seriesResult.isSuccess) {
+                    val seriesList = seriesResult.getOrDefault(emptyList())
+                    allSeries = seriesList.map { series ->
+                        Channel(
+                            streamId = series.seriesId,
+                            num = series.seriesId,
+                            name = series.name,
+                            streamType = "series",
+                            streamIcon = series.cover,
+                            epgChannelId = null,
+                            added = null,
+                            categoryId = series.categoryId,
+                            categoryName = null,
+                            customSid = null,
+                            tvArchive = 0,
+                            directSource = null,
+                            tvArchiveDuration = 0,
+                            isFavorite = series.isFavorite
+                        )
+                    }
+                    Log.d(TAG, "Loaded ${allSeries.size} series")
+                } else {
+                    Log.e(TAG, "Failed to load series: ${seriesResult.exceptionOrNull()?.message}")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Exception loading series", e)
+            }
+
+            // Update UI only if binding is still valid
+            if (_binding != null) {
+                updateUI()
+            }
+
+            if (hasError) {
+                showToast("Some content failed to load. Check your connection.")
+            }
+        }
+    }
+
+    private fun updateUI() {
+        if (_binding == null) return
+
+        try {
+            // Build category cards
+            val categories = mutableListOf<CategoryItem>()
+            categories.add(CategoryItem("All Channels", allChannels.size, R.drawable.ic_live_tv, "#E53935", "live"))
+            categories.add(CategoryItem("Sports", allChannels.count { 
+                it.categoryName?.contains("sport", true) == true || it.name.contains("sport", true) 
+            }, R.drawable.ic_sports, "#1E88E5", "live"))
+            categories.add(CategoryItem("News", allChannels.count { 
+                it.categoryName?.contains("news", true) == true || it.name.contains("news", true) 
+            }, R.drawable.ic_news, "#43A047", "live"))
+            categories.add(CategoryItem("Movies", allMovies.size, R.drawable.ic_movies, "#E53935", "movie"))
+            categories.add(CategoryItem("Kids", allChannels.count { 
+                it.categoryName?.contains("kids", true) == true || it.name.contains("kids", true) 
+            }, R.drawable.ic_kids, "#FB8C00", "live"))
+            categories.add(CategoryItem("Documentary", allChannels.count { 
+                it.categoryName?.contains("doc", true) == true || it.name.contains("doc", true) 
+            }, R.drawable.ic_documentary, "#00897B", "live"))
+            categories.add(CategoryItem("More", 0, R.drawable.ic_more, "#5E35B1", "live"))
+
+            updateCategories(categories)
+
+            // Build continue watching
+            val continueItems = mutableListOf<ContinueWatchingItem>()
+            allMovies.take(5).forEach { movie ->
+                continueItems.add(ContinueWatchingItem(
+                    id = movie.streamId,
+                    title = movie.name,
+                    subtitle = "Movie",
+                    imageUrl = movie.streamIcon,
+                    progress = (0..100).random(),
+                    channel = movie
+                ))
+            }
+            allSeries.take(3).forEach { series ->
+                continueItems.add(ContinueWatchingItem(
+                    id = series.streamId,
+                    title = series.name,
+                    subtitle = "Series",
+                    imageUrl = series.streamIcon,
+                    progress = (0..100).random(),
+                    channel = series
+                ))
+            }
+
+            updateContinueWatching(continueItems)
+
+            // Update hero with first movie if available
+            if (allMovies.isNotEmpty()) {
+                val featured = allMovies.first()
+                binding.heroTitle.text = featured.name
+                binding.heroSubtitle.text = "Featured Movie"
+                if (!featured.streamIcon.isNullOrEmpty()) {
+                    Glide.with(this@DashboardActivity)
+                        .load(featured.streamIcon)
+                        .placeholder(R.drawable.bg_hero_sports)
+                        .into(binding.heroImage)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error updating UI", e)
         }
     }
 
@@ -302,7 +366,7 @@ class DashboardActivity : AppCompatActivity() {
             ?: channel.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password)
 
         if (url.isNullOrBlank()) {
-            Toast.makeText(this, "No stream URL", Toast.LENGTH_SHORT).show()
+            showToast("No stream URL")
             return
         }
 
@@ -312,6 +376,14 @@ class DashboardActivity : AppCompatActivity() {
                 .putExtra("CHANNEL_NAME", channel.name)
                 .putExtra("STREAM_TYPE", channel.streamType)
         )
+    }
+
+    private fun showToast(message: String) {
+        try {
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error showing toast", e)
+        }
     }
 
     override fun onDestroy() {
