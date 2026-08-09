@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">ocean65024.cdn-akm.me</domain>
-    </domain-config>
+    <!-- Allow cleartext traffic for ALL domains (required for IPTV HTTP streams) -->
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system"/>
+        </trust-anchors>
+    </base-config>
 </network-security-config>

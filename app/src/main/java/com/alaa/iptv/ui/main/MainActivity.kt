@@ -82,12 +82,17 @@ class MainActivity : AppCompatActivity() {
             isFocusableInTouchMode = true
         }
 
-        // Adapter القنوات
+        // Adapter القنوات - CLICK now plays, FOCUS updates preview
         channelAdapter = ChannelAdapter(
             emptyList(),
-            onChannelClick      = { channel -> updatePreview(channel) },
-            onChannelLongClick  = { channel -> playChannel(channel) }
+            onChannelClick      = { channel -> playChannel(channel) },  // ← FIXED: play on click
+            onChannelLongClick  = { channel -> playChannel(channel) }   // ← keep as shortcut
         )
+
+        // Focus listener for preview updates only (no playback)
+        channelAdapter.setOnChannelFocusListener { channel ->
+            updatePreview(channel)
+        }
 
         binding.channelsRecyclerView.apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
@@ -352,12 +357,17 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        Log.d(TAG, "Playing: $url")
+        // Log stream URL safely (hide password)
+        val safeUrl = url.replace(prefs.password, "***")
+        Log.d(TAG, "▶️ Playing channel: ${channel.name}")
+        Log.d(TAG, "▶️ Stream URL: $safeUrl")
+        Log.d(TAG, "▶️ Stream Type: ${channel.streamType}")
 
         startActivity(
             Intent(this, PlayerActivity::class.java)
                 .putExtra("STREAM_URL", url)
                 .putExtra("CHANNEL_NAME", channel.name)
+                .putExtra("STREAM_TYPE", channel.streamType)
         )
     }
 

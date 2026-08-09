@@ -22,6 +22,7 @@ class ChannelAdapter(
         RecyclerView.ViewHolder(binding.root) {
 
         init {
+            // === CLICK: Play channel directly ===
             binding.root.setOnClickListener {
                 val position = bindingAdapterPosition
                 if (position != RecyclerView.NO_POSITION) {
@@ -30,6 +31,7 @@ class ChannelAdapter(
                 }
             }
 
+            // === LONG CLICK: Also play (shortcut) ===
             binding.root.setOnLongClickListener {
                 val position = bindingAdapterPosition
                 if (position != RecyclerView.NO_POSITION) {
@@ -40,13 +42,15 @@ class ChannelAdapter(
                 }
             }
 
+            // === FOCUS: Update preview/selection only (no playback) ===
             binding.root.setOnFocusChangeListener { _, hasFocus ->
                 updateUI(hasFocus)
                 if (hasFocus) {
                     val position = bindingAdapterPosition
                     if (position != RecyclerView.NO_POSITION) {
                         setSelectedPosition(position)
-                        onChannelClick(channels[position])
+                        // Only update preview on focus, do NOT play
+                        onChannelFocus(channels[position])
                     }
                 }
             }
@@ -55,7 +59,7 @@ class ChannelAdapter(
         fun bind(channel: Channel, isSelected: Boolean, position: Int) {
             binding.channelName.text = channel.name
             binding.channelNumber.text = (position + 1).toString()
-            
+
             // Load channel icon
             if (!channel.streamIcon.isNullOrEmpty()) {
                 Glide.with(binding.root.context)
@@ -72,7 +76,7 @@ class ChannelAdapter(
 
         private fun updateUI(hasFocus: Boolean) {
             if (hasFocus) {
-                // Blue/Cyan background for focused item as seen in Universe image
+                // Blue/Cyan background for focused item
                 binding.rootLayout.setBackgroundColor(Color.parseColor("#0056B3")) 
                 binding.channelName.setTextColor(Color.WHITE)
                 binding.channelNumber.setTextColor(Color.WHITE)
@@ -114,5 +118,12 @@ class ChannelAdapter(
         if (selectedPosition >= 0 && selectedPosition < channels.size) {
             notifyItemChanged(selectedPosition)
         }
+    }
+
+    // Separate callback for focus events (preview only, no playback)
+    private var onChannelFocus: (Channel) -> Unit = {}
+
+    fun setOnChannelFocusListener(listener: (Channel) -> Unit) {
+        onChannelFocus = listener
     }
 }
