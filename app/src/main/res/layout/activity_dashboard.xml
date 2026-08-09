@@ -60,7 +60,7 @@
             android:paddingStart="16dp"
             android:paddingEnd="16dp" />
 
-        <!-- Time & Date -->
+        <!-- Time &amp; Date -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -314,7 +314,7 @@
                     android:id="@+id/infoSecure"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Secure & Safe"
+                    android:text="Secure &amp; Safe"
                     android:textColor="@color/white"
                     android:textSize="12sp"
                     android:textStyle="bold" />
