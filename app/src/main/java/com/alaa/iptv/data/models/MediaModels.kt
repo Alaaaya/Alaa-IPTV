@@ -41,11 +41,12 @@ data class Channel(
         return when (type) {
 
             "live" -> {
-                // أغلب سيرفرات Xtream live = ts
+                // أغلب سيرفرات Xtream live = ts أو m3u8
                 "$cleanUrl/live/$username/$password/$streamId.ts"
             }
 
             "movie", "vod" -> {
+                // استخدم الامتداد الصحيح من container_extension أو ts كافتراضي
                 "$cleanUrl/movie/$username/$password/$streamId.ts"
             }
 
@@ -98,7 +99,7 @@ data class Movie(
     ): String {
 
         val cleanUrl = serverUrl.removeSuffix("/")
-        val extension = containerExtension ?: "ts"
+        val extension = containerExtension?.takeIf { it.isNotBlank() } ?: "mp4"
 
         return "$cleanUrl/movie/$username/$password/$streamId.$extension"
     }
@@ -140,7 +141,7 @@ data class Episode(
     ): String {
 
         val cleanUrl = serverUrl.removeSuffix("/")
-        val extension = containerExtension ?: "ts"
+        val extension = containerExtension?.takeIf { it.isNotBlank() } ?: "mp4"
 
         return "$cleanUrl/series/$username/$password/$id.$extension"
     }

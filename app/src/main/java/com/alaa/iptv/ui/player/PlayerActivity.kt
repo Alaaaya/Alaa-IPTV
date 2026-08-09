@@ -1,21 +1,35 @@
 package com.alaa.iptv.ui.player
 
+import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.KeyEvent
 import android.view.View
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.hls.HlsMediaSource
+import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import com.alaa.iptv.R
 import com.alaa.iptv.databinding.ActivityPlayerBinding
 
+@UnstableApi
 class PlayerActivity : AppCompatActivity() {
+
+    companion object {
+        private const val TAG = "PlayerActivity"
+    }
 
     private lateinit var binding: ActivityPlayerBinding
     private var player: ExoPlayer? = null
     private var streamUrl: String? = null
     private var channelName: String? = null
+    private var streamType: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -24,52 +38,115 @@ class PlayerActivity : AppCompatActivity() {
 
         streamUrl = intent.getStringExtra("STREAM_URL")
         channelName = intent.getStringExtra("CHANNEL_NAME")
+        streamType = intent.getStringExtra("STREAM_TYPE") ?: "live"
 
         binding.channelNameText.text = channelName ?: ""
 
-        if (streamUrl != null) {
+        Log.d(TAG, "▶️ onCreate - Channel: $channelName")
+        Log.d(TAG, "▶️ onCreate - Type: $streamType")
+
+        if (!streamUrl.isNullOrBlank()) {
             initializePlayer(streamUrl!!)
         } else {
+            Log.e(TAG, "❌ No stream URL provided")
             showError(getString(R.string.player_error))
         }
     }
 
     private fun initializePlayer(url: String) {
         showLoading(true)
-        
-        player = ExoPlayer.Builder(this).build()
-        binding.playerView.player = player
+        showError(null)
 
-        val mediaItem = MediaItem.fromUri(url)
-        player?.apply {
-            setMediaItem(mediaItem)
-            prepare()
-            playWhenReady = true
+        Log.d(TAG, "▶️ Initializing player with URL type: ${streamType}")
+        Log.d(TAG, "▶️ URL protocol: ${Uri.parse(url).scheme}")
 
-            addListener(object : Player.Listener {
-                override fun onPlaybackStateChanged(playbackState: Int) {
-                    when (playbackState) {
-                        Player.STATE_BUFFERING -> {
-                            showLoading(true)
-                        }
-                        Player.STATE_READY -> {
-                            showLoading(false)
-                            hideChannelName()
-                        }
-                        Player.STATE_ENDED -> {
-                            finish()
-                        }
-                        Player.STATE_IDLE -> {
-                            showLoading(false)
+        try {
+            player = ExoPlayer.Builder(this).build()
+            binding.playerView.player = player
+
+            val uri = Uri.parse(url)
+            val mediaItem = MediaItem.fromUri(uri)
+
+            // Configure HTTP data source to allow cleartext and custom headers
+            val httpDataSourceFactory = DefaultHttpDataSource.Factory()
+                .setAllowCrossProtocolRedirects(true)
+                .setConnectTimeoutMs(15000)
+                .setReadTimeoutMs(15000)
+
+            val mediaSource = when {
+                url.endsWith(".m3u8", ignoreCase = true) || 
+                url.contains(".m3u8", ignoreCase = true) -> {
+                    Log.d(TAG, "📺 Using HLS media source")
+                    HlsMediaSource.Factory(httpDataSourceFactory)
+                        .createMediaSource(mediaItem)
+                }
+                else -> {
+                    Log.d(TAG, "📺 Using Progressive media source")
+                    ProgressiveMediaSource.Factory(httpDataSourceFactory)
+                        .createMediaSource(mediaItem)
+                }
+            }
+
+            player?.apply {
+                setMediaSource(mediaSource)
+                prepare()
+                playWhenReady = true
+
+                addListener(object : Player.Listener {
+                    override fun onPlaybackStateChanged(playbackState: Int) {
+                        when (playbackState) {
+                            Player.STATE_BUFFERING -> {
+                                Log.d(TAG, "⏳ STATE_BUFFERING")
+                                showLoading(true)
+                            }
+                            Player.STATE_READY -> {
+                                Log.d(TAG, "✅ STATE_READY - Playing")
+                                showLoading(false)
+                                hideChannelName()
+                            }
+                            Player.STATE_ENDED -> {
+                                Log.d(TAG, "🏁 STATE_ENDED")
+                                finish()
+                            }
+                            Player.STATE_IDLE -> {
+                                Log.d(TAG, "⏸️ STATE_IDLE")
+                                showLoading(false)
+                            }
                         }
                     }
-                }
 
-                override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
-                    showLoading(false)
-                    showError(error.message ?: getString(R.string.player_error))
-                }
-            })
+                    override fun onPlayerError(error: PlaybackException) {
+                        Log.e(TAG, "❌ Player Error: ${error.errorCodeName}", error)
+                        showLoading(false)
+
+                        val errorMsg = when (error.errorCode) {
+                            PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED ->
+                                "فشل الاتصال بالشبكة"
+                            PlaybackException.ERROR_CODE_IO_INVALID_HTTP_CONTENT_TYPE ->
+                                "نوع المحتوى غير مدعوم"
+                            PlaybackException.ERROR_CODE_PARSING_CONTAINER_UNSUPPORTED ->
+                                "صيغة الملف غير مدعومة"
+                            PlaybackException.ERROR_CODE_DECODER_INIT_FAILED ->
+                                "فشل تشغيل الفيديو (Decoder)"
+                            PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS ->
+                                "خطأ في الخادم (HTTP ${error.message})"
+                            else -> "خطأ في التشغيل: ${error.message}"
+                        }
+
+                        showError(errorMsg)
+                        Toast.makeText(this@PlayerActivity, errorMsg, Toast.LENGTH_LONG).show()
+                    }
+
+                    override fun onIsPlayingChanged(isPlaying: Boolean) {
+                        Log.d(TAG, "▶️ isPlaying changed: $isPlaying")
+                    }
+                })
+            }
+
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Failed to initialize player", e)
+            showLoading(false)
+            showError("فشل تهيئة المشغل: ${e.message}")
         }
     }
 
@@ -83,9 +160,14 @@ class PlayerActivity : AppCompatActivity() {
         binding.loadingProgress.visibility = if (show) View.VISIBLE else View.GONE
     }
 
-    private fun showError(message: String) {
-        binding.errorText.text = message
-        binding.errorText.visibility = View.VISIBLE
+    private fun showError(message: String?) {
+        if (message == null) {
+            binding.errorText.visibility = View.GONE
+        } else {
+            binding.errorText.text = message
+            binding.errorText.visibility = View.VISIBLE
+            Log.e(TAG, "Error displayed: $message")
+        }
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
@@ -126,11 +208,13 @@ class PlayerActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
+        Log.d(TAG, "⏸️ onStop - Pausing player")
         player?.pause()
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        Log.d(TAG, "🛑 onDestroy - Releasing player")
         player?.release()
         player = null
     }
