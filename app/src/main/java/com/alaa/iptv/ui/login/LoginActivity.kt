@@ -2,87 +2,106 @@ package com.alaa.iptv.ui.login
 
 import android.content.Intent
 import android.os.Bundle
-import android.view.View
+import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.alaa.iptv.R
+import androidx.lifecycle.lifecycleScope
 import com.alaa.iptv.data.preferences.AppPreferences
+import com.alaa.iptv.data.repository.MediaRepository
 import com.alaa.iptv.databinding.ActivityLoginBinding
 import com.alaa.iptv.ui.dashboard.DashboardActivity
+import kotlinx.coroutines.launch
 
 class LoginActivity : AppCompatActivity() {
 
+    companion object {
+        private const val TAG = "LoginActivity"
+    }
+
     private lateinit var binding: ActivityLoginBinding
     private lateinit var prefs: AppPreferences
+    private lateinit var repository: MediaRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         prefs = AppPreferences(this)
+        repository = MediaRepository(prefs, this)
 
-        // إذا المستخدم مسجّل دخول سابقاً ➜ روح مباشرة للداشبورد
-        if (prefs.isLoggedIn) {
+        // Check if already logged in
+        if (prefs.isLoggedIn()) {
+            Log.d(TAG, "Already logged in, navigating to dashboard")
             navigateToDashboard()
             return
         }
 
-        // تحميل رابط M3U المحفوظ (إن وُجد)
-        binding.serverUrlInput.setText(prefs.serverUrl)
-        binding.serverUrlInput.requestFocus()
+        setupUI()
+    }
 
+    private fun setupUI() {
         binding.loginButton.setOnClickListener {
-            performLogin()
+            val serverUrl = binding.serverUrlInput.text.toString().trim()
+            val username = binding.usernameInput.text.toString().trim()
+            val password = binding.passwordInput.text.toString().trim()
+
+            if (validateInput(serverUrl, username, password)) {
+                performLogin(serverUrl, username, password)
+            }
         }
     }
 
-    private fun performLogin() {
-        val serverUrl = binding.serverUrlInput.text.toString().trim()
-        val username = binding.usernameInput.text.toString().trim()
-        val password = binding.passwordInput.text.toString().trim()
-
-        // التحقق من المدخلات
-        if (serverUrl.isEmpty() || !serverUrl.startsWith("http")) {
-            showError("الرجاء إدخال رابط سيرفر صحيح")
-            return
+    private fun validateInput(serverUrl: String, username: String, password: String): Boolean {
+        when {
+            serverUrl.isEmpty() -> {
+                binding.serverUrlInput.error = "Server URL is required"
+                return false
+            }
+            username.isEmpty() -> {
+                binding.usernameInput.error = "Username is required"
+                return false
+            }
+            password.isEmpty() -> {
+                binding.passwordInput.error = "Password is required"
+                return false
+            }
         }
-
-        // إذا لم يكن رابط M3U مباشر، نتحقق من اسم المستخدم وكلمة المرور
-        val isM3U = serverUrl.contains(".m3u") || serverUrl.contains("get.php")
-        if (!isM3U && (username.isEmpty() || password.isEmpty())) {
-            showError("الرجاء إدخال اسم المستخدم وكلمة المرور")
-            return
-        }
-
-        showLoading(true)
-
-        // حفظ البيانات في الإعدادات
-        prefs.serverUrl = serverUrl
-        prefs.username = username
-        prefs.password = password
-        prefs.isLoggedIn = true
-
-        showLoading(false)
-        navigateToDashboard()
+        return true
     }
 
-    private fun showLoading(show: Boolean) {
-        binding.progressBar.visibility = if (show) View.VISIBLE else View.GONE
-        binding.loginButton.isEnabled = !show
-        binding.serverUrlInput.isEnabled = !show
-    }
+    private fun performLogin(serverUrl: String, username: String, password: String) {
+        binding.loginButton.isEnabled = false
+        binding.loginButton.text = "Logging in..."
 
-    private fun showError(message: String) {
-        binding.errorText.text = message
-        binding.errorText.visibility = View.VISIBLE
-        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+        lifecycleScope.launch {
+            try {
+                val result = repository.authenticate(serverUrl, username, password)
+
+                if (result.isSuccess) {
+                    Log.d(TAG, "Login successful")
+                    prefs.saveCredentials(serverUrl, username, password)
+                    navigateToDashboard()
+                } else {
+                    val error = result.exceptionOrNull()?.message ?: "Unknown error"
+                    Log.e(TAG, "Login failed: $error")
+                    Toast.makeText(this@LoginActivity, "Login failed: $error", Toast.LENGTH_LONG).show()
+                    binding.loginButton.isEnabled = true
+                    binding.loginButton.text = "Login"
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Login exception", e)
+                Toast.makeText(this@LoginActivity, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                binding.loginButton.isEnabled = true
+                binding.loginButton.text = "Login"
+            }
+        }
     }
 
     private fun navigateToDashboard() {
-        val intent = Intent(this, DashboardActivity::class.java)
-        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        val intent = Intent(this, DashboardActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
         startActivity(intent)
         finish()
     }
