@@ -55,4 +55,7 @@
     <string name="no_description">لا يتوفر وصف لهذا المسلسل.</string>
     <string name="no_episodes">لا توجد حلقات متاحة لهذا المسلسل.</string>
     <string name="episodes_load_error">تعذر تحميل الحلقات. حاول مرة أخرى.</string>
+
+    <!-- Player -->
+    <string name="player_error">تعذر بدء تشغيل البث. حاول اختيار القناة مرة أخرى.</string>
 </resources>
