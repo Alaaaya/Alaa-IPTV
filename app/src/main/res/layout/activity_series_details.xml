@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/ibo_bg_dark"
+    android:layoutDirection="rtl">
+
+    <TextView
+        android:id="@+id/backButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="28dp"
+        android:focusable="true"
+        android:clickable="true"
+        android:paddingHorizontal="14dp"
+        android:paddingVertical="8dp"
+        android:text="← رجوع"
+        android:textColor="@color/white"
+        android:textSize="16sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageView
+        android:id="@+id/seriesPoster"
+        android:layout_width="170dp"
+        android:layout_height="255dp"
+        android:layout_marginStart="48dp"
+        android:scaleType="centerCrop"
+        android:contentDescription="@null"
+        app:layout_constraintBottom_toTopOf="@id/bottomGuide"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/backButton" />
+
+    <TextView
+        android:id="@+id/seriesName"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="28dp"
+        android:layout_marginEnd="36dp"
+        android:textColor="@color/white"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/seriesPoster"
+        app:layout_constraintTop_toTopOf="@id/seriesPoster" />
+
+    <TextView
+        android:id="@+id/seriesMeta"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:textColor="@color/text_gray_light"
+        android:textSize="15sp"
+        app:layout_constraintEnd_toEndOf="@id/seriesName"
+        app:layout_constraintStart_toStartOf="@id/seriesName"
+        app:layout_constraintTop_toBottomOf="@id/seriesName" />
+
+    <TextView
+        android:id="@+id/seriesDescription"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:maxLines="4"
+        android:textColor="@color/text_gray_light"
+        android:textSize="15sp"
+        app:layout_constraintEnd_toEndOf="@id/seriesName"
+        app:layout_constraintStart_toStartOf="@id/seriesName"
+        app:layout_constraintTop_toBottomOf="@id/seriesMeta" />
+
+    <TextView
+        android:id="@+id/episodesTitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="28dp"
+        android:text="الحلقات"
+        android:textColor="@color/white"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="@id/seriesName"
+        app:layout_constraintStart_toStartOf="@id/seriesName"
+        app:layout_constraintTop_toBottomOf="@id/seriesDescription" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/episodesRecyclerView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="12dp"
+        android:clipToPadding="false"
+        android:paddingBottom="72dp"
+        app:layout_constraintBottom_toTopOf="@id/bottomGuide"
+        app:layout_constraintEnd_toEndOf="@id/seriesName"
+        app:layout_constraintStart_toStartOf="@id/seriesName"
+        app:layout_constraintTop_toBottomOf="@id/episodesTitle" />
+
+    <ProgressBar
+        android:id="@+id/loadingProgress"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/episodesRecyclerView"
+        app:layout_constraintEnd_toEndOf="@id/episodesRecyclerView"
+        app:layout_constraintStart_toStartOf="@id/episodesRecyclerView"
+        app:layout_constraintTop_toTopOf="@id/episodesRecyclerView" />
+
+    <TextView
+        android:id="@+id/errorText"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:textColor="@color/error_color"
+        android:textSize="15sp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/episodesRecyclerView"
+        app:layout_constraintEnd_toEndOf="@id/episodesRecyclerView"
+        app:layout_constraintStart_toStartOf="@id/episodesRecyclerView"
+        app:layout_constraintTop_toTopOf="@id/episodesRecyclerView" />
+
+    <LinearLayout
+        android:id="@+id/bottomGuide"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:text="↑ ↓ تنقل"
+            android:textColor="@color/text_gray_dark"
+            android:textSize="12sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:text="OK تشغيل الحلقة"
+            android:textColor="@color/text_gray_dark"
+            android:textSize="12sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:text="← رجوع"
+            android:textColor="@color/text_gray_dark"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

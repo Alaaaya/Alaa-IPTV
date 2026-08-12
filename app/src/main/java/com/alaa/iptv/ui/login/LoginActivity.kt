@@ -3,7 +3,6 @@ package com.alaa.iptv.ui.login
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.alaa.iptv.data.preferences.AppPreferences
@@ -53,17 +52,18 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun validateInput(serverUrl: String, username: String, password: String): Boolean {
+        binding.errorText.visibility = android.view.View.GONE
         when {
             serverUrl.isEmpty() -> {
-                binding.serverUrlInput.error = "Server URL is required"
+                binding.serverUrlInput.error = "أدخل رابط السيرفر"
                 return false
             }
-            username.isEmpty() -> {
-                binding.usernameInput.error = "Username is required"
+            !repository.isM3U(serverUrl) && username.isEmpty() -> {
+                binding.usernameInput.error = "أدخل اسم المستخدم"
                 return false
             }
-            password.isEmpty() -> {
-                binding.passwordInput.error = "Password is required"
+            !repository.isM3U(serverUrl) && password.isEmpty() -> {
+                binding.passwordInput.error = "أدخل كلمة المرور"
                 return false
             }
         }
@@ -71,39 +71,38 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun performLogin(serverUrl: String, username: String, password: String) {
-        binding.loginButton.isEnabled = false
-        binding.loginButton.text = "Logging in..."
+        setLoading(true)
 
         lifecycleScope.launch {
-            try {
-                // Save credentials first (direct property assignment)
-                prefs.serverUrl = serverUrl
+            val validation = repository.validateLogin(serverUrl, username, password)
+            validation.onSuccess {
+                prefs.serverUrl = serverUrl.trim()
                 prefs.username = username
                 prefs.password = password
+                prefs.useM3U = repository.isM3U(serverUrl)
+                prefs.m3uUrl = if (prefs.useM3U) serverUrl.trim() else ""
                 prefs.isLoggedIn = true
-
-                // Verify credentials by trying to fetch live streams
-                val result = repository.getLiveStreams(null)
-
-                if (result.isSuccess) {
-                    val channels = result.getOrDefault(emptyList())
-                    Log.d(TAG, "Login successful! Loaded ${channels.size} channels")
-                    navigateToDashboard()
-                } else {
-                    // Credentials saved but API failed - still allow login
-                    Log.w(TAG, "API check failed but credentials saved")
-                    navigateToDashboard()
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Login exception", e)
-                // Still save credentials and navigate
-                prefs.serverUrl = serverUrl
-                prefs.username = username
-                prefs.password = password
-                prefs.isLoggedIn = true
+                repository.clearCache()
+                Log.d(TAG, "Login validated successfully")
                 navigateToDashboard()
+            }.onFailure { error ->
+                prefs.isLoggedIn = false
+                Log.w(TAG, "Login validation failed", error)
+                showLoginError(error.message ?: "تعذر الاتصال بالسيرفر. تحقق من البيانات وحاول مجدداً.")
+                setLoading(false)
             }
         }
+    }
+
+    private fun setLoading(loading: Boolean) {
+        binding.loginButton.isEnabled = !loading
+        binding.loginButton.text = if (loading) "جارٍ التحقق..." else getString(com.alaa.iptv.R.string.login)
+        binding.progressBar.visibility = if (loading) android.view.View.VISIBLE else android.view.View.GONE
+    }
+
+    private fun showLoginError(message: String) {
+        binding.errorText.text = message
+        binding.errorText.visibility = android.view.View.VISIBLE
     }
 
     private fun navigateToDashboard() {

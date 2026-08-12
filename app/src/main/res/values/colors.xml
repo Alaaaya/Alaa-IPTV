@@ -33,4 +33,12 @@
     <color name="white">#FFFFFF</color>
     <color name="transparent">#00000000</color>
     <color name="focus_highlight">#33E53935</color>
+
+    <!-- Compatibility colors used by existing screens and drawables -->
+    <color name="focus_background">#E53935</color>
+    <color name="focus_color">#FFFFFFFF</color>
+    <color name="glassmorphism_background">#1AFFFFFF</color>
+    <color name="glassmorphism_stroke">#40FFFFFF</color>
+    <color name="error_color">#FF5252</color>
+    <color name="overlay_dark">#99000000</color>
 </resources>

@@ -5,13 +5,13 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.alaa.iptv.R
-import com.alaa.iptv.data.models.Channel
+import com.alaa.iptv.data.models.Movie
 import com.alaa.iptv.databinding.ItemMovieCardBinding
 import com.bumptech.glide.Glide
 
 class MovieAdapter(
-    private val movies: List<Channel>,
-    private val onMovieClick: (Channel) -> Unit
+    private val movies: List<Movie>,
+    private val onMovieClick: (Movie) -> Unit
 ) : RecyclerView.Adapter<MovieAdapter.MovieViewHolder>() {
 
     inner class MovieViewHolder(private val binding: ItemMovieCardBinding) :
@@ -19,13 +19,14 @@ class MovieAdapter(
 
         init {
             binding.root.setOnClickListener {
-                onMovieClick(movies[bindingAdapterPosition])
+                val position = bindingAdapterPosition
+                if (position != RecyclerView.NO_POSITION) onMovieClick(movies[position])
             }
             binding.root.setOnFocusChangeListener { _, hasFocus ->
                 if (hasFocus) {
                     binding.posterCard.setCardBackgroundColor(Color.parseColor("#E53935"))
-                    binding.root.scaleX = 1.1f
-                    binding.root.scaleY = 1.1f
+                    binding.root.scaleX = 1.05f
+                    binding.root.scaleY = 1.05f
                 } else {
                     binding.posterCard.setCardBackgroundColor(Color.parseColor("#1AFFFFFF"))
                     binding.root.scaleX = 1.0f
@@ -34,15 +35,22 @@ class MovieAdapter(
             }
         }
 
-        fun bind(movie: Channel) {
+        fun bind(movie: Movie) {
             binding.movieTitle.text = movie.name
-            binding.ratingBadge.text = "${(7..9).random()}.${(0..9).random()}"
-            binding.yearText.text = "${(2010..2024).random()}"
+            setOptionalText(binding.ratingBadge, movie.rating)
+            setOptionalText(binding.yearText, movie.year ?: movie.releaseDate)
 
             Glide.with(binding.root.context)
                 .load(movie.streamIcon)
                 .placeholder(R.drawable.bg_dark_pattern)
+                .error(R.drawable.bg_dark_pattern)
                 .into(binding.moviePoster)
+        }
+
+        private fun setOptionalText(view: android.widget.TextView, value: String?) {
+            val text = value?.trim().orEmpty()
+            view.text = text
+            view.visibility = if (text.isEmpty()) android.view.View.GONE else android.view.View.VISIBLE
         }
     }
 
@@ -55,5 +63,5 @@ class MovieAdapter(
         holder.bind(movies[position])
     }
 
-    override fun getItemCount() = movies.size
+    override fun getItemCount(): Int = movies.size
 }

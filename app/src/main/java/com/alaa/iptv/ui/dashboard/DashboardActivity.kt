@@ -17,6 +17,8 @@ import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.data.repository.MediaRepository
 import com.alaa.iptv.databinding.ActivityDashboardBinding
 import com.alaa.iptv.ui.main.MainActivity
+import com.alaa.iptv.ui.main.MoviesActivity
+import com.alaa.iptv.ui.main.SeriesActivity
 import com.alaa.iptv.ui.player.PlayerActivity
 import com.alaa.iptv.utils.UpdateChecker
 import com.bumptech.glide.Glide
@@ -150,12 +152,15 @@ class DashboardActivity : AppCompatActivity() {
 
     private fun updateContinueWatching(items: List<ContinueWatchingItem>) {
         if (_binding == null) return
-        val adapter = ContinueWatchingAdapter(items) { item ->
-            playContent(item)
-        }
+        val hasItems = items.isNotEmpty()
+        binding.continueWatchingHeaderTitle.visibility = if (hasItems) View.VISIBLE else View.GONE
+        binding.continueWatchingViewAll.visibility = if (hasItems) View.VISIBLE else View.GONE
+        binding.continueWatchingRecyclerView.visibility = if (hasItems) View.VISIBLE else View.GONE
+        if (!hasItems) return
+
         binding.continueWatchingRecyclerView.apply {
             layoutManager = LinearLayoutManager(this@DashboardActivity, LinearLayoutManager.HORIZONTAL, false)
-            this.adapter = adapter
+            adapter = ContinueWatchingAdapter(items, ::playContent)
         }
     }
 
@@ -223,14 +228,8 @@ class DashboardActivity : AppCompatActivity() {
         categories.add(CategoryItem("الوثائقيات", allChannels.count { it.name.contains("doc", true) }, R.drawable.ic_documentary, "#00BCD4", "live"))
         updateCategories(categories)
 
-        val continueItems = mutableListOf<ContinueWatchingItem>()
-        allMovies.take(3).forEach { movie ->
-            continueItems.add(ContinueWatchingItem(movie.streamId, movie.name, "فيلم", movie.streamIcon, (20..90).random(), movie))
-        }
-        allSeries.take(2).forEach { series ->
-            continueItems.add(ContinueWatchingItem(series.streamId, series.name, "مسلسل", series.streamIcon, (10..50).random(), series))
-        }
-        updateContinueWatching(continueItems)
+        // لا نعرض محتوى في "متابعة المشاهدة" إلا عندما يتوفر سجل مشاهدة حقيقي.
+        updateContinueWatching(emptyList())
     }
 
     private fun openMain(mode: String) {

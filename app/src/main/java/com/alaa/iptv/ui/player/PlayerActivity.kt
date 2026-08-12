@@ -206,10 +206,15 @@ class PlayerActivity : AppCompatActivity() {
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        player?.play()
+    }
+
     override fun onStop() {
-        super.onStop()
         Log.d(TAG, "⏸️ onStop - Pausing player")
         player?.pause()
+        super.onStop()
     }
 
     override fun onDestroy() {

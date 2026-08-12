@@ -8,13 +8,12 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.alaa.iptv.R
-import com.alaa.iptv.data.models.Channel
+import com.alaa.iptv.data.models.Series
 import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.data.repository.MediaRepository
 import com.alaa.iptv.databinding.ActivitySeriesBinding
 import com.alaa.iptv.ui.dashboard.SidebarAdapter
 import com.alaa.iptv.ui.dashboard.SidebarItem
-import com.alaa.iptv.ui.player.PlayerActivity
 import kotlinx.coroutines.launch
 
 class SeriesActivity : AppCompatActivity() {
@@ -22,7 +21,7 @@ class SeriesActivity : AppCompatActivity() {
     private lateinit var binding: ActivitySeriesBinding
     private lateinit var prefs: AppPreferences
     private lateinit var repository: MediaRepository
-    private var seriesList: List<Channel> = emptyList()
+    private var seriesList: List<Series> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,7 +63,7 @@ class SeriesActivity : AppCompatActivity() {
             try {
                 val result = repository.getSeries(null)
                 if (result.isSuccess) {
-                    seriesList = result.getOrDefault(emptyList()).map { it.toChannel() }
+                    seriesList = result.getOrDefault(emptyList())
                     binding.seriesCount.text = "${seriesList.size} مسلسل"
                     binding.seriesRecyclerView.adapter = SeriesAdapter(seriesList) { series ->
                         openSeriesDetails(series)
@@ -76,9 +75,10 @@ class SeriesActivity : AppCompatActivity() {
         }
     }
 
-    private fun openSeriesDetails(series: Channel) {
-        // Implementation for series details / seasons
-        showToast("فتح تفاصيل: ${series.name}")
+    private fun openSeriesDetails(series: Series) {
+        startActivity(Intent(this, SeriesDetailsActivity::class.java).apply {
+            putExtra(SeriesDetailsActivity.EXTRA_SERIES, series)
+        })
     }
 
     private fun openMain(mode: String) {
@@ -91,13 +91,4 @@ class SeriesActivity : AppCompatActivity() {
         finish()
     }
 
-    private fun showToast(message: String) {
-        android.widget.Toast.makeText(this, message, android.widget.Toast.LENGTH_SHORT).show()
-    }
-
-    private fun com.alaa.iptv.data.models.Series.toChannel() = Channel(
-        streamId = seriesId, num = seriesId, name = name, streamType = "series",
-        streamIcon = cover, epgChannelId = null, added = null, categoryId = categoryId,
-        categoryName = null, customSid = null, tvArchive = 0, directSource = null, isFavorite = isFavorite
-    )
 }

@@ -5,13 +5,13 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.alaa.iptv.R
-import com.alaa.iptv.data.models.Channel
+import com.alaa.iptv.data.models.Series
 import com.alaa.iptv.databinding.ItemMovieCardBinding
 import com.bumptech.glide.Glide
 
 class SeriesAdapter(
-    private val seriesList: List<Channel>,
-    private val onSeriesClick: (Channel) -> Unit
+    private val seriesList: List<Series>,
+    private val onSeriesClick: (Series) -> Unit
 ) : RecyclerView.Adapter<SeriesAdapter.SeriesViewHolder>() {
 
     inner class SeriesViewHolder(private val binding: ItemMovieCardBinding) :
@@ -19,13 +19,14 @@ class SeriesAdapter(
 
         init {
             binding.root.setOnClickListener {
-                onSeriesClick(seriesList[bindingAdapterPosition])
+                val position = bindingAdapterPosition
+                if (position != RecyclerView.NO_POSITION) onSeriesClick(seriesList[position])
             }
             binding.root.setOnFocusChangeListener { _, hasFocus ->
                 if (hasFocus) {
                     binding.posterCard.setCardBackgroundColor(Color.parseColor("#E53935"))
-                    binding.root.scaleX = 1.1f
-                    binding.root.scaleY = 1.1f
+                    binding.root.scaleX = 1.05f
+                    binding.root.scaleY = 1.05f
                 } else {
                     binding.posterCard.setCardBackgroundColor(Color.parseColor("#1AFFFFFF"))
                     binding.root.scaleX = 1.0f
@@ -34,16 +35,22 @@ class SeriesAdapter(
             }
         }
 
-        fun bind(series: Channel) {
+        fun bind(series: Series) {
             binding.movieTitle.text = series.name
-            binding.ratingBadge.text = "${(8..9).random()}.${(0..9).random()}"
-            // Series style: S1 - E1
-            binding.yearText.text = "S${(1..12).random()} - E${(1..24).random()}"
+            setOptionalText(binding.ratingBadge, series.rating)
+            setOptionalText(binding.yearText, series.releaseDate)
 
             Glide.with(binding.root.context)
-                .load(series.streamIcon)
+                .load(series.cover)
                 .placeholder(R.drawable.bg_dark_pattern)
+                .error(R.drawable.bg_dark_pattern)
                 .into(binding.moviePoster)
+        }
+
+        private fun setOptionalText(view: android.widget.TextView, value: String?) {
+            val text = value?.trim().orEmpty()
+            view.text = text
+            view.visibility = if (text.isEmpty()) android.view.View.GONE else android.view.View.VISIBLE
         }
     }
 
@@ -56,5 +63,5 @@ class SeriesAdapter(
         holder.bind(seriesList[position])
     }
 
-    override fun getItemCount() = seriesList.size
+    override fun getItemCount(): Int = seriesList.size
 }
