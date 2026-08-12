@@ -234,10 +234,10 @@ class DashboardActivity : AppCompatActivity() {
     }
 
     private fun openMain(mode: String) {
-        val intent = if (mode == MainActivity.MODE_MOVIES) {
-            Intent(this, MoviesActivity::class.java)
-        } else {
-            Intent(this, MainActivity::class.java).apply { putExtra(MainActivity.EXTRA_MODE, mode) }
+        val intent = when (mode) {
+            MainActivity.MODE_MOVIES -> Intent(this, MoviesActivity::class.java)
+            MainActivity.MODE_SERIES -> Intent(this, SeriesActivity::class.java)
+            else -> Intent(this, MainActivity::class.java).apply { putExtra(MainActivity.EXTRA_MODE, mode) }
         }
         startActivity(intent)
     }

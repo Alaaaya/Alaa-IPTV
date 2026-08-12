@@ -70,6 +70,13 @@
             android:screenOrientation="landscape"
             android:configChanges="orientation|keyboardHidden|screenSize" />
 
+        <!-- 🎞️ Series -->
+        <activity
+            android:name=".ui.main.SeriesActivity"
+            android:exported="false"
+            android:screenOrientation="landscape"
+            android:configChanges="orientation|keyboardHidden|screenSize" />
+
         <!-- ▶️ Player -->
         <activity
             android:name=".ui.player.PlayerActivity"
