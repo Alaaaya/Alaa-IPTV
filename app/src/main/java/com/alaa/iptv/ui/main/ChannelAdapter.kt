@@ -47,11 +47,11 @@ class ChannelAdapter(
             binding.channelName.text = channel.name
             binding.channelNumber.text = (position + 1).toString()
             
-            // iBO Player Style: Quality tag (Mock for now or extract from name)
+            // iBO Player Style: Quality tag
             binding.qualityTag.text = if (channel.name.contains("HD", true)) "HD" else "SD"
             
             // Favorite indicator
-            binding.favoriteIndicator.visibility = if (channel.isFavorite) View.VISIBLE else View.VISIBLE // Always show icon as in image
+            binding.favoriteIndicator.visibility = View.VISIBLE
             binding.favoriteIndicator.alpha = if (channel.isFavorite) 1.0f else 0.3f
 
             if (!channel.streamIcon.isNullOrEmpty()) {
@@ -69,7 +69,6 @@ class ChannelAdapter(
 
         private fun updateUI(hasFocus: Boolean) {
             if (hasFocus) {
-                // iBO Player Red Focus
                 binding.root.setBackgroundResource(R.drawable.bg_sidebar_selected)
                 binding.channelName.setTextColor(Color.WHITE)
                 binding.channelNumber.setTextColor(Color.WHITE)

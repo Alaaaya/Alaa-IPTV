@@ -3,13 +3,10 @@ package com.alaa.iptv.ui.main
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
-import android.view.View
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.alaa.iptv.R
-import com.alaa.iptv.data.models.Category
 import com.alaa.iptv.data.models.Channel
 import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.data.repository.MediaRepository
@@ -114,7 +111,6 @@ class MainActivity : AppCompatActivity() {
         )
     }
     
-    // Helper to convert Movie/Series to Channel for unified list
     private fun com.alaa.iptv.data.models.Movie.toChannel() = Channel(
         streamId = streamId, num = streamId, name = name, streamType = "movie",
         streamIcon = streamIcon, epgChannelId = null, added = null, categoryId = categoryId,
