@@ -71,13 +71,23 @@ class MainActivity : AppCompatActivity() {
                     else -> repository.getLiveStreams(null)
                 }
 
-                if (result.isSuccess) {
-                    allChannels = result.getOrDefault(emptyList())
+                result.onSuccess { loadedChannels ->
+                    allChannels = loadedChannels
                     channelAdapter.updateChannels(allChannels)
                     if (allChannels.isNotEmpty()) {
-                        updatePreview(allChannels[0])
+                        updatePreview(allChannels.first())
+                    } else {
+                        binding.previewTitle.text = "لا توجد قنوات متاحة"
+                        binding.previewSubtitle.text = "تحقق من الاشتراك أو الفئة المختارة"
+                        binding.channelCounterFooter.text = "0 / 0"
                     }
-                    binding.channelCountFooter.text = "1 / ${allChannels.size}"
+                }.onFailure { error ->
+                    Log.e(TAG, "Unable to load content", error)
+                    allChannels = emptyList()
+                    channelAdapter.updateChannels(emptyList())
+                    binding.previewTitle.text = "تعذر تحميل القنوات"
+                    binding.previewSubtitle.text = error.message ?: "تحقق من اتصال الإنترنت والسيرفر"
+                    binding.channelCounterFooter.text = "0 / 0"
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error loading content", e)
@@ -96,7 +106,7 @@ class MainActivity : AppCompatActivity() {
             .into(binding.previewImage)
             
         val pos = allChannels.indexOf(channel) + 1
-        binding.channelCountFooter.text = "$pos / ${allChannels.size}"
+        binding.channelCounterFooter.text = "$pos / ${allChannels.size}"
     }
 
     private fun playChannel(channel: Channel) {

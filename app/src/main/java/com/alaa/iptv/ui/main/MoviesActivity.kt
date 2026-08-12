@@ -3,13 +3,12 @@ package com.alaa.iptv.ui.main
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
-import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.alaa.iptv.R
-import com.alaa.iptv.data.models.Channel
+import com.alaa.iptv.data.models.Movie
 import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.data.repository.MediaRepository
 import com.alaa.iptv.databinding.ActivityMoviesBinding
@@ -23,7 +22,7 @@ class MoviesActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMoviesBinding
     private lateinit var prefs: AppPreferences
     private lateinit var repository: MediaRepository
-    private var movies: List<Channel> = emptyList()
+    private var movies: List<Movie> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -62,26 +61,24 @@ class MoviesActivity : AppCompatActivity() {
 
     private fun loadMovies() {
         lifecycleScope.launch {
-            try {
-                val result = repository.getMovies(null)
-                if (result.isSuccess) {
-                    movies = result.getOrDefault(emptyList()).map { it.toChannel() }
-                    binding.moviesCount.text = "${movies.size} فيلم"
-                    // Use a dedicated MovieAdapter or update existing one
-                    // For now, let's assume we'll create MovieAdapter
-                    binding.moviesRecyclerView.adapter = MovieAdapter(movies) { movie ->
-                        playMovie(movie)
+            runCatching { repository.getMovies(null) }
+                .onSuccess { result ->
+                    result.onSuccess { loadedMovies ->
+                        movies = loadedMovies
+                        binding.moviesCount.text = "${movies.size} فيلم"
+                        binding.moviesRecyclerView.adapter = MovieAdapter(movies, ::playMovie)
+                    }.onFailure { error ->
+                        Log.e(TAG, "Unable to load movies", error)
                     }
                 }
-            } catch (e: Exception) {
-                Log.e("MoviesActivity", "Error loading movies", e)
-            }
+                .onFailure { error ->
+                    Log.e(TAG, "Unable to request movies", error)
+                }
         }
     }
 
-    private fun playMovie(movie: Channel) {
-        val url = movie.directSource ?: movie.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password)
-        if (url.isNullOrBlank()) return
+    private fun playMovie(movie: Movie) {
+        val url = movie.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password)
         startActivity(Intent(this, PlayerActivity::class.java)
             .putExtra("STREAM_URL", url)
             .putExtra("CHANNEL_NAME", movie.name)
@@ -89,13 +86,18 @@ class MoviesActivity : AppCompatActivity() {
     }
 
     private fun openMain(mode: String) {
-        startActivity(Intent(this, MainActivity::class.java).apply { putExtra(MainActivity.EXTRA_MODE, mode) })
+        val intent = if (mode == MainActivity.MODE_SERIES) {
+            Intent(this, SeriesActivity::class.java)
+        } else {
+            Intent(this, MainActivity::class.java).apply {
+                putExtra(MainActivity.EXTRA_MODE, mode)
+            }
+        }
+        startActivity(intent)
         finish()
     }
 
-    private fun com.alaa.iptv.data.models.Movie.toChannel() = Channel(
-        streamId = streamId, num = streamId, name = name, streamType = "movie",
-        streamIcon = streamIcon, epgChannelId = null, added = null, categoryId = categoryId,
-        categoryName = null, customSid = null, tvArchive = 0, directSource = null, isFavorite = isFavorite
-    )
+    companion object {
+        private const val TAG = "MoviesActivity"
+    }
 }

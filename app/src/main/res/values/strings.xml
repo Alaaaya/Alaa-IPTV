@@ -50,4 +50,9 @@
     <string name="logging_in">جاري تسجيل الدخول...</string>
     <string name="login_error">فشل تسجيل الدخول. يرجى التحقق من البيانات.</string>
     <string name="network_error">خطأ في الشبكة. يرجى التحقق من الاتصال.</string>
+
+    <!-- Series details -->
+    <string name="no_description">لا يتوفر وصف لهذا المسلسل.</string>
+    <string name="no_episodes">لا توجد حلقات متاحة لهذا المسلسل.</string>
+    <string name="episodes_load_error">تعذر تحميل الحلقات. حاول مرة أخرى.</string>
 </resources>

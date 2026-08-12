@@ -13,7 +13,7 @@ class SidebarAdapter(
     private val onItemClick: (SidebarItem) -> Unit
 ) : RecyclerView.Adapter<SidebarAdapter.ViewHolder>() {
 
-    private var selectedPosition = 0
+    private var selectedPosition = items.indexOfFirst { it.isSelected }.takeIf { it >= 0 } ?: 0
 
     inner class ViewHolder(val binding: ItemSidebarBinding) :
         RecyclerView.ViewHolder(binding.root) {

@@ -11,6 +11,8 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.io.IOException
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import java.util.concurrent.TimeUnit
 
 class MediaRepository(
@@ -52,24 +54,25 @@ class MediaRepository(
 
     private suspend fun request(url: String): String =
         withContext(Dispatchers.IO) {
-            Log.d(TAG, "Request: $url")
+            Log.d(TAG, "Requesting IPTV endpoint")
             val request = Request.Builder()
                 .url(url)
                 .header("User-Agent", "Mozilla/5.0")
                 .build()
-            val response = client.newCall(request).execute()
-            if (!response.isSuccessful) {
-                throw IOException("HTTP ${response.code} for $url")
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    throw IOException("HTTP ${response.code}")
+                }
+                response.body?.string() ?: throw IOException("Empty response body")
             }
-            response.body?.string() ?: throw IOException("Empty response body")
         }
 
     private fun normalizeHost(host: String): String {
-        var h = host.trim()
+        var h = host.trim().substringBefore("?").removeSuffix("/")
         if (!h.startsWith("http://") && !h.startsWith("https://")) {
             h = "http://$h"
         }
-        return h.removeSuffix("/")
+        return h.removeSuffix("/player_api.php").removeSuffix("/")
     }
 
     fun isM3U(url: String = prefs.serverUrl): Boolean {
@@ -82,8 +85,50 @@ class MediaRepository(
 
     private fun buildApiUrl(action: String, extra: String = ""): String {
         val base = normalizeHost(prefs.serverUrl)
-        return "$base/player_api.php?username=${prefs.username}&password=${prefs.password}&action=$action$extra"
+        val username = encodeQueryParameter(prefs.username)
+        val password = encodeQueryParameter(prefs.password)
+        return "$base/player_api.php?username=$username&password=$password&action=$action$extra"
     }
+
+    private fun encodeQueryParameter(value: String): String =
+        URLEncoder.encode(value, StandardCharsets.UTF_8.name())
+
+    /**
+     * Verifies an Xtream account before credentials are persisted. For M3U playlists,
+     * it verifies that the remote resource is reachable and contains a valid playlist header.
+     */
+    suspend fun validateLogin(serverUrl: String, username: String, password: String): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            try {
+                if (isM3U(serverUrl)) {
+                    val playlist = request(serverUrl)
+                    if (playlist.contains("#EXTM3U")) {
+                        Result.success(Unit)
+                    } else {
+                        Result.failure(IOException("الرابط لا يحتوي على قائمة M3U صالحة"))
+                    }
+                } else {
+                    if (username.isBlank() || password.isBlank()) {
+                        return@withContext Result.failure(IllegalArgumentException("اسم المستخدم وكلمة المرور مطلوبان"))
+                    }
+                    val base = normalizeHost(serverUrl)
+                    val url = "$base/player_api.php?username=${encodeQueryParameter(username)}&password=${encodeQueryParameter(password)}"
+                    val response = JSONObject(request(url))
+                    val userInfo = response.optJSONObject("user_info")
+                    val authenticated = userInfo?.optInt("auth", 0) == 1
+                    if (authenticated) {
+                        Result.success(Unit)
+                    } else {
+                        val message = userInfo?.optString("message")?.takeIf { it.isNotBlank() }
+                            ?: "تعذر التحقق من بيانات الدخول"
+                        Result.failure(IOException(message))
+                    }
+                }
+            } catch (error: Exception) {
+                Log.e(TAG, "Login validation failed", error)
+                Result.failure(error)
+            }
+        }
 
     // ================= LIVE STREAMS =================
 
@@ -278,8 +323,8 @@ class MediaRepository(
                             cast = obj.optString("cast", ""),
                             director = obj.optString("director", ""),
                             genre = obj.optString("genre", ""),
-                            releaseDate = obj.optString("releaseDate", ""),
-                            durationSecs = obj.optString("durationSecs", ""),
+                            releaseDate = obj.optString("release_date", ""),
+                            durationSecs = obj.optString("duration_secs", ""),
                             duration = obj.optString("duration", ""),
                             categoryId = obj.optString("category_id"),
                             containerExtension = obj.optString("container_extension", "mp4"),
@@ -334,7 +379,7 @@ class MediaRepository(
                             cast = obj.optString("cast", ""),
                             director = obj.optString("director", ""),
                             genre = obj.optString("genre"),
-                            releaseDate = obj.optString("releaseDate", ""),
+                            releaseDate = obj.optString("release_date", ""),
                             categoryId = obj.optString("category_id"),
                             rating = obj.optString("rating"),
                             isFavorite = false
@@ -354,6 +399,49 @@ class MediaRepository(
             } catch (e: Exception) {
                 Log.e(TAG, "getSeries error", e)
                 Result.failure(e)
+            }
+        }
+
+    // ================= SERIES EPISODES =================
+
+    suspend fun getSeriesEpisodes(seriesId: String): Result<List<Episode>> =
+        withContext(Dispatchers.IO) {
+            try {
+                if (isM3U()) {
+                    return@withContext Result.failure(IOException("قوائم M3U لا تحتوي على بيانات حلقات المسلسلات"))
+                }
+                val url = buildApiUrl("get_series_info", "&series_id=${encodeQueryParameter(seriesId)}")
+                val body = request(url)
+                val episodesObject = JSONObject(body).optJSONObject("episodes")
+                    ?: return@withContext Result.success(emptyList())
+
+                val episodes = mutableListOf<Episode>()
+                val seasons = episodesObject.keys()
+                while (seasons.hasNext()) {
+                    val seasonKey = seasons.next()
+                    val seasonNumber = seasonKey.toIntOrNull() ?: 0
+                    val array = episodesObject.optJSONArray(seasonKey) ?: continue
+                    for (index in 0 until array.length()) {
+                        val item = array.optJSONObject(index) ?: continue
+                        val info = item.optJSONObject("info")
+                        episodes += Episode(
+                            id = item.optString("id"),
+                            episodeNum = item.optInt("episode_num", index + 1),
+                            title = item.optString("title").ifBlank { "الحلقة ${index + 1}" },
+                            containerExtension = item.optString("container_extension", "mp4"),
+                            info = EpisodeInfo(
+                                plot = info?.optString("plot")?.takeIf { it.isNotBlank() },
+                                duration = info?.optString("duration")?.takeIf { it.isNotBlank() },
+                                rating = info?.optString("rating")?.takeIf { it.isNotBlank() }
+                            ),
+                            seasonNumber = seasonNumber
+                        )
+                    }
+                }
+                Result.success(episodes.sortedWith(compareBy<Episode> { it.seasonNumber }.thenBy { it.episodeNum }))
+            } catch (error: Exception) {
+                Log.e(TAG, "getSeriesEpisodes error", error)
+                Result.failure(error)
             }
         }
 
