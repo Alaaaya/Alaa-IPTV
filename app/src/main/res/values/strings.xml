@@ -1,44 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
     <!-- App -->
     <string name="app_name">Alaa IPTV</string>
+    <string name="premium">PREMIUM</string>
+    <string name="ibo_tv">IBO TV</string>
+
+    <!-- Sidebar -->
+    <string name="menu_home">الصفحة الرئيسية</string>
+    <string name="menu_live">البث المباشر</string>
+    <string name="menu_movies">الأفلام</string>
+    <string name="menu_series">المسلسلات</string>
+    <string name="menu_favorites">المفضلة</string>
+    <string name="menu_recent">المشاهدة الأخيرة</string>
+    <string name="menu_categories">الفئات</string>
+    <string name="menu_server">تغيير السيرفر</string>
+    <string name="menu_settings">الإعدادات</string>
+    <string name="security_title">حماية وأمان</string>
+    <string name="security_desc">بياناتك وسيرفرات موثوقة</string>
+
+    <!-- Top Bar -->
+    <string name="search">بحث</string>
+
+    <!-- Hero -->
+    <string name="hero_title">البث المباشر</string>
+    <string name="hero_desc">أكثر من 5000 قناة مباشرة بجودة عالية</string>
+    <string name="watch_now">شاهد الآن</string>
+
+    <!-- Sections -->
+    <string name="browse_categories">تصفح الفئات</string>
+    <string name="continue_watching">متابعة المشاهدة</string>
+    <string name="view_all">عرض الكل</string>
+
+    <!-- Bottom Info -->
+    <string name="info_secure">حماية وأمان</string>
+    <string name="info_secure_desc">بياناتك محمية بالكامل</string>
+    <string name="info_uptime">وقت التشغيل وقت 99.9%</string>
+    <string name="info_uptime_desc">سيرفرات قوية ومستقرة</string>
+    <string name="info_quality">جودة عالية</string>
+    <string name="info_quality_desc">HD / FHD / 4K</string>
+    <string name="info_support">دعم فني 24/7</string>
+    <string name="info_support_desc">نحن هنا دائماً لمساعدتك</string>
 
     <!-- Login -->
-    <string name="login_title">Welcome to Alaa IPTV</string>
-    <string name="server_url">Server URL</string>
-    <string name="username">Username</string>
-    <string name="password">Password</string>
-    <string name="login">Login</string>
-    <string name="logging_in">Logging in…</string>
-    <string name="login_error">Login failed. Please check your credentials.</string>
-    <string name="network_error">Network error. Please check your connection.</string>
-
-    <!-- Main / Tabs -->
-    <string name="live_tv">Live TV</string>
-    <string name="movies">Movies</string>
-    <string name="series">Series</string>
-    <string name="favorites">Favorites</string>
-    <string name="recents">Recents</string>
-    <string name="settings">Settings</string>
-
-    <!-- Categories -->
-    <string name="all_channels">All Channels</string>
-    <string name="loading">Loading…</string>
-    <string name="no_channels">No channels available</string>
-    <string name="no_movies">No movies available</string>
-    <string name="no_series">No series available</string>
-
-    <!-- Player -->
-    <string name="play">Play</string>
-    <string name="player_error">Error playing media</string>
-    <string name="add_to_favorites">Add to Favorites</string>
-    <string name="remove_from_favorites">Remove from Favorites</string>
-
-    <!-- Actions -->
-    <string name="long_press_to_reorder">Long press OK to reorder</string>
-    <string name="reordering_mode">
-        Reordering Mode - Use arrows to move, OK to confirm
-    </string>
-
+    <string name="login_title">مرحباً بك في Alaa IPTV</string>
+    <string name="server_url">رابط السيرفر</string>
+    <string name="username">اسم المستخدم</string>
+    <string name="password">كلمة المرور</string>
+    <string name="login">تسجيل الدخول</string>
+    <string name="logging_in">جاري تسجيل الدخول...</string>
+    <string name="login_error">فشل تسجيل الدخول. يرجى التحقق من البيانات.</string>
+    <string name="network_error">خطأ في الشبكة. يرجى التحقق من الاتصال.</string>
 </resources>

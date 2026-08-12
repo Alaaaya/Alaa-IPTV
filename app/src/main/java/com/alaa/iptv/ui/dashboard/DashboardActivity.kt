@@ -18,9 +18,9 @@ import com.alaa.iptv.data.repository.MediaRepository
 import com.alaa.iptv.databinding.ActivityDashboardBinding
 import com.alaa.iptv.ui.main.MainActivity
 import com.alaa.iptv.ui.player.PlayerActivity
+import com.alaa.iptv.utils.UpdateChecker
 import com.bumptech.glide.Glide
 import kotlinx.coroutines.launch
-import com.alaa.iptv.utils.UpdateChecker
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -65,24 +65,32 @@ class DashboardActivity : AppCompatActivity() {
         checkUpdates()
         startClock()
 
-        // Load content with delay to ensure UI is ready
         binding.root.post {
             loadContent()
         }
     }
 
-    // ================= SIDEBAR =================
+    private fun checkUpdates() {
+        lifecycleScope.launch {
+            try {
+                UpdateChecker(this@DashboardActivity).checkForUpdate(showToast = false)
+            } catch (e: Exception) {
+                Log.e(TAG, "Update check failed", e)
+            }
+        }
+    }
 
     private fun setupSidebar() {
         val items = listOf(
-            SidebarItem("Live TV", R.drawable.ic_live_tv, true) { openMain(MainActivity.MODE_LIVE) },
-            SidebarItem("Movies", R.drawable.ic_movies, false) { openMain(MainActivity.MODE_MOVIES) },
-            SidebarItem("Series", R.drawable.ic_series, false) { openMain(MainActivity.MODE_SERIES) },
-            SidebarItem("Favorites", R.drawable.ic_favorite, false) { showToast("Coming soon") },
-            SidebarItem("Recently", R.drawable.ic_recent, false) { showToast("Coming soon") },
-            SidebarItem("Categories", R.drawable.ic_categories, false) { showToast("Coming soon") },
-            SidebarItem("Change Server", R.drawable.ic_server, false) { showToast("Coming soon") },
-            SidebarItem("Settings", R.drawable.ic_settings, false) { showToast("Coming soon") }
+            SidebarItem(getString(R.string.menu_home), R.drawable.ic_logo, true) { /* Home */ },
+            SidebarItem(getString(R.string.menu_live), R.drawable.ic_live_tv, false) { openMain(MainActivity.MODE_LIVE) },
+            SidebarItem(getString(R.string.menu_movies), R.drawable.ic_movies, false) { openMain(MainActivity.MODE_MOVIES) },
+            SidebarItem(getString(R.string.menu_series), R.drawable.ic_series, false) { openMain(MainActivity.MODE_SERIES) },
+            SidebarItem(getString(R.string.menu_favorites), R.drawable.ic_favorite, false) { showToast("قريباً") },
+            SidebarItem(getString(R.string.menu_recent), R.drawable.ic_recent, false) { showToast("قريباً") },
+            SidebarItem(getString(R.string.menu_categories), R.drawable.ic_categories, false) { showToast("قريباً") },
+            SidebarItem(getString(R.string.menu_server), R.drawable.ic_server, false) { showToast("قريباً") },
+            SidebarItem(getString(R.string.menu_settings), R.drawable.ic_settings, false) { showToast("قريباً") }
         )
 
         val adapter = SidebarAdapter(items) { item ->
@@ -92,18 +100,16 @@ class DashboardActivity : AppCompatActivity() {
         binding.sidebarRecyclerView.apply {
             layoutManager = LinearLayoutManager(this@DashboardActivity)
             this.adapter = adapter
-            post {
-                val firstView = layoutManager?.findViewByPosition(0)
-                firstView?.requestFocus()
-            }
         }
+        
+        binding.securityTitle.text = getString(R.string.security_title)
+        binding.securityDesc.text = getString(R.string.security_desc)
     }
 
-    // ================= HERO BANNER =================
-
     private fun setupHeroBanner() {
-        binding.heroTitle.text = "Live TV"
-        binding.heroSubtitle.text = "Watch 1000+ Live Channels"
+        binding.heroTitle.text = getString(R.string.hero_title)
+        binding.heroSubtitle.text = getString(R.string.hero_desc)
+        binding.heroWatchNow.text = getString(R.string.watch_now)
         binding.heroWatchNow.setOnClickListener {
             openMain(MainActivity.MODE_LIVE)
         }
@@ -114,16 +120,14 @@ class DashboardActivity : AppCompatActivity() {
             .into(binding.heroImage)
     }
 
-    // ================= CATEGORIES =================
-
     private fun setupCategories() {
-        // Placeholder - will be populated after loading
+        binding.categoriesHeaderTitle.text = getString(R.string.browse_categories)
+        binding.categoriesViewAll.text = getString(R.string.view_all)
         updateCategories(emptyList())
     }
 
     private fun updateCategories(categories: List<CategoryItem>) {
         if (_binding == null) return
-
         val adapter = CategoryCardAdapter(categories) { category ->
             when (category.type) {
                 "live" -> openMain(MainActivity.MODE_LIVE)
@@ -132,53 +136,40 @@ class DashboardActivity : AppCompatActivity() {
                 else -> openMain(MainActivity.MODE_LIVE)
             }
         }
-
         binding.categoriesRecyclerView.apply {
             layoutManager = GridLayoutManager(this@DashboardActivity, 1, GridLayoutManager.HORIZONTAL, false)
             this.adapter = adapter
         }
     }
 
-    // ================= CONTINUE WATCHING =================
-
     private fun setupContinueWatching() {
+        binding.continueWatchingHeaderTitle.text = getString(R.string.continue_watching)
+        binding.continueWatchingViewAll.text = getString(R.string.view_all)
         updateContinueWatching(emptyList())
     }
 
     private fun updateContinueWatching(items: List<ContinueWatchingItem>) {
         if (_binding == null) return
-
         val adapter = ContinueWatchingAdapter(items) { item ->
             playContent(item)
         }
-
         binding.continueWatchingRecyclerView.apply {
             layoutManager = LinearLayoutManager(this@DashboardActivity, LinearLayoutManager.HORIZONTAL, false)
             this.adapter = adapter
         }
     }
 
-    // ================= BOTTOM INFO =================
-
-    private fun checkUpdates() {
-        lifecycleScope.launch {
-            UpdateChecker(this@DashboardActivity).checkForUpdate(showToast = false)
-        }
-    }
-
     private fun setupBottomInfo() {
         if (_binding == null) return
-        binding.infoSecure.text = "Secure & Safe"
-        binding.infoSecureDesc.text = "Your data is protected"
-        binding.infoUptime.text = "99.9% Uptime"
-        binding.infoUptimeDesc.text = "Reliable Servers"
-        binding.infoQuality.text = "High Quality"
-        binding.infoQualityDesc.text = "HD / FHD / 4K"
-        binding.infoSupport.text = "24/7 Support"
-        binding.infoSupportDesc.text = "Always Here to Help"
+        binding.infoSecure.text = getString(R.string.info_secure)
+        binding.infoSecureDesc.text = getString(R.string.info_secure_desc)
+        binding.infoUptime.text = getString(R.string.info_uptime)
+        binding.infoUptimeDesc.text = getString(R.string.info_uptime_desc)
+        binding.infoQuality.text = getString(R.string.info_quality)
+        binding.infoQualityDesc.text = getString(R.string.info_quality_desc)
+        binding.infoSupport.text = getString(R.string.info_support)
+        binding.infoSupportDesc.text = getString(R.string.info_support_desc)
     }
-
-    // ================= CLOCK =================
 
     private fun startClock() {
         updateDateTime()
@@ -189,210 +180,85 @@ class DashboardActivity : AppCompatActivity() {
         if (_binding == null) return
         try {
             val now = Date()
-            val timeFormat = SimpleDateFormat("hh:mm a", Locale.getDefault())
+            val timeFormat = SimpleDateFormat("hh:mm a", Locale("ar"))
             binding.timeText.text = timeFormat.format(now)
 
-            val dateFormat = SimpleDateFormat("EEEE, dd MMMM yyyy", Locale.getDefault())
+            val dateFormat = SimpleDateFormat("EEEE، dd MMMM yyyy", Locale("ar"))
             binding.dateText.text = dateFormat.format(now)
         } catch (e: Exception) {
             Log.e(TAG, "Error updating date/time", e)
         }
     }
 
-    // ================= CONTENT LOADING =================
-
     private fun loadContent() {
         lifecycleScope.launch {
-            var hasError = false
-
-            // Load channels
             try {
                 val channelsResult = repository.getLiveStreams(null)
                 if (channelsResult.isSuccess) {
                     allChannels = channelsResult.getOrDefault(emptyList())
-                    Log.d(TAG, "Loaded ${allChannels.size} channels")
-                } else {
-                    Log.e(TAG, "Failed to load channels: ${channelsResult.exceptionOrNull()?.message}")
-                    hasError = true
                 }
-            } catch (e: Exception) {
-                Log.e(TAG, "Exception loading channels", e)
-                hasError = true
-            }
-
-            // Load movies
-            try {
                 val moviesResult = repository.getMovies(null)
                 if (moviesResult.isSuccess) {
-                    val movies = moviesResult.getOrDefault(emptyList())
-                    allMovies = movies.map { movie ->
-                        Channel(
-                            streamId = movie.streamId,
-                            num = movie.streamId,
-                            name = movie.name,
-                            streamType = "movie",
-                            streamIcon = movie.streamIcon,
-                            epgChannelId = null,
-                            added = null,
-                            categoryId = movie.categoryId,
-                            categoryName = null,
-                            customSid = null,
-                            tvArchive = 0,
-                            directSource = movie.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password),
-                            tvArchiveDuration = 0,
-                            isFavorite = movie.isFavorite
-                        )
-                    }
-                    Log.d(TAG, "Loaded ${allMovies.size} movies")
-                } else {
-                    Log.e(TAG, "Failed to load movies: ${moviesResult.exceptionOrNull()?.message}")
+                    allMovies = moviesResult.getOrDefault(emptyList()).map { it.toChannel() }
                 }
-            } catch (e: Exception) {
-                Log.e(TAG, "Exception loading movies", e)
-            }
-
-            // Load series
-            try {
                 val seriesResult = repository.getSeries(null)
                 if (seriesResult.isSuccess) {
-                    val seriesList = seriesResult.getOrDefault(emptyList())
-                    allSeries = seriesList.map { series ->
-                        Channel(
-                            streamId = series.seriesId,
-                            num = series.seriesId,
-                            name = series.name,
-                            streamType = "series",
-                            streamIcon = series.cover,
-                            epgChannelId = null,
-                            added = null,
-                            categoryId = series.categoryId,
-                            categoryName = null,
-                            customSid = null,
-                            tvArchive = 0,
-                            directSource = null,
-                            tvArchiveDuration = 0,
-                            isFavorite = series.isFavorite
-                        )
-                    }
-                    Log.d(TAG, "Loaded ${allSeries.size} series")
-                } else {
-                    Log.e(TAG, "Failed to load series: ${seriesResult.exceptionOrNull()?.message}")
+                    allSeries = seriesResult.getOrDefault(emptyList()).map { it.toChannel() }
                 }
-            } catch (e: Exception) {
-                Log.e(TAG, "Exception loading series", e)
-            }
-
-            // Update UI only if binding is still valid
-            if (_binding != null) {
                 updateUI()
-            }
-
-            if (hasError) {
-                showToast("Some content failed to load. Check your connection.")
+            } catch (e: Exception) {
+                Log.e(TAG, "Content loading failed", e)
             }
         }
     }
 
     private fun updateUI() {
         if (_binding == null) return
+        val categories = mutableListOf<CategoryItem>()
+        categories.add(CategoryItem("كل القنوات", allChannels.size, R.drawable.ic_live_tv, "#E53935", "live"))
+        categories.add(CategoryItem("الرياضة", allChannels.count { it.name.contains("sport", true) }, R.drawable.ic_sports, "#2196F3", "live"))
+        categories.add(CategoryItem("الأخبار", allChannels.count { it.name.contains("news", true) }, R.drawable.ic_news, "#4CAF50", "live"))
+        categories.add(CategoryItem("الأفلام", allMovies.size, R.drawable.ic_movies, "#E53935", "movie"))
+        categories.add(CategoryItem("الأطفال", allChannels.count { it.name.contains("kids", true) }, R.drawable.ic_kids, "#FF9800", "live"))
+        categories.add(CategoryItem("الوثائقيات", allChannels.count { it.name.contains("doc", true) }, R.drawable.ic_documentary, "#00BCD4", "live"))
+        updateCategories(categories)
 
-        try {
-            // Build category cards
-            val categories = mutableListOf<CategoryItem>()
-            categories.add(CategoryItem("All Channels", allChannels.size, R.drawable.ic_live_tv, "#E53935", "live"))
-            categories.add(CategoryItem("Sports", allChannels.count { 
-                it.categoryName?.contains("sport", true) == true || it.name.contains("sport", true) 
-            }, R.drawable.ic_sports, "#2196F3", "live"))
-            categories.add(CategoryItem("News", allChannels.count { 
-                it.categoryName?.contains("news", true) == true || it.name.contains("news", true) 
-            }, R.drawable.ic_news, "#4CAF50", "live"))
-            categories.add(CategoryItem("Movies", allMovies.size, R.drawable.ic_movies, "#E53935", "movie"))
-            categories.add(CategoryItem("Kids", allChannels.count { 
-                it.categoryName?.contains("kids", true) == true || it.name.contains("kids", true) 
-            }, R.drawable.ic_kids, "#FF9800", "live"))
-            categories.add(CategoryItem("Documentary", allChannels.count { 
-                it.categoryName?.contains("doc", true) == true || it.name.contains("doc", true) 
-            }, R.drawable.ic_documentary, "#00BCD4", "live"))
-            categories.add(CategoryItem("More", 0, R.drawable.ic_more, "#9C27B0", "live"))
-
-            updateCategories(categories)
-
-            // Build continue watching
-            val continueItems = mutableListOf<ContinueWatchingItem>()
-            allMovies.take(5).forEach { movie ->
-                continueItems.add(ContinueWatchingItem(
-                    id = movie.streamId,
-                    title = movie.name,
-                    subtitle = "Movie",
-                    imageUrl = movie.streamIcon,
-                    progress = (0..100).random(),
-                    channel = movie
-                ))
-            }
-            allSeries.take(3).forEach { series ->
-                continueItems.add(ContinueWatchingItem(
-                    id = series.streamId,
-                    title = series.name,
-                    subtitle = "Series",
-                    imageUrl = series.streamIcon,
-                    progress = (0..100).random(),
-                    channel = series
-                ))
-            }
-
-            updateContinueWatching(continueItems)
-
-            // Update hero with first movie if available
-            if (allMovies.isNotEmpty()) {
-                val featured = allMovies.first()
-                binding.heroTitle.text = featured.name
-                binding.heroSubtitle.text = "Featured Movie"
-                if (!featured.streamIcon.isNullOrEmpty()) {
-                    Glide.with(this@DashboardActivity)
-                        .load(featured.streamIcon)
-                        .placeholder(R.drawable.bg_hero_sports)
-                        .into(binding.heroImage)
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error updating UI", e)
+        val continueItems = mutableListOf<ContinueWatchingItem>()
+        allMovies.take(3).forEach { movie ->
+            continueItems.add(ContinueWatchingItem(movie.streamId, movie.name, "فيلم", movie.streamIcon, (20..90).random(), movie))
         }
+        allSeries.take(2).forEach { series ->
+            continueItems.add(ContinueWatchingItem(series.streamId, series.name, "مسلسل", series.streamIcon, (10..50).random(), series))
+        }
+        updateContinueWatching(continueItems)
     }
 
-    // ================= NAVIGATION =================
-
     private fun openMain(mode: String) {
-        val intent = Intent(this, MainActivity::class.java).apply {
-            putExtra(MainActivity.EXTRA_MODE, mode)
-        }
-        startActivity(intent)
+        startActivity(Intent(this, MainActivity::class.java).apply { putExtra(MainActivity.EXTRA_MODE, mode) })
     }
 
     private fun playContent(item: ContinueWatchingItem) {
-        val channel = item.channel
-        val url = channel.directSource
-            ?: channel.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password)
-
-        if (url.isNullOrBlank()) {
-            showToast("No stream URL")
-            return
-        }
-
-        startActivity(
-            Intent(this, PlayerActivity::class.java)
-                .putExtra("STREAM_URL", url)
-                .putExtra("CHANNEL_NAME", channel.name)
-                .putExtra("STREAM_TYPE", channel.streamType)
-        )
+        val url = item.channel.directSource ?: item.channel.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password)
+        if (url.isNullOrBlank()) return
+        startActivity(Intent(this, PlayerActivity::class.java)
+            .putExtra("STREAM_URL", url).putExtra("CHANNEL_NAME", item.channel.name).putExtra("STREAM_TYPE", item.channel.streamType))
     }
 
     private fun showToast(message: String) {
-        try {
-            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-        } catch (e: Exception) {
-            Log.e(TAG, "Error showing toast", e)
-        }
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
+
+    private fun com.alaa.iptv.data.models.Movie.toChannel() = Channel(
+        streamId = streamId, num = streamId, name = name, streamType = "movie",
+        streamIcon = streamIcon, epgChannelId = null, added = null, categoryId = categoryId,
+        categoryName = null, customSid = null, tvArchive = 0, directSource = null, isFavorite = isFavorite
+    )
+    
+    private fun com.alaa.iptv.data.models.Series.toChannel() = Channel(
+        streamId = seriesId, num = seriesId, name = name, streamType = "series",
+        streamIcon = cover, epgChannelId = null, added = null, categoryId = categoryId,
+        categoryName = null, customSid = null, tvArchive = 0, directSource = null, isFavorite = isFavorite
+    )
 
     override fun onDestroy() {
         super.onDestroy()
@@ -401,28 +267,6 @@ class DashboardActivity : AppCompatActivity() {
     }
 }
 
-// ================= DATA CLASSES =================
-
-data class SidebarItem(
-    val title: String,
-    val iconRes: Int,
-    val isSelected: Boolean = false,
-    val action: () -> Unit
-)
-
-data class CategoryItem(
-    val name: String,
-    val count: Int,
-    val iconRes: Int,
-    val colorHex: String,
-    val type: String
-)
-
-data class ContinueWatchingItem(
-    val id: String,
-    val title: String,
-    val subtitle: String,
-    val imageUrl: String?,
-    val progress: Int,
-    val channel: Channel
-)
+data class SidebarItem(val title: String, val iconRes: Int, val isSelected: Boolean = false, val action: () -> Unit)
+data class CategoryItem(val name: String, val count: Int, val iconRes: Int, val colorHex: String, val type: String)
+data class ContinueWatchingItem(val id: String, val title: String, val subtitle: String, val imageUrl: String?, val progress: Int, val channel: Channel)
