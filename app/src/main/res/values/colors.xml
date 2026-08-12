@@ -24,6 +24,9 @@
     <color name="text_primary">#FFFFFF</color>
     <color name="text_secondary">#B0B0B0</color>
     <color name="text_hint">#808080</color>
+    <color name="text_white">#FFFFFF</color>
+    <color name="text_gray_light">#B0B0B0</color>
+    <color name="text_gray_dark">#808080</color>
     
     <!-- Functional Colors -->
     <color name="black">#000000</color>
