@@ -161,7 +161,9 @@ class DashboardActivity : AppCompatActivity() {
     // ================= BOTTOM INFO =================
 
     private fun checkUpdates() {
-        UpdateChecker(this).checkForUpdates(showToast = false)
+        lifecycleScope.launch {
+            UpdateChecker(this@DashboardActivity).checkForUpdate(showToast = false)
+        }
     }
 
     private fun setupBottomInfo() {
