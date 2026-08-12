@@ -234,7 +234,12 @@ class DashboardActivity : AppCompatActivity() {
     }
 
     private fun openMain(mode: String) {
-        startActivity(Intent(this, MainActivity::class.java).apply { putExtra(MainActivity.EXTRA_MODE, mode) })
+        val intent = if (mode == MainActivity.MODE_MOVIES) {
+            Intent(this, MoviesActivity::class.java)
+        } else {
+            Intent(this, MainActivity::class.java).apply { putExtra(MainActivity.EXTRA_MODE, mode) }
+        }
+        startActivity(intent)
     }
 
     private fun playContent(item: ContinueWatchingItem) {
