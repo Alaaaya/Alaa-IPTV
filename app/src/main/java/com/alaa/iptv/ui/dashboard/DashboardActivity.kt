@@ -302,18 +302,18 @@ class DashboardActivity : AppCompatActivity() {
             categories.add(CategoryItem("All Channels", allChannels.size, R.drawable.ic_live_tv, "#E53935", "live"))
             categories.add(CategoryItem("Sports", allChannels.count { 
                 it.categoryName?.contains("sport", true) == true || it.name.contains("sport", true) 
-            }, R.drawable.ic_sports, "#1E88E5", "live"))
+            }, R.drawable.ic_sports, "#2196F3", "live"))
             categories.add(CategoryItem("News", allChannels.count { 
                 it.categoryName?.contains("news", true) == true || it.name.contains("news", true) 
-            }, R.drawable.ic_news, "#43A047", "live"))
+            }, R.drawable.ic_news, "#4CAF50", "live"))
             categories.add(CategoryItem("Movies", allMovies.size, R.drawable.ic_movies, "#E53935", "movie"))
             categories.add(CategoryItem("Kids", allChannels.count { 
                 it.categoryName?.contains("kids", true) == true || it.name.contains("kids", true) 
-            }, R.drawable.ic_kids, "#FB8C00", "live"))
+            }, R.drawable.ic_kids, "#FF9800", "live"))
             categories.add(CategoryItem("Documentary", allChannels.count { 
                 it.categoryName?.contains("doc", true) == true || it.name.contains("doc", true) 
-            }, R.drawable.ic_documentary, "#00897B", "live"))
-            categories.add(CategoryItem("More", 0, R.drawable.ic_more, "#5E35B1", "live"))
+            }, R.drawable.ic_documentary, "#00BCD4", "live"))
+            categories.add(CategoryItem("More", 0, R.drawable.ic_more, "#9C27B0", "live"))
 
             updateCategories(categories)
 
