@@ -17,12 +17,12 @@ class ChannelAdapter(
 ) : RecyclerView.Adapter<ChannelAdapter.ChannelViewHolder>() {
 
     private var selectedPosition = -1
+    private var onChannelFocus: (Channel) -> Unit = {}
 
     inner class ChannelViewHolder(private val binding: ItemChannelBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
         init {
-            // === CLICK: Play channel directly ===
             binding.root.setOnClickListener {
                 val position = bindingAdapterPosition
                 if (position != RecyclerView.NO_POSITION) {
@@ -31,25 +31,12 @@ class ChannelAdapter(
                 }
             }
 
-            // === LONG CLICK: Also play (shortcut) ===
-            binding.root.setOnLongClickListener {
-                val position = bindingAdapterPosition
-                if (position != RecyclerView.NO_POSITION) {
-                    onChannelLongClick(channels[position])
-                    true
-                } else {
-                    false
-                }
-            }
-
-            // === FOCUS: Update preview/selection only (no playback) ===
             binding.root.setOnFocusChangeListener { _, hasFocus ->
                 updateUI(hasFocus)
                 if (hasFocus) {
                     val position = bindingAdapterPosition
                     if (position != RecyclerView.NO_POSITION) {
                         setSelectedPosition(position)
-                        // Only update preview on focus, do NOT play
                         onChannelFocus(channels[position])
                     }
                 }
@@ -59,16 +46,22 @@ class ChannelAdapter(
         fun bind(channel: Channel, isSelected: Boolean, position: Int) {
             binding.channelName.text = channel.name
             binding.channelNumber.text = (position + 1).toString()
+            
+            // iBO Player Style: Quality tag (Mock for now or extract from name)
+            binding.qualityTag.text = if (channel.name.contains("HD", true)) "HD" else "SD"
+            
+            // Favorite indicator
+            binding.favoriteIndicator.visibility = if (channel.isFavorite) View.VISIBLE else View.VISIBLE // Always show icon as in image
+            binding.favoriteIndicator.alpha = if (channel.isFavorite) 1.0f else 0.3f
 
-            // Load channel icon
             if (!channel.streamIcon.isNullOrEmpty()) {
                 Glide.with(binding.root.context)
                     .load(channel.streamIcon)
-                    .placeholder(R.drawable.app_banner)
-                    .error(R.drawable.app_banner)
+                    .placeholder(R.drawable.ic_logo)
+                    .error(R.drawable.ic_logo)
                     .into(binding.channelIcon)
             } else {
-                binding.channelIcon.setImageResource(R.drawable.app_banner)
+                binding.channelIcon.setImageResource(R.drawable.ic_logo)
             }
 
             updateUI(isSelected)
@@ -76,24 +69,24 @@ class ChannelAdapter(
 
         private fun updateUI(hasFocus: Boolean) {
             if (hasFocus) {
-                // Blue/Cyan background for focused item
-                binding.rootLayout.setBackgroundColor(Color.parseColor("#0056B3")) 
+                // iBO Player Red Focus
+                binding.root.setBackgroundResource(R.drawable.bg_sidebar_selected)
                 binding.channelName.setTextColor(Color.WHITE)
                 binding.channelNumber.setTextColor(Color.WHITE)
+                binding.qualityTag.setTextColor(Color.WHITE)
+                binding.favoriteIndicator.setColorFilter(Color.WHITE)
             } else {
-                binding.rootLayout.setBackgroundColor(Color.TRANSPARENT)
+                binding.root.setBackgroundColor(Color.TRANSPARENT)
                 binding.channelName.setTextColor(Color.WHITE)
-                binding.channelNumber.setTextColor(Color.WHITE)
+                binding.channelNumber.setTextColor(Color.parseColor("#808080"))
+                binding.qualityTag.setTextColor(Color.parseColor("#808080"))
+                binding.favoriteIndicator.setColorFilter(Color.parseColor("#808080"))
             }
         }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ChannelViewHolder {
-        val binding = ItemChannelBinding.inflate(
-            LayoutInflater.from(parent.context),
-            parent,
-            false
-        )
+        val binding = ItemChannelBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ChannelViewHolder(binding)
     }
 
@@ -112,16 +105,9 @@ class ChannelAdapter(
     fun setSelectedPosition(position: Int) {
         val previousPosition = selectedPosition
         selectedPosition = position
-        if (previousPosition >= 0 && previousPosition < channels.size) {
-            notifyItemChanged(previousPosition)
-        }
-        if (selectedPosition >= 0 && selectedPosition < channels.size) {
-            notifyItemChanged(selectedPosition)
-        }
+        if (previousPosition >= 0 && previousPosition < channels.size) notifyItemChanged(previousPosition)
+        if (selectedPosition >= 0 && selectedPosition < channels.size) notifyItemChanged(selectedPosition)
     }
-
-    // Separate callback for focus events (preview only, no playback)
-    private var onChannelFocus: (Channel) -> Unit = {}
 
     fun setOnChannelFocusListener(listener: (Channel) -> Unit) {
         onChannelFocus = listener

@@ -31,65 +31,30 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var prefs: AppPreferences
     private lateinit var repository: MediaRepository
-
     private lateinit var channelAdapter: ChannelAdapter
-    private lateinit var categoryAdapter: CategoryAdapter
-
     private var allChannels: List<Channel> = emptyList()
-    private var selectedChannel: Channel? = null
-    private var currentMode = MediaMode.LIVE_TV
-
-    private enum class MediaMode {
-        LIVE_TV, MOVIES, SERIES
-    }
-
-    // ================= LIFECYCLE =================
+    private var currentMode = "live"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         prefs = AppPreferences(this)
         repository = MediaRepository(prefs, this)
+        currentMode = intent.getStringExtra(EXTRA_MODE) ?: MODE_LIVE
 
-        currentMode = when (intent.getStringExtra(EXTRA_MODE)) {
-            MODE_MOVIES -> MediaMode.MOVIES
-            MODE_SERIES -> MediaMode.SERIES
-            else        -> MediaMode.LIVE_TV
-        }
-
-        setupRecyclerViews()
-        setupButtons()
+        setupChannelsList()
         loadContent()
     }
 
-    // ================= SETUP =================
-
-    private fun setupRecyclerViews() {
-
-        // Adapter الفئات
-        categoryAdapter = CategoryAdapter(emptyList()) { category ->
-            binding.categoryTitle.text = category.categoryName
-            filterByCategory(category)
-        }
-
-        binding.categoriesRecyclerView.apply {
-            layoutManager = LinearLayoutManager(this@MainActivity)
-            adapter = categoryAdapter
-            isFocusable = true
-            isFocusableInTouchMode = true
-        }
-
-        // Adapter القنوات - CLICK now plays, FOCUS updates preview
+    private fun setupChannelsList() {
         channelAdapter = ChannelAdapter(
             emptyList(),
-            onChannelClick      = { channel -> playChannel(channel) },  // ← FIXED: play on click
-            onChannelLongClick  = { channel -> playChannel(channel) }   // ← keep as shortcut
+            onChannelClick = { channel -> playChannel(channel) },
+            onChannelLongClick = { channel -> /* Toggle Favorite */ }
         )
 
-        // Focus listener for preview updates only (no playback)
         channelAdapter.setOnChannelFocusListener { channel ->
             updatePreview(channel)
         }
@@ -97,271 +62,49 @@ class MainActivity : AppCompatActivity() {
         binding.channelsRecyclerView.apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             adapter = channelAdapter
-            isFocusable = true
-            isFocusableInTouchMode = true
         }
     }
-
-    private fun setupButtons() {
-        binding.backButton.setOnClickListener { finish() }
-    }
-
-    // ================= LOAD CONTENT =================
 
     private fun loadContent() {
-        when (currentMode) {
-            MediaMode.LIVE_TV -> {
-                binding.moduleTitle.text = "القنوات"
-                loadLiveTV()
-            }
-            MediaMode.MOVIES -> {
-                binding.moduleTitle.text = "الأفلام"
-                loadMovies()
-            }
-            MediaMode.SERIES -> {
-                binding.moduleTitle.text = "المسلسلات"
-                loadSeries()
-            }
-        }
-    }
-
-    // ================= LIVE TV =================
-
-    private fun loadLiveTV() {
-        showLoading(true)
-
         lifecycleScope.launch {
             try {
-                // جلب القنوات
-                val streamsResult = repository.getLiveStreams(null)
-
-                if (streamsResult.isFailure) {
-                    showError("فشل تحميل القنوات: ${streamsResult.exceptionOrNull()?.message}")
-                    return@launch
+                val result = when (currentMode) {
+                    MODE_MOVIES -> repository.getMovies(null).map { list -> list.map { it.toChannel() } }
+                    MODE_SERIES -> repository.getSeries(null).map { list -> list.map { it.toChannel() } }
+                    else -> repository.getLiveStreams(null)
                 }
 
-                val channels = streamsResult.getOrDefault(emptyList())
-                allChannels = channels
-
-                Log.d(TAG, "Loaded ${channels.size} channels")
-
-                // ===== الفئات =====
-                val categories: List<Category>
-
-                if (repository.isM3U()) {
-                    // M3U: استخرج الفئات من القنوات مباشرة
-                    categories = channels
-                        .mapNotNull { it.categoryName?.trim()?.takeIf { n -> n.isNotBlank() } }
-                        .distinct()
-                        .sorted()
-                        .map { name -> Category(categoryId = name, categoryName = name, parentId = 0) }
-
-                    Log.d(TAG, "M3U categories: ${categories.size}")
-
-                } else {
-                    // Xtream Codes: جلب الفئات من API
-                    val catsResult = repository.getLiveCategories()
-                    categories = catsResult.getOrDefault(emptyList())
-
-                    Log.d(TAG, "Xtream categories: ${categories.size}")
+                if (result.isSuccess) {
+                    allChannels = result.getOrDefault(emptyList())
+                    channelAdapter.updateChannels(allChannels)
+                    if (allChannels.isNotEmpty()) {
+                        updatePreview(allChannels[0])
+                    }
+                    binding.channelCountFooter.text = "1 / ${allChannels.size}"
                 }
-
-                // إضافة "كل القنوات" في البداية
-                val allCats = mutableListOf(
-                    Category(categoryId = "all", categoryName = "كل القنوات", parentId = 0)
-                ).apply { addAll(categories) }
-
-                // تحديث الواجهة
-                categoryAdapter.updateCategories(allCats)
-                channelAdapter.updateChannels(channels)
-
-                if (channels.isNotEmpty()) {
-                    updatePreview(channels[0])
-                }
-
-                showLoading(false)
-                binding.categoriesRecyclerView.requestFocus()
-
             } catch (e: Exception) {
-                Log.e(TAG, "loadLiveTV exception", e)
-                showError("خطأ غير متوقع: ${e.message}")
+                Log.e(TAG, "Error loading content", e)
             }
         }
     }
-
-    // ================= MOVIES =================
-
-    private fun loadMovies() {
-        showLoading(true)
-
-        lifecycleScope.launch {
-            try {
-                val moviesResult  = repository.getMovies(null)
-                val catsResult    = repository.getMovieCategories()
-
-                if (moviesResult.isFailure) {
-                    showError("فشل تحميل الأفلام: ${moviesResult.exceptionOrNull()?.message}")
-                    return@launch
-                }
-
-                val movies = moviesResult.getOrDefault(emptyList())
-
-                // تحويل الأفلام إلى Channel للعرض
-                allChannels = movies.map { movie ->
-                    Channel(
-                        streamId        = movie.streamId,
-                        num             = movie.streamId,
-                        name            = movie.name,
-                        streamType      = "movie",
-                        streamIcon      = movie.streamIcon,
-                        epgChannelId    = null,
-                        added           = null,
-                        categoryId      = movie.categoryId,
-                        categoryName    = null,
-                        customSid       = null,
-                        tvArchive       = 0,
-                        directSource    = movie.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password),
-                        tvArchiveDuration = 0,
-                        isFavorite      = movie.isFavorite
-                    )
-                }
-
-                Log.d(TAG, "Loaded ${movies.size} movies")
-
-                // الفئات
-                val cats = catsResult.getOrDefault(emptyList())
-                val allCats = mutableListOf(
-                    Category(categoryId = "all", categoryName = "كل الأفلام", parentId = 0)
-                ).apply { addAll(cats) }
-
-                categoryAdapter.updateCategories(allCats)
-                channelAdapter.updateChannels(allChannels)
-
-                if (allChannels.isNotEmpty()) updatePreview(allChannels[0])
-
-                showLoading(false)
-                binding.channelsRecyclerView.requestFocus()
-
-            } catch (e: Exception) {
-                Log.e(TAG, "loadMovies exception", e)
-                showError("خطأ: ${e.message}")
-            }
-        }
-    }
-
-    // ================= SERIES =================
-
-    private fun loadSeries() {
-        showLoading(true)
-
-        lifecycleScope.launch {
-            try {
-                val seriesResult = repository.getSeries(null)
-                val catsResult   = repository.getSeriesCategories()
-
-                if (seriesResult.isFailure) {
-                    showError("فشل تحميل المسلسلات: ${seriesResult.exceptionOrNull()?.message}")
-                    return@launch
-                }
-
-                val seriesList = seriesResult.getOrDefault(emptyList())
-
-                // تحويل المسلسلات إلى Channel
-                allChannels = seriesList.map { series ->
-                    Channel(
-                        streamId        = series.seriesId,
-                        num             = series.seriesId,
-                        name            = series.name,
-                        streamType      = "series",
-                        streamIcon      = series.cover,
-                        epgChannelId    = null,
-                        added           = null,
-                        categoryId      = series.categoryId,
-                        categoryName    = null,
-                        customSid       = null,
-                        tvArchive       = 0,
-                        directSource    = null,
-                        tvArchiveDuration = 0,
-                        isFavorite      = series.isFavorite
-                    )
-                }
-
-                Log.d(TAG, "Loaded ${seriesList.size} series")
-
-                // الفئات
-                val cats = catsResult.getOrDefault(emptyList())
-                val allCats = mutableListOf(
-                    Category(categoryId = "all", categoryName = "كل المسلسلات", parentId = 0)
-                ).apply { addAll(cats) }
-
-                categoryAdapter.updateCategories(allCats)
-                channelAdapter.updateChannels(allChannels)
-
-                if (allChannels.isNotEmpty()) updatePreview(allChannels[0])
-
-                showLoading(false)
-                binding.channelsRecyclerView.requestFocus()
-
-            } catch (e: Exception) {
-                Log.e(TAG, "loadSeries exception", e)
-                showError("خطأ: ${e.message}")
-            }
-        }
-    }
-
-    // ================= FILTER BY CATEGORY =================
-
-    private fun filterByCategory(category: Category) {
-
-        val filtered = if (category.categoryId == "all") {
-            allChannels
-        } else {
-            allChannels.filter { channel ->
-                // دعم Xtream (categoryId) وM3U (categoryName)
-                channel.categoryId == category.categoryId ||
-                channel.categoryName == category.categoryName
-            }
-        }
-
-        Log.d(TAG, "Filter '${category.categoryName}': ${filtered.size} items")
-
-        channelAdapter.updateChannels(filtered)
-
-        if (filtered.isNotEmpty()) {
-            updatePreview(filtered[0])
-            binding.channelsRecyclerView.scrollToPosition(0)
-        }
-    }
-
-    // ================= PREVIEW =================
 
     private fun updatePreview(channel: Channel) {
-        selectedChannel = channel
         binding.previewTitle.text = channel.name
-
+        binding.previewSubtitle.text = channel.categoryName ?: "بث مباشر"
+        
         Glide.with(this)
             .load(channel.streamIcon)
-            .placeholder(R.drawable.app_banner)
-            .error(R.drawable.app_banner)
+            .placeholder(R.drawable.bg_hero_sports)
+            .error(R.drawable.bg_hero_sports)
             .into(binding.previewImage)
+            
+        val pos = allChannels.indexOf(channel) + 1
+        binding.channelCountFooter.text = "$pos / ${allChannels.size}"
     }
 
-    // ================= PLAY =================
-
     private fun playChannel(channel: Channel) {
-        val url = channel.directSource
-            ?: channel.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password)
-
-        if (url.isNullOrBlank()) {
-            Toast.makeText(this, "لا يوجد رابط للبث", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        // Log stream URL safely (hide password)
-        val safeUrl = url.replace(prefs.password, "***")
-        Log.d(TAG, "▶️ Playing channel: ${channel.name}")
-        Log.d(TAG, "▶️ Stream URL: $safeUrl")
-        Log.d(TAG, "▶️ Stream Type: ${channel.streamType}")
+        val url = channel.directSource ?: channel.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password)
+        if (url.isNullOrBlank()) return
 
         startActivity(
             Intent(this, PlayerActivity::class.java)
@@ -370,17 +113,17 @@ class MainActivity : AppCompatActivity() {
                 .putExtra("STREAM_TYPE", channel.streamType)
         )
     }
-
-    // ================= UI HELPERS =================
-
-    private fun showLoading(show: Boolean) {
-        // إذا عندك ProgressBar في الـ layout اسمها progressBar فعّله هنا
-        // binding.progressBar.visibility = if (show) View.VISIBLE else View.GONE
-    }
-
-    private fun showError(message: String) {
-        showLoading(false)
-        Log.e(TAG, message)
-        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
-    }
+    
+    // Helper to convert Movie/Series to Channel for unified list
+    private fun com.alaa.iptv.data.models.Movie.toChannel() = Channel(
+        streamId = streamId, num = streamId, name = name, streamType = "movie",
+        streamIcon = streamIcon, epgChannelId = null, added = null, categoryId = categoryId,
+        categoryName = null, customSid = null, tvArchive = 0, directSource = null, isFavorite = isFavorite
+    )
+    
+    private fun com.alaa.iptv.data.models.Series.toChannel() = Channel(
+        streamId = seriesId, num = seriesId, name = name, streamType = "series",
+        streamIcon = cover, epgChannelId = null, added = null, categoryId = categoryId,
+        categoryName = null, customSid = null, tvArchive = 0, directSource = null, isFavorite = isFavorite
+    )
 }
