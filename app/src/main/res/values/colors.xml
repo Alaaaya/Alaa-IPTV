@@ -1,34 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Primary Colors -->
-    <color name="primary_blue">#2196F3</color>
-    <color name="accent_blue">#64B5F6</color>
-    <color name="dark_blue">#1976D2</color>
+    <!-- iBO Player Core Palette -->
+    <color name="ibo_bg_dark">#0A0E17</color>
+    <color name="ibo_sidebar_bg">#0D1117</color>
+    <color name="ibo_accent_red">#E53935</color>
+    <color name="ibo_accent_blue">#2196F3</color>
+    <color name="ibo_accent_green">#4CAF50</color>
+    <color name="ibo_accent_orange">#FF9800</color>
+    <color name="ibo_accent_purple">#9C27B0</color>
     
-    <!-- Background Colors -->
-    <color name="dark_background">#0D1117</color>
-    <color name="card_background">#161B22</color>
-    <color name="glassmorphism_background">#26FFFFFF</color>
-    <color name="glassmorphism_stroke">#40FFFFFF</color>
+    <!-- Glassmorphism Effects -->
+    <color name="glass_white_10">#1AFFFFFF</color>
+    <color name="glass_white_20">#33FFFFFF</color>
+    <color name="glass_white_30">#4DFFFFFF</color>
+    <color name="glass_border">#40FFFFFF</color>
     
     <!-- Text Colors -->
-    <color name="text_primary">#FFFFFF</color>
-    <color name="text_secondary">#B0B0B0</color>
-    <color name="text_hint">#808080</color>
+    <color name="text_white">#FFFFFF</color>
+    <color name="text_gray_light">#B0B0B0</color>
+    <color name="text_gray_dark">#808080</color>
     
-    <!-- Focus Colors -->
-    <color name="focus_color">#2196F3</color>
-    <color name="focus_background">#332196F3</color>
-    
-    <!-- Standard Colors -->
+    <!-- Functional Colors -->
     <color name="black">#000000</color>
     <color name="white">#FFFFFF</color>
-
-    <!-- Status Colors -->
-    <color name="error_color">#F44336</color>
-    <color name="success_color">#4CAF50</color>
-    
-    <!-- Overlay -->
-    <color name="overlay_dark">#CC000000</color>
-    <color name="overlay_light">#66000000</color>
+    <color name="transparent">#00000000</color>
+    <color name="focus_highlight">#33E53935</color>
 </resources>
