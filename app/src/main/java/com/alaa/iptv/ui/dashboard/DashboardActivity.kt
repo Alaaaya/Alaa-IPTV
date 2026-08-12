@@ -20,6 +20,7 @@ import com.alaa.iptv.ui.main.MainActivity
 import com.alaa.iptv.ui.player.PlayerActivity
 import com.bumptech.glide.Glide
 import kotlinx.coroutines.launch
+import com.alaa.iptv.utils.UpdateChecker
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -61,6 +62,7 @@ class DashboardActivity : AppCompatActivity() {
         setupCategories()
         setupContinueWatching()
         setupBottomInfo()
+        checkUpdates()
         startClock()
 
         // Load content with delay to ensure UI is ready
@@ -157,6 +159,10 @@ class DashboardActivity : AppCompatActivity() {
     }
 
     // ================= BOTTOM INFO =================
+
+    private fun checkUpdates() {
+        UpdateChecker(this).checkForUpdates(showToast = false)
+    }
 
     private fun setupBottomInfo() {
         if (_binding == null) return
