@@ -3,280 +3,313 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0A0E17">
+    android:background="#0A0E17"
+    android:layoutDirection="rtl">
 
-    <!-- 1. Mini Sidebar (Left) -->
+    <!-- Header Section (Top Right) -->
     <LinearLayout
-        android:id="@+id/miniSidebar"
-        android:layout_width="80dp"
-        android:layout_height="match_parent"
-        android:background="#0D1117"
-        android:gravity="center_horizontal"
+        android:id="@+id/headerLayout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="24dp"
+        android:gravity="end"
         android:orientation="vertical"
-        android:paddingTop="20dp"
-        app:layout_constraintStart_toStartOf="parent">
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
-        <ImageView
-            android:id="@+id/appLogo"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:src="@drawable/ic_logo" />
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginTop="20dp"
-            android:background="#1AFFFFFF" />
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/miniSidebarRecyclerView"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:paddingTop="10dp" />
-            
         <TextView
-            android:id="@+id/serverStatus"
+            android:id="@+id/categoryTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Server 1"
-            android:textColor="#4CAF50"
-            android:textSize="10sp"
-            android:paddingBottom="10dp"/>
+            android:text="البث المباشر / الرياضة"
+            android:textColor="@color/white"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/channelCountText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="780 قناة"
+            android:textColor="#808080"
+            android:textSize="16sp" />
     </LinearLayout>
 
-    <!-- 2. Channel List Section (Middle) -->
-    <LinearLayout
-        android:id="@+id/channelSection"
+    <!-- Channel List Panel (Left Side) -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/channelPanel"
         android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:background="#0A0E17"
-        android:orientation="vertical"
-        app:layout_constraintEnd_toStartOf="@+id/previewSection"
-        app:layout_constraintStart_toEndOf="@id/miniSidebar"
-        app:layout_constraintWidth_percent="0.35">
+        android:layout_height="0dp"
+        android:layout_margin="24dp"
+        android:background="@drawable/bg_info_card"
+        app:layout_constraintBottom_toTopOf="@+id/bottomGuide"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintWidth_percent="0.4">
 
-        <!-- Header: Category Name & Filter Tabs -->
+        <!-- Filter Tabs -->
         <LinearLayout
+            android:id="@+id/filterTabs"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="15dp">
-            
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="16dp"
+            app:layout_constraintTop_toTopOf="parent">
+
             <TextView
-                android:id="@+id/categoryTitle"
+                android:id="@+id/filterAll"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="البث المباشر / الرياضة"
+                android:background="@drawable/bg_button_red"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="6dp"
+                android:text="الكل"
                 android:textColor="@color/white"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                android:textSize="14sp" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
+            <TextView
+                android:id="@+id/filterLive"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:orientation="horizontal">
-                
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/bg_sidebar_selected"
-                    android:paddingHorizontal="12dp"
-                    android:paddingVertical="4dp"
-                    android:text="الكل"
-                    android:textColor="@color/white"
-                    android:textSize="12sp" />
-                
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="10dp"
-                    android:text="مباشرة الآن"
-                    android:textColor="#808080"
-                    android:textSize="12sp" />
-                    
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="10dp"
-                    android:text="مفضلة"
-                    android:textColor="#808080"
-                    android:textSize="12sp" />
-                    
-                <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
-                
-                <ImageView
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
-                    android:src="@drawable/ic_search"
-                    app:tint="#808080" />
-            </LinearLayout>
+                android:layout_marginStart="16dp"
+                android:text="مباشرة الآن"
+                android:textColor="#808080"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/filterFav"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:text="مفضلة"
+                android:textColor="#808080"
+                android:textSize="14sp" />
+
+            <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
+
+            <ImageView
+                android:id="@+id/searchIcon"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_search"
+                app:tint="#808080" />
         </LinearLayout>
 
+        <!-- Recycler View -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/channelsRecyclerView"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1"
-            android:paddingHorizontal="5dp" />
-            
+            android:clipToPadding="false"
+            android:padding="8dp"
+            app:layout_constraintBottom_toTopOf="@+id/channelCounterFooter"
+            app:layout_constraintTop_toBottomOf="@id/filterTabs" />
+
+        <!-- Dynamic Counter -->
         <TextView
-            android:id="@+id/channelCountFooter"
+            android:id="@+id/channelCounterFooter"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center"
-            android:padding="10dp"
+            android:padding="12dp"
             android:text="1 / 780"
             android:textColor="#808080"
-            android:textSize="12sp" />
-    </LinearLayout>
+            android:textSize="14sp"
+            app:layout_constraintBottom_toBottomOf="parent" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- 3. Preview Section (Right) -->
+    <!-- Preview Panel (Right Side) -->
     <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/previewSection"
+        android:id="@+id/previewPanel"
         android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:background="#0D1117"
+        android:layout_height="0dp"
+        android:layout_margin="24dp"
+        app:layout_constraintBottom_toTopOf="@+id/bottomGuide"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/channelSection">
+        app:layout_constraintStart_toEndOf="@id/channelPanel"
+        app:layout_constraintTop_toBottomOf="@id/headerLayout">
 
-        <!-- Video Preview Container -->
+        <!-- Video Area -->
         <androidx.cardview.widget.CardView
-            android:id="@+id/previewCard"
+            android:id="@+id/videoCard"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_margin="15dp"
             app:cardBackgroundColor="#000000"
-            app:cardCornerRadius="12dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
             app:layout_constraintDimensionRatio="16:9"
             app:layout_constraintTop_toTopOf="parent">
-            
+
             <ImageView
                 android:id="@+id/previewImage"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:scaleType="centerCrop"
-                android:src="@drawable/bg_hero_sports" />
-                
+                android:scaleType="centerCrop" />
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="top|end"
-                android:layout_margin="10dp"
-                android:background="#E53935"
-                android:paddingHorizontal="8dp"
-                android:paddingVertical="2dp"
+                android:layout_margin="16dp"
+                android:background="@drawable/bg_button_red"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp"
                 android:text="LIVE"
                 android:textColor="@color/white"
-                android:textSize="10sp"
+                android:textSize="12sp"
                 android:textStyle="bold" />
         </androidx.cardview.widget.CardView>
 
         <!-- Channel Info -->
+        <TextView
+            android:id="@+id/previewTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="beIN SPORTS 1"
+            android:textColor="@color/white"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/videoCard" />
+
+        <TextView
+            android:id="@+id/previewSubtitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="الدوري الإسباني"
+            android:textColor="#808080"
+            android:textSize="18sp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/previewTitle" />
+
+        <!-- EPG Timeline -->
         <LinearLayout
+            android:id="@+id/epgLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingHorizontal="20dp"
-            android:paddingTop="10dp"
-            app:layout_constraintTop_toBottomOf="@id/previewCard">
+            android:layout_marginTop="32dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            app:layout_constraintTop_toBottomOf="@id/previewSubtitle">
 
             <TextView
-                android:id="@+id/previewTitle"
+                android:id="@+id/epgStartTime"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="beIN SPORTS 1"
-                android:textColor="@color/white"
-                android:textSize="18sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/previewSubtitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="الدوري الإسباني"
+                android:text="12:30"
                 android:textColor="#808080"
                 android:textSize="14sp" />
 
-            <!-- EPG Progress -->
-            <LinearLayout
-                android:layout_width="match_parent"
+            <ProgressBar
+                android:id="@+id/epgProgressBar"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="0dp"
+                android:layout_height="6dp"
+                android:layout_marginHorizontal="16dp"
+                android:layout_weight="1"
+                android:progress="45"
+                android:progressDrawable="@drawable/bg_progress_red" />
+
+            <TextView
+                android:id="@+id/epgEndTime"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-                
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="12:30"
-                    android:textColor="#808080"
-                    android:textSize="12sp" />
-                
-                <ProgressBar
-                    android:id="@+id/epgProgressBar"
-                    style="?android:attr/progressBarStyleHorizontal"
-                    android:layout_width="0dp"
-                    android:layout_height="4dp"
-                    android:layout_marginHorizontal="10dp"
-                    android:layout_weight="1"
-                    android:progress="45"
-                    android:progressDrawable="@drawable/bg_progress_red" />
-                    
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="15:00"
-                    android:textColor="#808080"
-                    android:textSize="12sp" />
-            </LinearLayout>
+                android:text="15:00"
+                android:textColor="#808080"
+                android:textSize="14sp" />
         </LinearLayout>
 
-        <!-- Bottom Controls Legend -->
+        <!-- Action Buttons -->
         <LinearLayout
+            android:id="@+id/actionButtons"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center"
+            android:layout_marginTop="40dp"
             android:orientation="horizontal"
-            android:padding="20dp"
-            app:layout_constraintBottom_toBottomOf="parent">
-            
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="● تبديل القناة"
-                android:textColor="#2196F3"
-                android:textSize="11sp"
-                android:layout_marginEnd="15dp"/>
-                
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="● مفضلة"
-                android:textColor="#FF9800"
-                android:textSize="11sp"
-                android:layout_marginEnd="15dp"/>
-                
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="● تسجيل"
-                android:textColor="#E53935"
-                android:textSize="11sp"
-                android:layout_marginEnd="15dp"/>
-                
+            app:layout_constraintTop_toBottomOf="@id/epgLayout">
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="● معلومات"
                 android:textColor="#2196F3"
-                android:textSize="11sp"/>
+                android:textSize="14sp"
+                android:layout_marginEnd="24dp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="● تسجيل"
+                android:textColor="#E53935"
+                android:textSize="14sp"
+                android:layout_marginEnd="24dp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="● مفضلة"
+                android:textColor="#FF9800"
+                android:textSize="14sp"
+                android:layout_marginEnd="24dp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="● تبديل القناة"
+                android:textColor="#2196F3"
+                android:textSize="14sp"/>
         </LinearLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- Hidden Legacy Views to avoid crashes -->
+    <!-- Bottom Guide (Remote Instructions) -->
+    <LinearLayout
+        android:id="@+id/bottomGuide"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="↑ ↓ تنقل"
+            android:textColor="#40FFFFFF"
+            android:textSize="12sp"
+            android:layout_marginHorizontal="16dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="OK اختيار"
+            android:textColor="#40FFFFFF"
+            android:textSize="12sp"
+            android:layout_marginHorizontal="16dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="← رجوع"
+            android:textColor="#40FFFFFF"
+            android:textSize="12sp"
+            android:layout_marginHorizontal="16dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="☰ قائمة"
+            android:textColor="#40FFFFFF"
+            android:textSize="12sp"
+            android:layout_marginHorizontal="16dp"/>
+    </LinearLayout>
+
+    <!-- Legacy Views (Hidden) -->
+    <View android:id="@+id/miniSidebar" android:layout_width="1dp" android:layout_height="1dp" android:visibility="gone"/>
     <View android:id="@+id/backButton" android:layout_width="1dp" android:layout_height="1dp" android:visibility="gone"/>
     <View android:id="@+id/moduleTitle" android:layout_width="1dp" android:layout_height="1dp" android:visibility="gone"/>
     <View android:id="@+id/categoriesRecyclerView" android:layout_width="1dp" android:layout_height="1dp" android:visibility="gone"/>
