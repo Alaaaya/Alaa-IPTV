@@ -130,7 +130,11 @@ class PlayerActivity : AppCompatActivity() {
                             }
                             Player.STATE_ENDED -> {
                                 Log.d(TAG, "🏁 STATE_ENDED")
-                                finish()
+                                if (streamType.equals("live", ignoreCase = true)) {
+                                    showError("انتهى البث مؤقتاً، جرّب قناة أخرى")
+                                } else {
+                                    finish()
+                                }
                             }
                             Player.STATE_IDLE -> {
                                 Log.d(TAG, "⏸️ STATE_IDLE")

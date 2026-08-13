@@ -202,10 +202,12 @@ class DashboardActivity : AppCompatActivity() {
                 if (channelsResult.isSuccess) {
                     allChannels = channelsResult.getOrDefault(emptyList())
                 }
+                updateUI()
                 val moviesResult = repository.getMovies(null)
                 if (moviesResult.isSuccess) {
                     allMovies = moviesResult.getOrDefault(emptyList()).map { it.toChannel() }
                 }
+                updateUI()
                 val seriesResult = repository.getSeries(null)
                 if (seriesResult.isSuccess) {
                     allSeries = seriesResult.getOrDefault(emptyList()).map { it.toChannel() }
