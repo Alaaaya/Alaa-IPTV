@@ -24,10 +24,12 @@ class MediaRepository(
         private const val TAG = "MediaRepository"
         private const val CACHE_DURATION = 5 * 60 * 1000L // 5 دقائق
         private const val CONTENT_PAGE_SIZE = 120
+        private const val LIVE_PAGE_SIZE = 100
 
         private var cachedChannels: List<Channel>? = null
         private var cachedChannelsTime = 0L
         private var cachedChannelsCategoryId: String? = null
+        private val cachedChannelPages = mutableMapOf<String, Pair<Long, List<Channel>>>()
         private var cachedCategories: List<Category>? = null
         private var cachedCategoriesTime = 0L
         private var cachedMovies: List<Movie>? = null
@@ -144,7 +146,7 @@ class MediaRepository(
 
     // ================= LIVE STREAMS =================
 
-    suspend fun getLiveStreams(categoryId: String?): Result<List<Channel>> =
+    suspend fun getLiveStreams(categoryId: String?, page: Int = 0): Result<List<Channel>> =
         withContext(Dispatchers.IO) {
 
             val requestedCategory = categoryId?.takeIf { it != "all" }
@@ -153,17 +155,19 @@ class MediaRepository(
                 .firstOrNull()
                 ?.categoryId
 
-            // استخدم الكاش إذا كان حديثاً
-            cachedChannels?.let { cached ->
-                if (System.currentTimeMillis() - cachedChannelsTime < CACHE_DURATION &&
-                    cachedChannelsCategoryId == effectiveCategory) {
+            val pageIndex = page.coerceAtLeast(0)
+            val pageCacheKey = "${effectiveCategory ?: "all"}:$pageIndex"
+            cachedChannelPages[pageCacheKey]?.let { (savedAt, cached) ->
+                if (System.currentTimeMillis() - savedAt < CACHE_DURATION) {
                     return@withContext Result.success(cached)
                 }
             }
 
             try {
                 if (isM3U()) {
-                    return@withContext loadM3U(prefs.serverUrl)
+                    return@withContext loadM3U(prefs.serverUrl).map { channels ->
+                        channels.drop(pageIndex * LIVE_PAGE_SIZE).take(LIVE_PAGE_SIZE)
+                    }
                 }
 
                 val categoryExtra = effectiveCategory?.let { "&category_id=${encodeQueryParameter(it)}" }.orEmpty()
@@ -173,7 +177,9 @@ class MediaRepository(
                 val base = normalizeHost(prefs.serverUrl)
 
                 val channels = mutableListOf<Channel>()
-                for (i in 0 until array.length()) {
+                val startIndex = pageIndex * LIVE_PAGE_SIZE
+                val endIndex = minOf(array.length(), startIndex + LIVE_PAGE_SIZE)
+                for (i in startIndex until endIndex) {
                     val obj = array.getJSONObject(i)
                     val id = obj.optString("stream_id")
                     val direct = "$base/live/${prefs.username}/${prefs.password}/$id.m3u8"
@@ -201,6 +207,7 @@ class MediaRepository(
                 cachedChannels = channels
                 cachedChannelsTime = System.currentTimeMillis()
                 cachedChannelsCategoryId = effectiveCategory
+                cachedChannelPages[pageCacheKey] = System.currentTimeMillis() to channels
 
                 Result.success(channels)
 
@@ -535,6 +542,7 @@ class MediaRepository(
         cachedChannels = null
         cachedChannelsTime = 0L
         cachedChannelsCategoryId = null
+        cachedChannelPages.clear()
         cachedCategories = null
         cachedCategoriesTime = 0L
         cachedMovies = null

@@ -114,6 +114,8 @@
             android:id="@+id/channelCounterFooter"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:clickable="true"
+            android:focusable="true"
             android:gravity="center"
             android:padding="12dp"
             android:text="1 / 780"
