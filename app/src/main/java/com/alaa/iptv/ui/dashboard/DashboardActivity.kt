@@ -88,7 +88,7 @@ class DashboardActivity : AppCompatActivity() {
             SidebarItem(getString(R.string.menu_live), R.drawable.ic_live_tv, false) { openMain(MainActivity.MODE_LIVE) },
             SidebarItem(getString(R.string.menu_movies), R.drawable.ic_movies, false) { openMain(MainActivity.MODE_MOVIES) },
             SidebarItem(getString(R.string.menu_series), R.drawable.ic_series, false) { openMain(MainActivity.MODE_SERIES) },
-            SidebarItem(getString(R.string.menu_favorites), R.drawable.ic_favorite, false) { showToast("قريباً") },
+            SidebarItem(getString(R.string.menu_favorites), R.drawable.ic_favorite, false) { openMain(MainActivity.MODE_FAVORITES) },
             SidebarItem(getString(R.string.menu_recent), R.drawable.ic_recent, false) { showToast("قريباً") },
             SidebarItem(getString(R.string.menu_categories), R.drawable.ic_categories, false) { showToast("قريباً") },
             SidebarItem(getString(R.string.menu_server), R.drawable.ic_server, false) { showToast("قريباً") },
