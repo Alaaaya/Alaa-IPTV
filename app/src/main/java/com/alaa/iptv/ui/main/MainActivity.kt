@@ -46,6 +46,19 @@ class MainActivity : AppCompatActivity() {
         repository = MediaRepository(prefs, this)
         currentMode = intent.getStringExtra(EXTRA_MODE) ?: MODE_LIVE
 
+        when (currentMode) {
+            MODE_MOVIES -> {
+                startActivity(Intent(this, MoviesActivity::class.java))
+                finish()
+                return
+            }
+            MODE_SERIES -> {
+                startActivity(Intent(this, SeriesActivity::class.java))
+                finish()
+                return
+            }
+        }
+
         setupChannelsList()
         loadContent()
     }
@@ -70,11 +83,7 @@ class MainActivity : AppCompatActivity() {
     private fun loadContent() {
         lifecycleScope.launch {
             try {
-                val result = when (currentMode) {
-                    MODE_MOVIES -> repository.getMovies(null).map { list -> list.map { it.toChannel() } }
-                    MODE_SERIES -> repository.getSeries(null).map { list -> list.map { it.toChannel() } }
-                    else -> repository.getLiveStreams(null)
-                }
+                val result = repository.getLiveStreams(null)
 
                 result.onSuccess { loadedChannels ->
                     val decoratedChannels = decorateChannels(loadedChannels)
@@ -233,15 +242,4 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    private fun com.alaa.iptv.data.models.Movie.toChannel() = Channel(
-        streamId = streamId, num = streamId, name = name, streamType = "movie",
-        streamIcon = streamIcon, epgChannelId = null, added = null, categoryId = categoryId,
-        categoryName = null, customSid = null, tvArchive = 0, directSource = null, isFavorite = isFavorite
-    )
-
-    private fun com.alaa.iptv.data.models.Series.toChannel() = Channel(
-        streamId = seriesId, num = seriesId, name = name, streamType = "series",
-        streamIcon = cover, epgChannelId = null, added = null, categoryId = categoryId,
-        categoryName = null, customSid = null, tvArchive = 0, directSource = null, isFavorite = isFavorite
-    )
 }
