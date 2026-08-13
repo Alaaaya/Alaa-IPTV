@@ -23,6 +23,19 @@ class MediaRepository(
     companion object {
         private const val TAG = "MediaRepository"
         private const val CACHE_DURATION = 5 * 60 * 1000L // 5 دقائق
+        private const val CONTENT_PAGE_SIZE = 120
+
+        private var cachedChannels: List<Channel>? = null
+        private var cachedChannelsTime = 0L
+        private var cachedChannelsCategoryId: String? = null
+        private var cachedCategories: List<Category>? = null
+        private var cachedCategoriesTime = 0L
+        private var cachedMovies: List<Movie>? = null
+        private var cachedMoviesTime = 0L
+        private val cachedMoviesByCategory = mutableMapOf<String, Pair<Long, List<Movie>>>()
+        private var cachedSeries: List<Series>? = null
+        private var cachedSeriesTime = 0L
+        private val cachedSeriesByCategory = mutableMapOf<String, Pair<Long, List<Series>>>()
     }
 
     private val client: OkHttpClient by lazy {
@@ -37,19 +50,6 @@ class MediaRepository(
     }
 
     // ================= CACHE =================
-
-    private var cachedChannels: List<Channel>? = null
-    private var cachedChannelsTime = 0L
-    private var cachedChannelsCategoryId: String? = null
-
-    private var cachedCategories: List<Category>? = null
-    private var cachedCategoriesTime = 0L
-
-    private var cachedMovies: List<Movie>? = null
-    private var cachedMoviesTime = 0L
-
-    private var cachedSeries: List<Series>? = null
-    private var cachedSeriesTime = 0L
 
     // ================= HELPERS =================
 
@@ -308,23 +308,31 @@ class MediaRepository(
 
     suspend fun getMovies(categoryId: String?): Result<List<Movie>> =
         withContext(Dispatchers.IO) {
+            val requestedCategory = categoryId?.takeIf { it != "all" }
+            requestedCategory?.let { key ->
+                cachedMoviesByCategory[key]?.let { (savedAt, cached) ->
+                    if (System.currentTimeMillis() - savedAt < CACHE_DURATION) {
+                        return@withContext Result.success(cached)
+                    }
+                }
+            }
             cachedMovies?.let { cached ->
-                if (System.currentTimeMillis() - cachedMoviesTime < CACHE_DURATION) {
-                    val filtered = if (categoryId != null && categoryId != "all") cached.filter { it.categoryId == categoryId } else cached
+                if (requestedCategory == null && System.currentTimeMillis() - cachedMoviesTime < CACHE_DURATION) {
+                    val filtered = cached.take(CONTENT_PAGE_SIZE)
                     return@withContext Result.success(filtered)
                 }
             }
 
             try {
-                val requestedCategory = categoryId?.takeIf { it != "all" }
                 val allResponse = if (requestedCategory == null) fetchMovies(null) else emptyList()
                 val movies = when {
                     requestedCategory != null -> fetchMovies(requestedCategory)
                     allResponse.isNotEmpty() -> allResponse
                     else -> fetchFeaturedMovies()
-                }
+                }.take(CONTENT_PAGE_SIZE)
                 cachedMovies = movies
                 cachedMoviesTime = System.currentTimeMillis()
+                requestedCategory?.let { cachedMoviesByCategory[it] = System.currentTimeMillis() to movies }
                 Result.success(movies)
             } catch (e: Exception) {
                 Log.e(TAG, "getMovies error", e)
@@ -364,18 +372,26 @@ class MediaRepository(
 
     suspend fun getSeries(categoryId: String?): Result<List<Series>> =
         withContext(Dispatchers.IO) {
+            val requestedCategory = categoryId?.takeIf { it != "all" }
+            requestedCategory?.let { key ->
+                cachedSeriesByCategory[key]?.let { (savedAt, cached) ->
+                    if (System.currentTimeMillis() - savedAt < CACHE_DURATION) {
+                        return@withContext Result.success(cached)
+                    }
+                }
+            }
             cachedSeries?.let { cached ->
-                if (System.currentTimeMillis() - cachedSeriesTime < CACHE_DURATION) {
-                    val filtered = if (categoryId != null && categoryId != "all") cached.filter { it.categoryId == categoryId } else cached
-                    return@withContext Result.success(filtered)
+                if (requestedCategory == null && System.currentTimeMillis() - cachedSeriesTime < CACHE_DURATION) {
+                    return@withContext Result.success(cached.take(CONTENT_PAGE_SIZE))
                 }
             }
 
             try {
-                val requestedCategory = categoryId?.takeIf { it != "all" }
-                val series = if (requestedCategory == null) fetchFeaturedSeries() else fetchSeries(requestedCategory)
+                val series = (if (requestedCategory == null) fetchFeaturedSeries() else fetchSeries(requestedCategory))
+                    .take(CONTENT_PAGE_SIZE)
                 cachedSeries = series
                 cachedSeriesTime = System.currentTimeMillis()
+                requestedCategory?.let { cachedSeriesByCategory[it] = System.currentTimeMillis() to series }
                 Result.success(series)
             } catch (e: Exception) {
                 Log.e(TAG, "getSeries error", e)
@@ -523,7 +539,9 @@ class MediaRepository(
         cachedCategoriesTime = 0L
         cachedMovies = null
         cachedMoviesTime = 0L
+        cachedMoviesByCategory.clear()
         cachedSeries = null
         cachedSeriesTime = 0L
+        cachedSeriesByCategory.clear()
     }
 }

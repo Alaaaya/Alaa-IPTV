@@ -19,6 +19,9 @@ class AppPreferences(context: Context) {
         private const val KEY_TV_ID = "tv_id"
         private const val KEY_FAVORITES = "favorites"
         private const val KEY_CHANNEL_ORDER = "channel_order"
+        private const val KEY_LAST_LIVE_CATEGORY = "last_live_category"
+        private const val KEY_LAST_MOVIE_CATEGORY = "last_movie_category"
+        private const val KEY_LAST_SERIES_CATEGORY = "last_series_category"
     }
     
     var serverUrl: String
@@ -48,6 +51,18 @@ class AppPreferences(context: Context) {
     var tvId: String
         get() = prefs.getString(KEY_TV_ID, "") ?: ""
         set(value) = prefs.edit().putString(KEY_TV_ID, value).apply()
+
+    var lastLiveCategoryId: String
+        get() = prefs.getString(KEY_LAST_LIVE_CATEGORY, "") ?: ""
+        set(value) = prefs.edit().putString(KEY_LAST_LIVE_CATEGORY, value).apply()
+
+    var lastMovieCategoryId: String
+        get() = prefs.getString(KEY_LAST_MOVIE_CATEGORY, "") ?: ""
+        set(value) = prefs.edit().putString(KEY_LAST_MOVIE_CATEGORY, value).apply()
+
+    var lastSeriesCategoryId: String
+        get() = prefs.getString(KEY_LAST_SERIES_CATEGORY, "") ?: ""
+        set(value) = prefs.edit().putString(KEY_LAST_SERIES_CATEGORY, value).apply()
 
     fun getOrCreateTvId(): String {
         if (tvId.isNotBlank()) return tvId

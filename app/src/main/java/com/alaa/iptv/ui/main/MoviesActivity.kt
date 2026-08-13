@@ -3,12 +3,14 @@ package com.alaa.iptv.ui.main
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.alaa.iptv.R
 import com.alaa.iptv.data.models.Movie
+import com.alaa.iptv.data.models.Category
 import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.data.repository.MediaRepository
 import com.alaa.iptv.databinding.ActivityMoviesBinding
@@ -23,6 +25,7 @@ class MoviesActivity : AppCompatActivity() {
     private lateinit var prefs: AppPreferences
     private lateinit var repository: MediaRepository
     private var movies: List<Movie> = emptyList()
+    private var categories: List<Category> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,7 +37,8 @@ class MoviesActivity : AppCompatActivity() {
 
         setupSidebar()
         setupMoviesGrid()
-        loadMovies()
+        binding.movieCategorySelector.setOnClickListener { showCategorySelector() }
+        loadCategories()
     }
 
     private fun setupSidebar() {
@@ -59,9 +63,44 @@ class MoviesActivity : AppCompatActivity() {
         }
     }
 
-    private fun loadMovies() {
+    private fun loadCategories() {
         lifecycleScope.launch {
-            runCatching { repository.getMovies(null) }
+            val result = repository.getMovieCategories()
+            result.onSuccess { loadedCategories ->
+                categories = loadedCategories
+                val selected = categories.firstOrNull { it.categoryId == prefs.lastMovieCategoryId }
+                    ?: categories.firstOrNull()
+                if (selected == null) {
+                    binding.moviesCount.text = "لا توجد فئات أفلام"
+                } else {
+                    selectCategory(selected)
+                }
+            }.onFailure { error ->
+                Log.e(TAG, "Unable to load movie categories", error)
+                binding.moviesCount.text = "تعذر تحميل فئات الأفلام"
+            }
+        }
+    }
+
+    private fun showCategorySelector() {
+        if (categories.isEmpty()) return
+        AlertDialog.Builder(this)
+            .setTitle("فئات الأفلام")
+            .setItems(categories.map { it.categoryName }.toTypedArray()) { _, index ->
+                selectCategory(categories[index])
+            }
+            .show()
+    }
+
+    private fun selectCategory(category: Category) {
+        prefs.lastMovieCategoryId = category.categoryId
+        binding.movieCategorySelector.text = category.categoryName
+        loadMovies(category.categoryId)
+    }
+
+    private fun loadMovies(categoryId: String) {
+        lifecycleScope.launch {
+            runCatching { repository.getMovies(categoryId) }
                 .onSuccess { result ->
                     result.onSuccess { loadedMovies ->
                         movies = loadedMovies

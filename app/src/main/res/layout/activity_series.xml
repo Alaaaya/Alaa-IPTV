@@ -145,12 +145,15 @@
             app:layout_constraintTop_toBottomOf="@id/headerLayout">
 
             <TextView
+                android:id="@+id/seriesCategorySelector"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_button_red"
+                android:clickable="true"
+                android:focusable="true"
                 android:paddingHorizontal="16dp"
                 android:paddingVertical="6dp"
-                android:text="الكل"
+                android:text="الفئات"
                 android:textColor="@color/white"
                 android:textSize="14sp" />
 

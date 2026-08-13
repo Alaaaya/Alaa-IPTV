@@ -3,12 +3,14 @@ package com.alaa.iptv.ui.main
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.alaa.iptv.R
 import com.alaa.iptv.data.models.Series
+import com.alaa.iptv.data.models.Category
 import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.data.repository.MediaRepository
 import com.alaa.iptv.databinding.ActivitySeriesBinding
@@ -22,6 +24,7 @@ class SeriesActivity : AppCompatActivity() {
     private lateinit var prefs: AppPreferences
     private lateinit var repository: MediaRepository
     private var seriesList: List<Series> = emptyList()
+    private var categories: List<Category> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,7 +36,8 @@ class SeriesActivity : AppCompatActivity() {
 
         setupSidebar()
         setupSeriesGrid()
-        loadSeries()
+        binding.seriesCategorySelector.setOnClickListener { showCategorySelector() }
+        loadCategories()
     }
 
     private fun setupSidebar() {
@@ -58,10 +62,45 @@ class SeriesActivity : AppCompatActivity() {
         }
     }
 
-    private fun loadSeries() {
+    private fun loadCategories() {
+        lifecycleScope.launch {
+            val result = repository.getSeriesCategories()
+            result.onSuccess { loadedCategories ->
+                categories = loadedCategories
+                val selected = categories.firstOrNull { it.categoryId == prefs.lastSeriesCategoryId }
+                    ?: categories.firstOrNull()
+                if (selected == null) {
+                    binding.seriesCount.text = "لا توجد فئات مسلسلات"
+                } else {
+                    selectCategory(selected)
+                }
+            }.onFailure { error ->
+                Log.e("SeriesActivity", "Unable to load series categories", error)
+                binding.seriesCount.text = "تعذر تحميل فئات المسلسلات"
+            }
+        }
+    }
+
+    private fun showCategorySelector() {
+        if (categories.isEmpty()) return
+        AlertDialog.Builder(this)
+            .setTitle("فئات المسلسلات")
+            .setItems(categories.map { it.categoryName }.toTypedArray()) { _, index ->
+                selectCategory(categories[index])
+            }
+            .show()
+    }
+
+    private fun selectCategory(category: Category) {
+        prefs.lastSeriesCategoryId = category.categoryId
+        binding.seriesCategorySelector.text = category.categoryName
+        loadSeries(category.categoryId)
+    }
+
+    private fun loadSeries(categoryId: String) {
         lifecycleScope.launch {
             try {
-                val result = repository.getSeries(null)
+                val result = repository.getSeries(categoryId)
                 if (result.isSuccess) {
                     seriesList = result.getOrDefault(emptyList())
                     binding.seriesCount.text = "${seriesList.size} مسلسل"
