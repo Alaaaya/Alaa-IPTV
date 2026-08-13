@@ -6,17 +6,23 @@ import android.util.Log
 import android.view.KeyEvent
 import android.view.View
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.TrackSelectionOverride
+import androidx.media3.common.Tracks
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
+import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import com.alaa.iptv.R
 import com.alaa.iptv.databinding.ActivityPlayerBinding
+import java.util.Locale
 
 @UnstableApi
 class PlayerActivity : AppCompatActivity() {
@@ -28,10 +34,18 @@ class PlayerActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityPlayerBinding
     private var player: ExoPlayer? = null
+    private var trackSelector: DefaultTrackSelector? = null
     private var streamUrl: String? = null
     private var channelName: String? = null
     private var streamType: String? = null
     private var channelIndex = -1
+
+    private data class TrackOption(
+        val type: Int,
+        val title: String,
+        val group: Tracks.Group? = null,
+        val trackIndex: Int = -1
+    )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,6 +58,7 @@ class PlayerActivity : AppCompatActivity() {
         channelIndex = intent.getIntExtra(EXTRA_CHANNEL_INDEX, -1)
 
         binding.channelNameText.text = channelName ?: ""
+        binding.trackSelectionButton.setOnClickListener { showTrackSelection() }
 
         Log.d(TAG, "▶️ onCreate - Channel: $channelName")
         Log.d(TAG, "▶️ onCreate - Type: $streamType")
@@ -66,7 +81,10 @@ class PlayerActivity : AppCompatActivity() {
         Log.d(TAG, "▶️ URL protocol: ${Uri.parse(url).scheme}")
 
         try {
-            player = ExoPlayer.Builder(this).build()
+            trackSelector = DefaultTrackSelector(this)
+            player = ExoPlayer.Builder(this)
+                .setTrackSelector(trackSelector!!)
+                .build()
             binding.playerView.player = player
 
             val uri = Uri.parse(url)
@@ -108,6 +126,7 @@ class PlayerActivity : AppCompatActivity() {
                                 Log.d(TAG, "✅ STATE_READY - Playing")
                                 showLoading(false)
                                 hideChannelName()
+                                updateTrackSelectionVisibility()
                             }
                             Player.STATE_ENDED -> {
                                 Log.d(TAG, "🏁 STATE_ENDED")
@@ -175,6 +194,79 @@ class PlayerActivity : AppCompatActivity() {
         }
     }
 
+    private fun updateTrackSelectionVisibility() {
+        val hasTrackOptions = player?.currentTracks?.groups?.any { group ->
+            !streamType.equals("live", ignoreCase = true) &&
+                (group.type == C.TRACK_TYPE_AUDIO || group.type == C.TRACK_TYPE_TEXT) &&
+                (0 until group.length).any { group.isTrackSupported(it) }
+        } == true
+        binding.trackSelectionButton.visibility = if (hasTrackOptions) View.VISIBLE else View.GONE
+    }
+
+    private fun showTrackSelection() {
+        val activePlayer = player ?: return
+        val selector = trackSelector ?: return
+        val options = mutableListOf<TrackOption>()
+        var hasSubtitleTrack = false
+
+        activePlayer.currentTracks.groups.forEach { group ->
+            if (group.type != C.TRACK_TYPE_AUDIO && group.type != C.TRACK_TYPE_TEXT) return@forEach
+            (0 until group.length)
+                .filter { group.isTrackSupported(it) }
+                .forEach { index ->
+                    if (group.type == C.TRACK_TYPE_TEXT) hasSubtitleTrack = true
+                    val format = group.getTrackFormat(index)
+                    val prefix = if (group.type == C.TRACK_TYPE_AUDIO) "الصوت" else "الترجمة"
+                    val details = format.label?.takeIf { it.isNotBlank() } ?: displayLanguage(format.language)
+                    options += TrackOption(group.type, "$prefix: $details", group, index)
+                }
+        }
+
+        if (hasSubtitleTrack) options += TrackOption(C.TRACK_TYPE_TEXT, "الترجمة: إيقاف")
+        if (options.isEmpty()) {
+            Toast.makeText(this, "لا توجد مسارات صوت أو ترجمة إضافية", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("الصوت والترجمة")
+            .setItems(options.map { it.title }.toTypedArray()) { dialog, selectedIndex ->
+                val selected = options[selectedIndex]
+                val parameters = selector.buildUponParameters()
+                if (selected.type == C.TRACK_TYPE_TEXT && selected.group == null) {
+                    parameters.setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)
+                } else {
+                    parameters
+                        .setTrackTypeDisabled(selected.type, false)
+                        .clearOverridesOfType(selected.type)
+                        .setOverrideForType(
+                            TrackSelectionOverride(
+                                requireNotNull(selected.group).mediaTrackGroup,
+                                listOf(selected.trackIndex)
+                            )
+                        )
+                }
+                selector.parameters = parameters.build()
+                Toast.makeText(this, "تم اختيار ${selected.title}", Toast.LENGTH_SHORT).show()
+                dialog.dismiss()
+            }
+            .setNegativeButton("إلغاء", null)
+            .show()
+    }
+
+    private fun displayLanguage(code: String?): String {
+        val normalized = code?.trim()?.lowercase().orEmpty()
+        return when (normalized) {
+            "ar", "ara" -> "العربية"
+            "tr", "tur" -> "التركية"
+            "de", "deu", "ger" -> "الألمانية"
+            "en", "eng" -> "الإنجليزية"
+            "fr", "fra", "fre" -> "الفرنسية"
+            "es", "spa" -> "الإسبانية"
+            else -> Locale.forLanguageTag(normalized).displayLanguage.takeIf { it.isNotBlank() } ?: "غير محدد"
+        }
+    }
+
     private fun switchChannel(offset: Int) {
         if (!streamType.equals("live", ignoreCase = true) || channelIndex < 0) {
             Toast.makeText(this, "تنقل القنوات متاح للبث المباشر فقط", Toast.LENGTH_SHORT).show()
@@ -229,6 +321,10 @@ class PlayerActivity : AppCompatActivity() {
             }
             KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_CHANNEL_DOWN -> {
                 switchChannel(-1)
+                true
+            }
+            KeyEvent.KEYCODE_MENU, KeyEvent.KEYCODE_CAPTIONS -> {
+                showTrackSelection()
                 true
             }
             KeyEvent.KEYCODE_MEDIA_FAST_FORWARD, KeyEvent.KEYCODE_DPAD_RIGHT -> {

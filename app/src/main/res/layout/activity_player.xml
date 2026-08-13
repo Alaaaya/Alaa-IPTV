@@ -48,4 +48,20 @@
         android:background="@drawable/glassmorphism_background"
         android:visibility="gone" />
 
+    <Button
+        android:id="@+id/trackSelectionButton"
+        android:layout_width="wrap_content"
+        android:layout_height="48dp"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true"
+        android:layout_margin="24dp"
+        android:background="@drawable/bg_login_secondary_button"
+        android:contentDescription="اختيار الصوت والترجمة"
+        android:focusable="true"
+        android:text="الصوت والترجمة"
+        android:textAllCaps="false"
+        android:textColor="@color/white"
+        android:textSize="14sp"
+        android:visibility="gone" />
+
 </RelativeLayout>
