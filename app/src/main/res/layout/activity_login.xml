@@ -142,23 +142,20 @@
                         android:contentDescription="@null"
                         android:src="@drawable/ic_server" />
 
-                    <EditText
-                        android:id="@+id/tvIdInput"
+                    <TextView
+                        android:id="@+id/tvIdValue"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:background="@android:color/transparent"
+                        android:contentDescription="معرّف هذا التلفزيون"
                         android:gravity="right|center_vertical"
-                        android:hint="TV ID"
-                        android:imeOptions="actionNext"
-                        android:inputType="textNoSuggestions"
-                        android:nextFocusDown="@id/fetchTvIdButton"
                         android:paddingLeft="48dp"
                         android:paddingRight="12dp"
-                        android:singleLine="true"
+                        android:fontFamily="monospace"
+                        android:letterSpacing="0.08"
                         android:textColor="@color/white"
-                        android:textColorHint="#B1B8C9"
                         android:textDirection="ltr"
-                        android:textSize="14sp" />
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
                 </FrameLayout>
 
                 <Button
@@ -168,11 +165,20 @@
                     android:layout_marginStart="10dp"
                     android:background="@drawable/bg_login_secondary_button"
                     android:nextFocusDown="@id/serverUrlInput"
-                    android:text="جلب البيانات"
+                    android:text="جلب اشتراكي"
                     android:textAllCaps="false"
                     android:textColor="@color/white"
                     android:textSize="13sp" />
             </LinearLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:gravity="center"
+                android:text="هذا هو معرّف تلفزيونك — أضفه مرة واحدة إلى لوحة التحكم"
+                android:textColor="@color/text_gray_light"
+                android:textSize="11sp" />
 
             <TextView
                 android:layout_width="wrap_content"

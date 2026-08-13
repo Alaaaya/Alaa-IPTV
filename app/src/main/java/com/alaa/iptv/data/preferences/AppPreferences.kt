@@ -2,6 +2,7 @@ package com.alaa.iptv.data.preferences
 
 import android.content.Context
 import android.content.SharedPreferences
+import java.util.UUID
 
 class AppPreferences(context: Context) {
     
@@ -47,9 +48,19 @@ class AppPreferences(context: Context) {
     var tvId: String
         get() = prefs.getString(KEY_TV_ID, "") ?: ""
         set(value) = prefs.edit().putString(KEY_TV_ID, value).apply()
+
+    fun getOrCreateTvId(): String {
+        if (tvId.isNotBlank()) return tvId
+
+        val token = UUID.randomUUID().toString().replace("-", "").uppercase()
+        val generatedId = "ALA-${token.take(4)}-${token.drop(4).take(4)}-${token.drop(8).take(4)}"
+        tvId = generatedId
+        return generatedId
+    }
     
     fun clear() {
-        prefs.edit().clear().apply()
+        val deviceId = tvId
+        prefs.edit().clear().putString(KEY_TV_ID, deviceId).apply()
     }
     
     fun saveFavorites(favorites: Set<String>) {
