@@ -15,6 +15,8 @@ class AppPreferences(context: Context) {
         private const val KEY_IS_LOGGED_IN = "is_logged_in"
         private const val KEY_USE_M3U = "use_m3u"
         private const val KEY_M3U_URL = "m3u_url"
+        private const val KEY_FAVORITES = "favorites"
+        private const val KEY_CHANNEL_ORDER = "channel_order"
     }
     
     var serverUrl: String
@@ -46,10 +48,21 @@ class AppPreferences(context: Context) {
     }
     
     fun saveFavorites(favorites: Set<String>) {
-        prefs.edit().putStringSet("favorites", favorites).apply()
+        prefs.edit().putStringSet(KEY_FAVORITES, favorites).apply()
     }
     
     fun getFavorites(): Set<String> {
-        return prefs.getStringSet("favorites", emptySet()) ?: emptySet()
+        return prefs.getStringSet(KEY_FAVORITES, emptySet())?.toSet() ?: emptySet()
+    }
+
+    fun saveChannelOrder(channelKeys: List<String>) {
+        prefs.edit().putString(KEY_CHANNEL_ORDER, channelKeys.joinToString(separator = "|")) .apply()
+    }
+
+    fun getChannelOrder(): List<String> {
+        return prefs.getString(KEY_CHANNEL_ORDER, "")
+            .orEmpty()
+            .split("|")
+            .filter { it.isNotBlank() }
     }
 }

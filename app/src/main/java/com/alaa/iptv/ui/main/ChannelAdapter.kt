@@ -31,6 +31,15 @@ class ChannelAdapter(
                 }
             }
 
+            binding.root.setOnLongClickListener {
+                val position = bindingAdapterPosition
+                if (position != RecyclerView.NO_POSITION) {
+                    setSelectedPosition(position)
+                    onChannelLongClick(channels[position])
+                }
+                true
+            }
+
             binding.root.setOnFocusChangeListener { _, hasFocus ->
                 updateUI(hasFocus)
                 if (hasFocus) {
