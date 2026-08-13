@@ -40,6 +40,7 @@ class MediaRepository(
 
     private var cachedChannels: List<Channel>? = null
     private var cachedChannelsTime = 0L
+    private var cachedChannelsCategoryId: String? = null
 
     private var cachedCategories: List<Category>? = null
     private var cachedCategoriesTime = 0L
@@ -146,13 +147,17 @@ class MediaRepository(
     suspend fun getLiveStreams(categoryId: String?): Result<List<Channel>> =
         withContext(Dispatchers.IO) {
 
+            val requestedCategory = categoryId?.takeIf { it != "all" }
+            val effectiveCategory = requestedCategory ?: getLiveCategories()
+                .getOrDefault(emptyList())
+                .firstOrNull()
+                ?.categoryId
+
             // استخدم الكاش إذا كان حديثاً
             cachedChannels?.let { cached ->
-                if (System.currentTimeMillis() - cachedChannelsTime < CACHE_DURATION) {
-                    val filtered = if (categoryId != null && categoryId != "all")
-                        cached.filter { it.categoryId == categoryId }
-                    else cached
-                    return@withContext Result.success(filtered)
+                if (System.currentTimeMillis() - cachedChannelsTime < CACHE_DURATION &&
+                    cachedChannelsCategoryId == effectiveCategory) {
+                    return@withContext Result.success(cached)
                 }
             }
 
@@ -161,7 +166,8 @@ class MediaRepository(
                     return@withContext loadM3U(prefs.serverUrl)
                 }
 
-                val url = buildApiUrl("get_live_streams")
+                val categoryExtra = effectiveCategory?.let { "&category_id=${encodeQueryParameter(it)}" }.orEmpty()
+                val url = buildApiUrl("get_live_streams", categoryExtra)
                 val body = request(url)
                 val array = JSONArray(body)
                 val base = normalizeHost(prefs.serverUrl)
@@ -194,12 +200,9 @@ class MediaRepository(
                 // حفظ في الكاش
                 cachedChannels = channels
                 cachedChannelsTime = System.currentTimeMillis()
+                cachedChannelsCategoryId = effectiveCategory
 
-                val filtered = if (categoryId != null && categoryId != "all")
-                    channels.filter { it.categoryId == categoryId }
-                else channels
-
-                Result.success(filtered)
+                Result.success(channels)
 
             } catch (e: Exception) {
                 Log.e(TAG, "getLiveStreams error", e)
@@ -515,6 +518,7 @@ class MediaRepository(
     fun clearCache() {
         cachedChannels = null
         cachedChannelsTime = 0L
+        cachedChannelsCategoryId = null
         cachedCategories = null
         cachedCategoriesTime = 0L
         cachedMovies = null
