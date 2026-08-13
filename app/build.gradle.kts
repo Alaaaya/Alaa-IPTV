@@ -15,6 +15,11 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "2.0.0"
+        buildConfigField(
+            "String",
+            "PROVISIONING_API_URL",
+            "\"https://alaacontrol-orxg4ht3.manus.space/api/trpc\""
+        )
     }
 
     buildTypes {
@@ -38,6 +43,7 @@ android {
 
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
 }
 

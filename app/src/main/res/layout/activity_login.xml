@@ -120,10 +120,72 @@
                 android:textColor="@color/text_gray_light"
                 android:textSize="14sp" />
 
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="16dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <FrameLayout
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:addStatesFromChildren="true"
+                    android:background="@drawable/bg_login_input">
+
+                    <ImageView
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_gravity="left|center_vertical"
+                        android:layout_marginLeft="14dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_server" />
+
+                    <EditText
+                        android:id="@+id/tvIdInput"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@android:color/transparent"
+                        android:gravity="right|center_vertical"
+                        android:hint="TV ID"
+                        android:imeOptions="actionNext"
+                        android:inputType="textNoSuggestions"
+                        android:nextFocusDown="@id/fetchTvIdButton"
+                        android:paddingLeft="48dp"
+                        android:paddingRight="12dp"
+                        android:singleLine="true"
+                        android:textColor="@color/white"
+                        android:textColorHint="#B1B8C9"
+                        android:textDirection="ltr"
+                        android:textSize="14sp" />
+                </FrameLayout>
+
+                <Button
+                    android:id="@+id/fetchTvIdButton"
+                    android:layout_width="128dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginStart="10dp"
+                    android:background="@drawable/bg_login_secondary_button"
+                    android:nextFocusDown="@id/serverUrlInput"
+                    android:text="جلب البيانات"
+                    android:textAllCaps="false"
+                    android:textColor="@color/white"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="أو أدخل بيانات الاشتراك يدوياً"
+                android:textColor="@color/text_gray_light"
+                android:textSize="12sp" />
+
             <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="54dp"
-                android:layout_marginTop="28dp"
+                android:layout_marginTop="12dp"
                 android:addStatesFromChildren="true"
                 android:background="@drawable/bg_login_input"
                 android:focusable="false">
@@ -146,6 +208,7 @@
                     android:imeOptions="actionNext"
                     android:inputType="textUri"
                     android:nextFocusDown="@id/usernameInput"
+                    android:nextFocusUp="@id/fetchTvIdButton"
                     android:paddingLeft="56dp"
                     android:paddingRight="18dp"
                     android:singleLine="true"
