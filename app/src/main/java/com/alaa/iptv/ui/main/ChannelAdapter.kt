@@ -1,6 +1,7 @@
 package com.alaa.iptv.ui.main
 
 import android.graphics.Color
+import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -48,6 +49,16 @@ class ChannelAdapter(
                         setSelectedPosition(position)
                         onChannelFocus(channels[position])
                     }
+                }
+            }
+
+            binding.root.setOnKeyListener { _, keyCode, event ->
+                if (event.action != KeyEvent.ACTION_DOWN) return@setOnKeyListener false
+                val position = bindingAdapterPosition
+                when (keyCode) {
+                    KeyEvent.KEYCODE_DPAD_UP -> position == 0
+                    KeyEvent.KEYCODE_DPAD_DOWN -> position == channels.lastIndex
+                    else -> false
                 }
             }
         }

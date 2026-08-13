@@ -305,113 +305,105 @@ class MediaRepository(
 
     suspend fun getMovies(categoryId: String?): Result<List<Movie>> =
         withContext(Dispatchers.IO) {
-
             cachedMovies?.let { cached ->
                 if (System.currentTimeMillis() - cachedMoviesTime < CACHE_DURATION) {
-                    val filtered = if (categoryId != null && categoryId != "all")
-                        cached.filter { it.categoryId == categoryId }
-                    else cached
+                    val filtered = if (categoryId != null && categoryId != "all") cached.filter { it.categoryId == categoryId } else cached
                     return@withContext Result.success(filtered)
                 }
             }
 
             try {
-                val url = buildApiUrl("get_vod_streams")
-                val body = request(url)
-                val array = JSONArray(body)
-
-                val movies = mutableListOf<Movie>()
-                for (i in 0 until array.length()) {
-                    val obj = array.getJSONObject(i)
-                    movies.add(
-                        Movie(
-                            streamId = obj.optString("stream_id"),
-                            name = obj.optString("name"),
-                            streamIcon = obj.optString("stream_icon"),
-                            rating = obj.optString("rating"),
-                            year = obj.optString("year", ""),
-                            plot = obj.optString("plot", ""),
-                            cast = obj.optString("cast", ""),
-                            director = obj.optString("director", ""),
-                            genre = obj.optString("genre", ""),
-                            releaseDate = obj.optString("release_date", ""),
-                            durationSecs = obj.optString("duration_secs", ""),
-                            duration = obj.optString("duration", ""),
-                            categoryId = obj.optString("category_id"),
-                            containerExtension = obj.optString("container_extension", "mp4"),
-                            isFavorite = false
-                        )
-                    )
+                val requestedCategory = categoryId?.takeIf { it != "all" }
+                val allResponse = if (requestedCategory == null) fetchMovies(null) else emptyList()
+                val movies = when {
+                    requestedCategory != null -> fetchMovies(requestedCategory)
+                    allResponse.isNotEmpty() -> allResponse
+                    else -> fetchFeaturedMovies()
                 }
-
                 cachedMovies = movies
                 cachedMoviesTime = System.currentTimeMillis()
-
-                val filtered = if (categoryId != null && categoryId != "all")
-                    movies.filter { it.categoryId == categoryId }
-                else movies
-
-                Result.success(filtered)
-
+                Result.success(movies)
             } catch (e: Exception) {
                 Log.e(TAG, "getMovies error", e)
                 Result.failure(e)
             }
         }
 
+    private suspend fun fetchMovies(categoryId: String?): List<Movie> {
+        val extra = categoryId?.let { "&category_id=${encodeQueryParameter(it)}" }.orEmpty()
+        val array = JSONArray(request(buildApiUrl("get_vod_streams", extra)))
+        return List(array.length()) { index ->
+            val obj = array.getJSONObject(index)
+            Movie(
+                streamId = obj.optString("stream_id"), name = obj.optString("name"), streamIcon = obj.optString("stream_icon"),
+                rating = obj.optString("rating"), year = obj.optString("year", ""), plot = obj.optString("plot", ""),
+                cast = obj.optString("cast", ""), director = obj.optString("director", ""), genre = obj.optString("genre", ""),
+                releaseDate = obj.optString("release_date", ""), durationSecs = obj.optString("duration_secs", ""),
+                duration = obj.optString("duration", ""), categoryId = obj.optString("category_id"),
+                containerExtension = obj.optString("container_extension", "mp4"), isFavorite = false
+            )
+        }
+    }
+
+    private suspend fun fetchFeaturedMovies(): List<Movie> {
+        val categories = getMovieCategories().getOrDefault(emptyList())
+        val featured = linkedMapOf<String, Movie>()
+        for (category in categories) {
+            if (featured.size >= 500) break
+            fetchMovies(category.categoryId).forEach { movie ->
+                if (featured.size < 500) featured.putIfAbsent(movie.streamId, movie)
+            }
+        }
+        return featured.values.toList()
+    }
+
     // ================= SERIES =================
 
     suspend fun getSeries(categoryId: String?): Result<List<Series>> =
         withContext(Dispatchers.IO) {
-
             cachedSeries?.let { cached ->
                 if (System.currentTimeMillis() - cachedSeriesTime < CACHE_DURATION) {
-                    val filtered = if (categoryId != null && categoryId != "all")
-                        cached.filter { it.categoryId == categoryId }
-                    else cached
+                    val filtered = if (categoryId != null && categoryId != "all") cached.filter { it.categoryId == categoryId } else cached
                     return@withContext Result.success(filtered)
                 }
             }
 
             try {
-                val url = buildApiUrl("get_series")
-                val body = request(url)
-                val array = JSONArray(body)
-
-                val seriesList = mutableListOf<Series>()
-                for (i in 0 until array.length()) {
-                    val obj = array.getJSONObject(i)
-                    seriesList.add(
-                        Series(
-                            seriesId = obj.optString("series_id"),
-                            name = obj.optString("name"),
-                            cover = obj.optString("cover"),
-                            plot = obj.optString("plot"),
-                            cast = obj.optString("cast", ""),
-                            director = obj.optString("director", ""),
-                            genre = obj.optString("genre"),
-                            releaseDate = obj.optString("release_date", ""),
-                            categoryId = obj.optString("category_id"),
-                            rating = obj.optString("rating"),
-                            isFavorite = false
-                        )
-                    )
-                }
-
-                cachedSeries = seriesList
+                val requestedCategory = categoryId?.takeIf { it != "all" }
+                val series = if (requestedCategory == null) fetchFeaturedSeries() else fetchSeries(requestedCategory)
+                cachedSeries = series
                 cachedSeriesTime = System.currentTimeMillis()
-
-                val filtered = if (categoryId != null && categoryId != "all")
-                    seriesList.filter { it.categoryId == categoryId }
-                else seriesList
-
-                Result.success(filtered)
-
+                Result.success(series)
             } catch (e: Exception) {
                 Log.e(TAG, "getSeries error", e)
                 Result.failure(e)
             }
         }
+
+    private suspend fun fetchSeries(categoryId: String): List<Series> {
+        val array = JSONArray(request(buildApiUrl("get_series", "&category_id=${encodeQueryParameter(categoryId)}")))
+        return List(array.length()) { index ->
+            val obj = array.getJSONObject(index)
+            Series(
+                seriesId = obj.optString("series_id"), name = obj.optString("name"), cover = obj.optString("cover"),
+                plot = obj.optString("plot"), cast = obj.optString("cast", ""), director = obj.optString("director", ""),
+                genre = obj.optString("genre"), releaseDate = obj.optString("release_date", ""),
+                categoryId = obj.optString("category_id"), rating = obj.optString("rating"), isFavorite = false
+            )
+        }
+    }
+
+    private suspend fun fetchFeaturedSeries(): List<Series> {
+        val categories = getSeriesCategories().getOrDefault(emptyList())
+        val featured = linkedMapOf<String, Series>()
+        for (category in categories) {
+            if (featured.size >= 500) break
+            fetchSeries(category.categoryId).forEach { series ->
+                if (featured.size < 500) featured.putIfAbsent(series.seriesId, series)
+            }
+        }
+        return featured.values.toList()
+    }
 
     // ================= SERIES EPISODES =================
 
