@@ -67,6 +67,17 @@ class MediaRepository(
             }
         }
 
+    private suspend fun readPlaylist(url: String): String =
+        withContext(Dispatchers.IO) {
+            if (url.startsWith("file:", ignoreCase = true)) {
+                val file = File(java.net.URI(url))
+                if (!file.exists() || !file.isFile) throw IOException("ملف القائمة غير موجود")
+                file.readText()
+            } else {
+                request(url)
+            }
+        }
+
     private fun normalizeHost(host: String): String {
         var h = host.trim().substringBefore("?").removeSuffix("/")
         if (!h.startsWith("http://") && !h.startsWith("https://")) {
@@ -101,7 +112,7 @@ class MediaRepository(
         withContext(Dispatchers.IO) {
             try {
                 if (isM3U(serverUrl)) {
-                    val playlist = request(serverUrl)
+                    val playlist = readPlaylist(serverUrl)
                     if (playlist.contains("#EXTM3U")) {
                         Result.success(Unit)
                     } else {
@@ -457,7 +468,7 @@ class MediaRepository(
             }
 
             try {
-                val body = request(url)
+                val body = readPlaylist(url)
                 val channels = mutableListOf<Channel>()
                 var name = "Channel"
                 var logo: String? = null

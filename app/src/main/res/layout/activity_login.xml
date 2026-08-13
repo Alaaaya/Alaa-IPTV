@@ -1,78 +1,374 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/dark_background"
-    android:padding="48dp">
-    <LinearLayout
+    android:background="@drawable/bg_login_screen"
+    android:layoutDirection="rtl"
+    android:padding="18dp">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/loginContainer"
-        android:layout_width="600dp"
-        android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
-        android:orientation="vertical"
-        android:background="@drawable/glassmorphism_background"
-        android:padding="48dp">
-        <TextView
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="@drawable/bg_login_panel"
+        android:clipToOutline="true"
+        app:layout_constraintBottom_toTopOf="@id/infoBar"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.45"
+        android:layout_marginBottom="20dp">
+
+        <androidx.constraintlayout.widget.Guideline
+            android:id="@+id/verticalDivider"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/login_title"
-            android:textColor="@color/text_primary"
-            android:textSize="32sp"
-            android:textStyle="bold"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginBottom="32dp" />
-        <EditText
-            android:id="@+id/serverUrlInput"
-            style="@style/InputField"
-            android:layout_width="match_parent"
+            android:orientation="vertical"
+            app:layout_constraintGuide_percent="0.41" />
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="0dp"
+            android:layout_marginVertical="36dp"
+            android:background="#264B5570"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="@id/verticalDivider"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <LinearLayout
+            android:id="@+id/brandPanel"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="28dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toLeftOf="@id/verticalDivider"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <ImageView
+                android:layout_width="112dp"
+                android:layout_height="84dp"
+                android:contentDescription="@string/app_name"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_logo" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="IBO Player"
+                android:textColor="@color/white"
+                android:textSize="24sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="أفضل تجربة مشاهدة"
+                android:textColor="@color/text_gray_light"
+                android:textSize="16sp" />
+
+            <ImageView
+                android:layout_width="190dp"
+                android:layout_height="130dp"
+                android:layout_marginTop="34dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_login_tv_neon" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="-8dp"
+                android:letterSpacing="0.28"
+                android:text="••••  •••"
+                android:textColor="#B8302A8C"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/loginForm"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:hint="@string/server_url"
-            android:inputType="textUri"
-            android:layout_marginBottom="16dp"
-            android:nextFocusDown="@id/usernameInput" />
-        <EditText
-            android:id="@+id/usernameInput"
-            style="@style/InputField"
-            android:layout_width="match_parent"
+            android:layout_marginHorizontal="60dp"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:paddingVertical="26dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toRightOf="@id/verticalDivider"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="تسجيل الدخول"
+                android:textColor="@color/white"
+                android:textSize="28sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:gravity="center"
+                android:text="أدخل بيانات الاشتراك الخاصة بك"
+                android:textColor="@color/text_gray_light"
+                android:textSize="14sp" />
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:layout_marginTop="28dp"
+                android:addStatesFromChildren="true"
+                android:background="@drawable/bg_login_input"
+                android:focusable="false">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="left|center_vertical"
+                    android:layout_marginLeft="18dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_link" />
+
+                <EditText
+                    android:id="@+id/serverUrlInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@android:color/transparent"
+                    android:gravity="right|center_vertical"
+                    android:hint="رابط الاشتراك"
+                    android:imeOptions="actionNext"
+                    android:inputType="textUri"
+                    android:nextFocusDown="@id/usernameInput"
+                    android:paddingLeft="56dp"
+                    android:paddingRight="18dp"
+                    android:showSoftInputOnFocus="true"
+                    android:singleLine="true"
+                    android:textColor="@color/white"
+                    android:textColorHint="#B1B8C9"
+                    android:textDirection="ltr"
+                    android:textSize="16sp" />
+            </FrameLayout>
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:layout_marginTop="12dp"
+                android:addStatesFromChildren="true"
+                android:background="@drawable/bg_login_input">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="left|center_vertical"
+                    android:layout_marginLeft="18dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_user_login" />
+
+                <EditText
+                    android:id="@+id/usernameInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@android:color/transparent"
+                    android:gravity="right|center_vertical"
+                    android:hint="اسم المستخدم"
+                    android:imeOptions="actionNext"
+                    android:inputType="text"
+                    android:nextFocusDown="@id/passwordInput"
+                    android:nextFocusUp="@id/serverUrlInput"
+                    android:paddingLeft="56dp"
+                    android:paddingRight="18dp"
+                    android:showSoftInputOnFocus="true"
+                    android:singleLine="true"
+                    android:textColor="@color/white"
+                    android:textColorHint="#B1B8C9"
+                    android:textSize="16sp" />
+            </FrameLayout>
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:layout_marginTop="12dp"
+                android:addStatesFromChildren="true"
+                android:background="@drawable/bg_login_input">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="left|center_vertical"
+                    android:layout_marginLeft="18dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_lock_login" />
+
+                <EditText
+                    android:id="@+id/passwordInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@android:color/transparent"
+                    android:gravity="right|center_vertical"
+                    android:hint="كلمة المرور"
+                    android:imeOptions="actionDone"
+                    android:inputType="textPassword"
+                    android:nextFocusDown="@id/loginButton"
+                    android:nextFocusUp="@id/usernameInput"
+                    android:paddingLeft="56dp"
+                    android:paddingRight="52dp"
+                    android:showSoftInputOnFocus="true"
+                    android:singleLine="true"
+                    android:textColor="@color/white"
+                    android:textColorHint="#B1B8C9"
+                    android:textSize="16sp" />
+
+                <ImageButton
+                    android:id="@+id/passwordVisibilityButton"
+                    android:layout_width="46dp"
+                    android:layout_height="match_parent"
+                    android:layout_gravity="right|center_vertical"
+                    android:background="@android:color/transparent"
+                    android:contentDescription="إظهار أو إخفاء كلمة المرور"
+                    android:focusable="false"
+                    android:src="@drawable/ic_visibility" />
+            </FrameLayout>
+
+            <Button
+                android:id="@+id/loginButton"
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/bg_login_primary_button"
+                android:focusable="true"
+                android:nextFocusDown="@id/importPlaylistButton"
+                android:nextFocusUp="@id/passwordInput"
+                android:text="تسجيل الدخول"
+                android:textAllCaps="false"
+                android:textColor="@color/white"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+
+            <ProgressBar
+                android:id="@+id/progressBar"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_marginTop="10dp"
+                android:indeterminateTint="@color/ibo_accent_red"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/errorText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:gravity="center"
+                android:maxLines="2"
+                android:textColor="@color/error_color"
+                android:textSize="13sp"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1"
+                    android:background="#3047546B" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="16dp"
+                    android:text="أو"
+                    android:textColor="@color/text_gray_light"
+                    android:textSize="13sp" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1"
+                    android:background="#3047546B" />
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/importPlaylistButton"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_login_secondary_button"
+                android:drawableStart="@drawable/ic_import_playlist"
+                android:drawablePadding="10dp"
+                android:focusable="true"
+                android:nextFocusUp="@id/loginButton"
+                android:text="اختر ملف أو قم باستيراد قائمة"
+                android:textAllCaps="false"
+                android:textColor="@color/white"
+                android:textSize="15sp" />
+        </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <LinearLayout
+        android:id="@+id/infoBar"
+        android:layout_width="0dp"
+        android:layout_height="74dp"
+        android:background="@drawable/bg_info_card"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="20dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <LinearLayout
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:hint="@string/username"
-            android:inputType="text"
-            android:layout_marginBottom="16dp"
-            android:nextFocusUp="@id/serverUrlInput"
-            android:nextFocusDown="@id/passwordInput" />
-        <EditText
-            android:id="@+id/passwordInput"
-            style="@style/InputField"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="@string/password"
-            android:inputType="textPassword"
-            android:layout_marginBottom="24dp"
-            android:nextFocusUp="@id/usernameInput"
-            android:nextFocusDown="@id/loginButton" />
-        <Button
-            android:id="@+id/loginButton"
-            style="@style/PrimaryButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/login"
-            android:nextFocusUp="@id/passwordInput" />
-        <ProgressBar
-            android:id="@+id/progressBar"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginTop="16dp"
-            android:visibility="gone"
-            android:indeterminateTint="@color/accent_blue" />
-        <TextView
-            android:id="@+id/errorText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginTop="16dp"
-            android:textColor="@color/error_color"
-            android:textSize="14sp"
-            android:visibility="gone" />
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+            <ImageView android:layout_width="30dp" android:layout_height="30dp" android:contentDescription="@null" android:src="@drawable/ic_secure" />
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:orientation="vertical">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="حماية وأمان" android:textColor="@color/white" android:textSize="15sp" android:textStyle="bold" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="بياناتك محمية بالكامل" android:textColor="@color/text_gray_light" android:textSize="11sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <View android:layout_width="1dp" android:layout_height="42dp" android:background="#2547546B" />
+
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center_vertical" android:orientation="horizontal" android:paddingStart="18dp">
+            <ImageView android:layout_width="30dp" android:layout_height="30dp" android:contentDescription="@null" android:src="@drawable/ic_uptime" />
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:orientation="vertical">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="وقت التشغيل 99.9%" android:textColor="@color/white" android:textSize="15sp" android:textStyle="bold" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="سيرفرات قوية ومستقرة" android:textColor="@color/text_gray_light" android:textSize="11sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <View android:layout_width="1dp" android:layout_height="42dp" android:background="#2547546B" />
+
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center_vertical" android:orientation="horizontal" android:paddingStart="18dp">
+            <ImageView android:layout_width="30dp" android:layout_height="30dp" android:contentDescription="@null" android:src="@drawable/ic_quality" />
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:orientation="vertical">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="جودة عالية" android:textColor="@color/white" android:textSize="15sp" android:textStyle="bold" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="HD / FHD / 4K" android:textColor="@color/text_gray_light" android:textSize="11sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <View android:layout_width="1dp" android:layout_height="42dp" android:background="#2547546B" />
+
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center_vertical" android:orientation="horizontal" android:paddingStart="18dp">
+            <ImageView android:layout_width="30dp" android:layout_height="30dp" android:contentDescription="@null" android:src="@drawable/ic_support" />
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:orientation="vertical">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="دعم فني 24/7" android:textColor="@color/white" android:textSize="15sp" android:textStyle="bold" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="نحن هنا دائماً لمساعدتك" android:textColor="@color/text_gray_light" android:textSize="11sp" />
+            </LinearLayout>
+        </LinearLayout>
     </LinearLayout>
-</RelativeLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
