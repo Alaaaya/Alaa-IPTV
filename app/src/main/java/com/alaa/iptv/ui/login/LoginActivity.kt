@@ -10,6 +10,7 @@ import java.io.File
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.alaa.iptv.data.preferences.AppPreferences
+import com.alaa.iptv.data.remote.TvProvisioningClient
 import com.alaa.iptv.data.repository.MediaRepository
 import com.alaa.iptv.databinding.ActivityLoginBinding
 import com.alaa.iptv.ui.dashboard.DashboardActivity
@@ -61,6 +62,8 @@ class LoginActivity : AppCompatActivity() {
             ))
         }
         binding.passwordVisibilityButton.setOnClickListener { togglePasswordVisibility() }
+        binding.fetchTvIdButton.setOnClickListener { fetchTvSubscription() }
+        binding.tvIdInput.setText(prefs.tvId)
         listOf(binding.loginButton, binding.importPlaylistButton).forEach { button ->
             button.setOnFocusChangeListener { view, hasFocus ->
                 view.animate()
@@ -78,6 +81,30 @@ class LoginActivity : AppCompatActivity() {
         val password = binding.passwordInput.text.toString().trim()
         if (validateInput(serverUrl, username, password)) {
             performLogin(serverUrl, username, password)
+        }
+    }
+
+    private fun fetchTvSubscription() {
+        val tvId = binding.tvIdInput.text.toString().trim().uppercase()
+        binding.errorText.visibility = android.view.View.GONE
+        if (tvId.length < 16) {
+            binding.tvIdInput.error = "يرجى إدخال TV ID صحيح"
+            return
+        }
+
+        setLoading(true)
+        lifecycleScope.launch {
+            TvProvisioningClient.fetchSubscription(tvId).onSuccess { subscription ->
+                prefs.tvId = subscription.tvId
+                binding.tvIdInput.setText(subscription.tvId)
+                binding.serverUrlInput.setText(subscription.serverUrl)
+                binding.usernameInput.setText(subscription.username)
+                binding.passwordInput.setText(subscription.password)
+                performLogin(subscription.serverUrl, subscription.username, subscription.password)
+            }.onFailure { error ->
+                showLoginError(error.message ?: "تعذر جلب بيانات الجهاز")
+                setLoading(false)
+            }
         }
     }
 
@@ -159,6 +186,8 @@ class LoginActivity : AppCompatActivity() {
         binding.serverUrlInput.isEnabled = !loading
         binding.usernameInput.isEnabled = !loading
         binding.passwordInput.isEnabled = !loading
+        binding.tvIdInput.isEnabled = !loading
+        binding.fetchTvIdButton.isEnabled = !loading
         binding.passwordVisibilityButton.isEnabled = !loading
         binding.loginButton.text = if (loading) "جاري تسجيل الدخول…" else getString(com.alaa.iptv.R.string.login)
         binding.progressBar.visibility = if (loading) android.view.View.VISIBLE else android.view.View.GONE

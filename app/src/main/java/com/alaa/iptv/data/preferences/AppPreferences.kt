@@ -15,6 +15,7 @@ class AppPreferences(context: Context) {
         private const val KEY_IS_LOGGED_IN = "is_logged_in"
         private const val KEY_USE_M3U = "use_m3u"
         private const val KEY_M3U_URL = "m3u_url"
+        private const val KEY_TV_ID = "tv_id"
         private const val KEY_FAVORITES = "favorites"
         private const val KEY_CHANNEL_ORDER = "channel_order"
     }
@@ -42,6 +43,10 @@ class AppPreferences(context: Context) {
     var m3uUrl: String
         get() = prefs.getString(KEY_M3U_URL, "") ?: ""
         set(value) = prefs.edit().putString(KEY_M3U_URL, value).apply()
+
+    var tvId: String
+        get() = prefs.getString(KEY_TV_ID, "") ?: ""
+        set(value) = prefs.edit().putString(KEY_TV_ID, value).apply()
     
     fun clear() {
         prefs.edit().clear().apply()
