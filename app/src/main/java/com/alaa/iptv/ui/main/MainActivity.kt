@@ -38,6 +38,9 @@ class MainActivity : AppCompatActivity() {
     private var allChannels: List<Channel> = emptyList()
     private var currentMode = MODE_LIVE
     private var liveCategories: List<Category> = emptyList()
+    private var selectedLiveCategory: Category? = null
+    private var currentLivePage = 0
+    private var hasMoreLivePages = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,6 +66,7 @@ class MainActivity : AppCompatActivity() {
 
         setupChannelsList()
         binding.filterAll.setOnClickListener { showLiveCategorySelector() }
+        binding.channelCounterFooter.setOnClickListener { loadMoreChannels() }
         loadLiveCategories()
     }
 
@@ -118,24 +122,38 @@ class MainActivity : AppCompatActivity() {
 
     private fun selectLiveCategory(category: Category) {
         prefs.lastLiveCategoryId = category.categoryId
+        selectedLiveCategory = category
+        currentLivePage = 0
+        hasMoreLivePages = false
         binding.filterAll.text = category.categoryName
         binding.categoryTitle.text = "البث المباشر / ${category.categoryName}"
-        loadContent(category.categoryId)
+        loadContent(category.categoryId, page = 0, append = false)
     }
 
-    private fun loadContent(categoryId: String) {
+    private fun loadMoreChannels() {
+        val category = selectedLiveCategory ?: return
+        if (!hasMoreLivePages) {
+            Toast.makeText(this, "تم تحميل كل قنوات هذه الفئة", Toast.LENGTH_SHORT).show()
+            return
+        }
+        loadContent(category.categoryId, page = currentLivePage + 1, append = true)
+    }
+
+    private fun loadContent(categoryId: String, page: Int, append: Boolean) {
         lifecycleScope.launch {
             try {
-                val result = repository.getLiveStreams(categoryId)
+                val result = repository.getLiveStreams(categoryId, page)
 
                 result.onSuccess { loadedChannels ->
-                    val decoratedChannels = decorateChannels(loadedChannels)
+                    val decoratedChannels = decorateChannels(if (append) allChannels + loadedChannels else loadedChannels)
                     allChannels = if (currentMode == MODE_FAVORITES) {
                         decoratedChannels.filter { it.isFavorite }
                     } else {
                         decoratedChannels
                     }
-                    updateChannelList()
+                    currentLivePage = page
+                    hasMoreLivePages = loadedChannels.size >= 100
+                    updateChannelList(if (append) allChannels.firstOrNull() else null)
                 }.onFailure(::showContentError)
             } catch (e: Exception) {
                 showContentError(e)
@@ -197,7 +215,11 @@ class MainActivity : AppCompatActivity() {
             .into(binding.previewImage)
 
         val pos = allChannels.indexOfFirst { channelKey(it) == channelKey(channel) } + 1
-        binding.channelCounterFooter.text = "$pos / ${allChannels.size}"
+        binding.channelCounterFooter.text = if (hasMoreLivePages) {
+            "$pos / ${allChannels.size}  •  اضغط هنا لتحميل المزيد"
+        } else {
+            "$pos / ${allChannels.size}"
+        }
     }
 
     private fun showChannelOptions(channel: Channel) {
