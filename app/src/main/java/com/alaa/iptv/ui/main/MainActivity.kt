@@ -10,6 +10,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.alaa.iptv.R
 import com.alaa.iptv.data.models.Channel
+import com.alaa.iptv.data.models.Category
 import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.data.repository.MediaRepository
 import com.alaa.iptv.databinding.ActivityMainBinding
@@ -36,6 +37,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var channelAdapter: ChannelAdapter
     private var allChannels: List<Channel> = emptyList()
     private var currentMode = MODE_LIVE
+    private var liveCategories: List<Category> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,7 +62,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         setupChannelsList()
-        loadContent()
+        binding.filterAll.setOnClickListener { showLiveCategorySelector() }
+        loadLiveCategories()
     }
 
     private fun setupChannelsList() {
@@ -80,10 +83,50 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun loadContent() {
+    private fun loadLiveCategories() {
         lifecycleScope.launch {
             try {
-                val result = repository.getLiveStreams(null)
+                val categoriesResult = repository.getLiveCategories()
+                if (categoriesResult.isFailure) {
+                    showContentError(categoriesResult.exceptionOrNull())
+                    return@launch
+                }
+                liveCategories = categoriesResult.getOrDefault(emptyList())
+                val selected = liveCategories.firstOrNull { it.categoryId == prefs.lastLiveCategoryId }
+                    ?: liveCategories.firstOrNull()
+                if (selected == null) {
+                    binding.previewTitle.text = "لا توجد فئات قنوات"
+                    binding.previewSubtitle.text = "تحقق من اشتراك IPTV"
+                    return@launch
+                }
+                selectLiveCategory(selected)
+            } catch (e: Exception) {
+                showContentError(e)
+            }
+        }
+    }
+
+    private fun showLiveCategorySelector() {
+        if (liveCategories.isEmpty()) return
+        AlertDialog.Builder(this)
+            .setTitle("فئات القنوات")
+            .setItems(liveCategories.map { it.categoryName }.toTypedArray()) { _, index ->
+                selectLiveCategory(liveCategories[index])
+            }
+            .show()
+    }
+
+    private fun selectLiveCategory(category: Category) {
+        prefs.lastLiveCategoryId = category.categoryId
+        binding.filterAll.text = category.categoryName
+        binding.categoryTitle.text = "البث المباشر / ${category.categoryName}"
+        loadContent(category.categoryId)
+    }
+
+    private fun loadContent(categoryId: String) {
+        lifecycleScope.launch {
+            try {
+                val result = repository.getLiveStreams(categoryId)
 
                 result.onSuccess { loadedChannels ->
                     val decoratedChannels = decorateChannels(loadedChannels)
@@ -93,18 +136,20 @@ class MainActivity : AppCompatActivity() {
                         decoratedChannels
                     }
                     updateChannelList()
-                }.onFailure { error ->
-                    Log.e(TAG, "Unable to load content", error)
-                    allChannels = emptyList()
-                    binding.previewTitle.text = "تعذر تحميل القنوات"
-                    binding.previewSubtitle.text = error.message ?: "تحقق من اتصال الإنترنت والسيرفر"
-                    binding.channelCounterFooter.text = "0 / 0"
-                    channelAdapter.updateChannels(emptyList())
-                }
+                }.onFailure(::showContentError)
             } catch (e: Exception) {
-                Log.e(TAG, "Error loading content", e)
+                showContentError(e)
             }
         }
+    }
+
+    private fun showContentError(error: Throwable?) {
+        Log.e(TAG, "Unable to load content", error)
+        allChannels = emptyList()
+        binding.previewTitle.text = "تعذر تحميل القنوات"
+        binding.previewSubtitle.text = error?.message ?: "تحقق من اتصال الإنترنت والسيرفر"
+        binding.channelCounterFooter.text = "0 / 0"
+        channelAdapter.updateChannels(emptyList())
     }
 
     private fun decorateChannels(channels: List<Channel>): List<Channel> {
