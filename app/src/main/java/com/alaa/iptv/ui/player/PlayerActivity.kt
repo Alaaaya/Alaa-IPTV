@@ -16,6 +16,7 @@ import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
@@ -74,18 +75,28 @@ class PlayerActivity : AppCompatActivity() {
     private fun initializePlayer(url: String) {
         showLoading(true)
         showError(null)
-        player?.release()
-        player = null
 
         Log.d(TAG, "▶️ Initializing player with URL type: ${streamType}")
         Log.d(TAG, "▶️ URL protocol: ${Uri.parse(url).scheme}")
 
         try {
-            trackSelector = DefaultTrackSelector(this)
-            player = ExoPlayer.Builder(this)
-                .setTrackSelector(trackSelector!!)
-                .build()
-            binding.playerView.player = player
+            val shouldAttachListener = player == null
+            if (shouldAttachListener) {
+                trackSelector = DefaultTrackSelector(this)
+                val fastLiveLoadControl = DefaultLoadControl.Builder()
+                    .setBufferDurationsMs(
+                        1_500,
+                        6_000,
+                        300,
+                        800
+                    )
+                    .build()
+                player = ExoPlayer.Builder(this)
+                    .setTrackSelector(trackSelector!!)
+                    .setLoadControl(fastLiveLoadControl)
+                    .build()
+                binding.playerView.player = player
+            }
 
             val uri = Uri.parse(url)
             val mediaItem = MediaItem.fromUri(uri)
@@ -93,8 +104,8 @@ class PlayerActivity : AppCompatActivity() {
             // Configure HTTP data source to allow cleartext and custom headers
             val httpDataSourceFactory = DefaultHttpDataSource.Factory()
                 .setAllowCrossProtocolRedirects(true)
-                .setConnectTimeoutMs(15000)
-                .setReadTimeoutMs(15000)
+                .setConnectTimeoutMs(5_000)
+                .setReadTimeoutMs(8_000)
 
             val mediaSource = when {
                 url.endsWith(".m3u8", ignoreCase = true) || 
@@ -113,9 +124,9 @@ class PlayerActivity : AppCompatActivity() {
             player?.apply {
                 setMediaSource(mediaSource)
                 prepare()
-                playWhenReady = true
+                play()
 
-                addListener(object : Player.Listener {
+                if (shouldAttachListener) addListener(object : Player.Listener {
                     override fun onPlaybackStateChanged(playbackState: Int) {
                         when (playbackState) {
                             Player.STATE_BUFFERING -> {
