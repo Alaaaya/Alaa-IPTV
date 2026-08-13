@@ -14,6 +14,8 @@ import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.data.repository.MediaRepository
 import com.alaa.iptv.databinding.ActivityMainBinding
 import com.alaa.iptv.ui.player.PlayerActivity
+import com.alaa.iptv.ui.player.PlayableChannel
+import com.alaa.iptv.ui.player.PlayerChannelNavigator
 import com.bumptech.glide.Glide
 import kotlinx.coroutines.launch
 
@@ -208,11 +210,26 @@ class MainActivity : AppCompatActivity() {
         val url = channel.directSource ?: channel.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password)
         if (url.isNullOrBlank()) return
 
+        val liveChannels = if (channel.streamType.equals("live", ignoreCase = true)) {
+            allChannels.mapNotNull { item ->
+                if (!item.streamType.equals("live", ignoreCase = true)) return@mapNotNull null
+                val itemUrl = item.directSource ?: item.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password)
+                itemUrl.takeIf { it.isNotBlank() }?.let {
+                    PlayableChannel(item.name, it, item.streamType)
+                }
+            }
+        } else {
+            emptyList()
+        }
+        val playerIndex = liveChannels.indexOfFirst { it.streamUrl == url }
+        if (playerIndex >= 0) PlayerChannelNavigator.setChannels(liveChannels)
+
         startActivity(
             Intent(this, PlayerActivity::class.java)
                 .putExtra("STREAM_URL", url)
                 .putExtra("CHANNEL_NAME", channel.name)
                 .putExtra("STREAM_TYPE", channel.streamType)
+                .putExtra(PlayerActivity.EXTRA_CHANNEL_INDEX, playerIndex)
         )
     }
 

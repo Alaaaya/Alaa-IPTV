@@ -23,6 +23,7 @@ class PlayerActivity : AppCompatActivity() {
 
     companion object {
         private const val TAG = "PlayerActivity"
+        const val EXTRA_CHANNEL_INDEX = "CHANNEL_INDEX"
     }
 
     private lateinit var binding: ActivityPlayerBinding
@@ -30,6 +31,7 @@ class PlayerActivity : AppCompatActivity() {
     private var streamUrl: String? = null
     private var channelName: String? = null
     private var streamType: String? = null
+    private var channelIndex = -1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,6 +41,7 @@ class PlayerActivity : AppCompatActivity() {
         streamUrl = intent.getStringExtra("STREAM_URL")
         channelName = intent.getStringExtra("CHANNEL_NAME")
         streamType = intent.getStringExtra("STREAM_TYPE") ?: "live"
+        channelIndex = intent.getIntExtra(EXTRA_CHANNEL_INDEX, -1)
 
         binding.channelNameText.text = channelName ?: ""
 
@@ -56,6 +59,8 @@ class PlayerActivity : AppCompatActivity() {
     private fun initializePlayer(url: String) {
         showLoading(true)
         showError(null)
+        player?.release()
+        player = null
 
         Log.d(TAG, "▶️ Initializing player with URL type: ${streamType}")
         Log.d(TAG, "▶️ URL protocol: ${Uri.parse(url).scheme}")
@@ -170,6 +175,30 @@ class PlayerActivity : AppCompatActivity() {
         }
     }
 
+    private fun switchChannel(offset: Int) {
+        if (!streamType.equals("live", ignoreCase = true) || channelIndex < 0) {
+            Toast.makeText(this, "تنقل القنوات متاح للبث المباشر فقط", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val nextIndex = channelIndex + offset
+        val nextChannel = PlayerChannelNavigator.channelAt(nextIndex)
+        if (nextChannel == null) {
+            val boundaryMessage = if (offset > 0) "هذه آخر قناة" else "هذه أول قناة"
+            Toast.makeText(this, boundaryMessage, Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        channelIndex = nextIndex
+        streamUrl = nextChannel.streamUrl
+        channelName = nextChannel.name
+        streamType = nextChannel.streamType
+        binding.channelNameText.text = nextChannel.name
+        binding.channelNameText.visibility = View.VISIBLE
+        Toast.makeText(this, "${nextChannel.name}  ${channelIndex + 1}/${PlayerChannelNavigator.size()}", Toast.LENGTH_SHORT).show()
+        initializePlayer(nextChannel.streamUrl)
+    }
+
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         return when (keyCode) {
             KeyEvent.KEYCODE_BACK, KeyEvent.KEYCODE_ESCAPE -> {
@@ -192,6 +221,14 @@ class PlayerActivity : AppCompatActivity() {
             }
             KeyEvent.KEYCODE_MEDIA_PAUSE -> {
                 player?.pause()
+                true
+            }
+            KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_CHANNEL_UP -> {
+                switchChannel(1)
+                true
+            }
+            KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_CHANNEL_DOWN -> {
+                switchChannel(-1)
                 true
             }
             KeyEvent.KEYCODE_MEDIA_FAST_FORWARD, KeyEvent.KEYCODE_DPAD_RIGHT -> {
