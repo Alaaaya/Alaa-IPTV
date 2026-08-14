@@ -22,7 +22,9 @@ import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import com.alaa.iptv.R
+import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.databinding.ActivityPlayerBinding
+import com.alaa.iptv.ui.theme.DisplayTheme
 import java.util.Locale
 
 @UnstableApi
@@ -52,6 +54,9 @@ class PlayerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityPlayerBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        val displayPrefs = AppPreferences(this)
+        DisplayTheme.applyPlayer(binding, displayPrefs)
+        binding.playerView.post { DisplayTheme.applyPlayerControls(binding.playerView, displayPrefs) }
 
         streamUrl = intent.getStringExtra("STREAM_URL")
         channelName = intent.getStringExtra("CHANNEL_NAME")

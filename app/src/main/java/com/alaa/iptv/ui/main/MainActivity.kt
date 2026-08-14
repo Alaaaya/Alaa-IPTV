@@ -17,6 +17,7 @@ import com.alaa.iptv.databinding.ActivityMainBinding
 import com.alaa.iptv.ui.player.PlayerActivity
 import com.alaa.iptv.ui.player.PlayableChannel
 import com.alaa.iptv.ui.player.PlayerChannelNavigator
+import com.alaa.iptv.ui.theme.DisplayTheme
 import com.bumptech.glide.Glide
 import kotlinx.coroutines.launch
 
@@ -49,6 +50,7 @@ class MainActivity : AppCompatActivity() {
 
         prefs = AppPreferences(this)
         repository = MediaRepository(prefs, this)
+        DisplayTheme.applyLive(binding, prefs)
         currentMode = intent.getStringExtra(EXTRA_MODE) ?: MODE_LIVE
 
         when (currentMode) {
@@ -73,6 +75,7 @@ class MainActivity : AppCompatActivity() {
     private fun setupChannelsList() {
         channelAdapter = ChannelAdapter(
             emptyList(),
+            prefs.isHotPlayerTheme,
             onChannelClick = { channel -> playChannel(channel) },
             onChannelLongClick = { channel -> showChannelOptions(channel) }
         )

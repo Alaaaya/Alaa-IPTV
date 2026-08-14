@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0A1426"
+    android:layoutDirection="ltr"
+    android:padding="36dp">
+
+    <TextView
+        android:id="@+id/backButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_login_secondary_button"
+        android:clickable="true"
+        android:focusable="true"
+        android:paddingHorizontal="18dp"
+        android:paddingVertical="10dp"
+        android:text="← رجوع"
+        android:textColor="@color/white"
+        android:textSize="16sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/settingsTitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="28dp"
+        android:text="الإعدادات والمظهر"
+        android:textColor="@color/white"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@id/backButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/backButton"
+        app:layout_constraintTop_toTopOf="@id/backButton" />
+
+    <LinearLayout
+        android:id="@+id/contentPanel"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="34dp"
+        android:background="@drawable/bg_info_card"
+        android:orientation="vertical"
+        android:padding="28dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/backButton">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="تصميم الواجهة"
+            android:textColor="@color/white"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="تغيير التصميم لا يغيّر TV ID أو الاشتراك أو القنوات أو المفضلة."
+            android:textColor="@color/text_gray_light"
+            android:textSize="14sp" />
+
+        <RadioGroup
+            android:id="@+id/themeGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:orientation="vertical">
+
+            <RadioButton
+                android:id="@+id/themeAlaaClassic"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_login_input"
+                android:focusable="true"
+                android:padding="18dp"
+                android:text="Alaa IPTV Classic — التصميم الحالي الافتراضي"
+                android:textColor="@color/white"
+                android:textSize="17sp" />
+
+            <RadioButton
+                android:id="@+id/themeHotPlayer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_login_input"
+                android:focusable="true"
+                android:padding="18dp"
+                android:text="Hot Player — كحلي داكن مع أصفر وترتيب بصري مستوحى من الصور"
+                android:textColor="@color/white"
+                android:textSize="17sp" />
+        </RadioGroup>
+
+        <TextView
+            android:id="@+id/selectionState"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:text="التصميم الأصلي هو المفعّل حالياً."
+            android:textColor="#D8CA28"
+            android:textSize="14sp" />
+
+        <Button
+            android:id="@+id/applyThemeButton"
+            android:layout_width="wrap_content"
+            android:layout_height="52dp"
+            android:layout_marginTop="20dp"
+            android:background="@drawable/bg_button_red"
+            android:focusable="true"
+            android:paddingHorizontal="28dp"
+            android:text="تطبيق التصميم"
+            android:textAllCaps="false"
+            android:textColor="@color/white"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvIdLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:text="TV ID"
+        android:textColor="@color/text_gray_light"
+        android:textSize="14sp"
+        app:layout_constraintStart_toStartOf="@id/contentPanel"
+        app:layout_constraintTop_toBottomOf="@id/contentPanel" />
+
+    <TextView
+        android:id="@+id/tvIdValue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:fontFamily="monospace"
+        android:textColor="@color/white"
+        android:textDirection="ltr"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="@id/contentPanel"
+        app:layout_constraintTop_toBottomOf="@id/tvIdLabel" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

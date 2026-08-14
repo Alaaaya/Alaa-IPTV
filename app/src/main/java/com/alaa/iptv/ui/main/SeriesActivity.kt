@@ -16,6 +16,8 @@ import com.alaa.iptv.data.repository.MediaRepository
 import com.alaa.iptv.databinding.ActivitySeriesBinding
 import com.alaa.iptv.ui.dashboard.SidebarAdapter
 import com.alaa.iptv.ui.dashboard.SidebarItem
+import com.alaa.iptv.ui.settings.SettingsActivity
+import com.alaa.iptv.ui.theme.DisplayTheme
 import kotlinx.coroutines.launch
 
 class SeriesActivity : AppCompatActivity() {
@@ -33,6 +35,7 @@ class SeriesActivity : AppCompatActivity() {
 
         prefs = AppPreferences(this)
         repository = MediaRepository(prefs, this)
+        DisplayTheme.applySeries(binding, prefs)
 
         setupSidebar()
         setupSeriesGrid()
@@ -47,12 +50,12 @@ class SeriesActivity : AppCompatActivity() {
             SidebarItem(getString(R.string.menu_movies), R.drawable.ic_movies, false) { openMain(MainActivity.MODE_MOVIES) },
             SidebarItem(getString(R.string.menu_series), R.drawable.ic_series, true) { /* Already here */ },
             SidebarItem(getString(R.string.menu_favorites), R.drawable.ic_favorite, false) { },
-            SidebarItem(getString(R.string.menu_settings), R.drawable.ic_settings, false) { }
+            SidebarItem(getString(R.string.menu_settings), R.drawable.ic_settings, false) { startActivity(Intent(this, SettingsActivity::class.java)) }
         )
 
         binding.sidebarRecyclerView.apply {
             layoutManager = LinearLayoutManager(this@SeriesActivity)
-            adapter = SidebarAdapter(items) { it.action.invoke() }
+            adapter = SidebarAdapter(items, prefs.isHotPlayerTheme) { it.action.invoke() }
         }
     }
 
@@ -104,7 +107,7 @@ class SeriesActivity : AppCompatActivity() {
                 if (result.isSuccess) {
                     seriesList = result.getOrDefault(emptyList())
                     binding.seriesCount.text = "${seriesList.size} مسلسل"
-                    binding.seriesRecyclerView.adapter = SeriesAdapter(seriesList) { series ->
+                    binding.seriesRecyclerView.adapter = SeriesAdapter(seriesList, prefs.isHotPlayerTheme) { series ->
                         openSeriesDetails(series)
                     }
                 }
