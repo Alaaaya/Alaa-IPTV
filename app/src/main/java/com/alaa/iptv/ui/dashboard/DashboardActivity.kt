@@ -225,12 +225,14 @@ class DashboardActivity : AppCompatActivity() {
     private fun updateUI() {
         if (_binding == null) return
         val categories = mutableListOf<CategoryItem>()
-        categories.add(CategoryItem("كل القنوات", allChannels.size, R.drawable.ic_live_tv, "#E53935", "live"))
-        categories.add(CategoryItem("الرياضة", allChannels.count { it.name.contains("sport", true) }, R.drawable.ic_sports, "#2196F3", "live"))
-        categories.add(CategoryItem("الأخبار", allChannels.count { it.name.contains("news", true) }, R.drawable.ic_news, "#4CAF50", "live"))
-        categories.add(CategoryItem("الأفلام", allMovies.size, R.drawable.ic_movies, "#E53935", "movie"))
-        categories.add(CategoryItem("الأطفال", allChannels.count { it.name.contains("kids", true) }, R.drawable.ic_kids, "#FF9800", "live"))
-        categories.add(CategoryItem("الوثائقيات", allChannels.count { it.name.contains("doc", true) }, R.drawable.ic_documentary, "#00BCD4", "live"))
+        categories.add(CategoryItem("كل القنوات", allChannels.size, R.drawable.ic_live_tv, CategoryVisuals.backgroundFor("live"), "#E53935", "live"))
+        categories.add(CategoryItem("الرياضة", allChannels.count { it.name.contains("sport", true) }, R.drawable.ic_sports, CategoryVisuals.backgroundFor("sports"), "#2196F3", "live"))
+        categories.add(CategoryItem("الأخبار", allChannels.count { it.name.contains("news", true) }, R.drawable.ic_news, CategoryVisuals.backgroundFor("news"), "#4CAF50", "live"))
+        categories.add(CategoryItem("الأفلام", allMovies.size, R.drawable.ic_movies, CategoryVisuals.backgroundFor("movies"), "#E53935", "movie"))
+        categories.add(CategoryItem("المسلسلات", allSeries.size, R.drawable.ic_series, CategoryVisuals.backgroundFor("series"), "#8B5CF6", "series"))
+        categories.add(CategoryItem("الأطفال", allChannels.count { it.name.contains("kids", true) }, R.drawable.ic_kids, CategoryVisuals.backgroundFor("kids"), "#FF9800", "live"))
+        categories.add(CategoryItem("الوثائقيات", allChannels.count { it.name.contains("doc", true) }, R.drawable.ic_documentary, CategoryVisuals.backgroundFor("documentary"), "#00BCD4", "live"))
+        categories.add(CategoryItem("الموسيقى", allChannels.count { it.name.contains("music", true) }, R.drawable.ic_music, CategoryVisuals.backgroundFor("music"), "#EC4899", "live"))
         updateCategories(categories)
 
         // لا نعرض محتوى في "متابعة المشاهدة" إلا عندما يتوفر سجل مشاهدة حقيقي.
@@ -277,5 +279,12 @@ class DashboardActivity : AppCompatActivity() {
 }
 
 data class SidebarItem(val title: String, val iconRes: Int, val isSelected: Boolean = false, val action: () -> Unit)
-data class CategoryItem(val name: String, val count: Int, val iconRes: Int, val colorHex: String, val type: String)
+data class CategoryItem(
+    val name: String,
+    val count: Int,
+    val iconRes: Int,
+    val backgroundRes: Int,
+    val colorHex: String,
+    val type: String
+)
 data class ContinueWatchingItem(val id: String, val title: String, val subtitle: String, val imageUrl: String?, val progress: Int, val channel: Channel)
