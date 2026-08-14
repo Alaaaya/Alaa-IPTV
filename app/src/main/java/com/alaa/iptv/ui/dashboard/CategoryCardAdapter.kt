@@ -1,6 +1,7 @@
 package com.alaa.iptv.ui.dashboard
 
 import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
@@ -21,14 +22,19 @@ class CategoryCardAdapter(
 
             binding.root.setOnFocusChangeListener { _, hasFocus ->
                 binding.focusOutline.visibility = if (hasFocus) android.view.View.VISIBLE else android.view.View.GONE
+                binding.iconGlow.alpha = if (hasFocus) 1.0f else 0.72f
                 if (hasFocus) {
                     binding.root.scaleX = 1.05f
                     binding.root.scaleY = 1.05f
-                    binding.root.elevation = 8f
+                    binding.root.elevation = 12f
+                    binding.categoryIcon.scaleX = 1.08f
+                    binding.categoryIcon.scaleY = 1.08f
                 } else {
                     binding.root.scaleX = 1.0f
                     binding.root.scaleY = 1.0f
                     binding.root.elevation = 2f
+                    binding.categoryIcon.scaleX = 1.0f
+                    binding.categoryIcon.scaleY = 1.0f
                 }
             }
 
@@ -45,7 +51,13 @@ class CategoryCardAdapter(
             binding.categoryCount.text = if (item.count > 0) item.count.toString() else ""
             binding.categoryBackdrop.setImageResource(item.backgroundRes)
             binding.categoryIcon.setImageResource(item.iconRes)
-            binding.categoryIcon.setColorFilter(Color.WHITE)
+            val neonColor = Color.parseColor(item.colorHex)
+            binding.categoryIcon.setColorFilter(neonColor)
+            binding.iconGlow.background = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(Color.argb(70, Color.red(neonColor), Color.green(neonColor), Color.blue(neonColor)))
+                setStroke(2, neonColor)
+            }
             binding.cardBackground.setCardBackgroundColor(Color.TRANSPARENT)
         }
     }
