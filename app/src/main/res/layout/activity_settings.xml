@@ -93,6 +93,42 @@
                 android:text="Hot Player — كحلي داكن مع أصفر وترتيب بصري مستوحى من الصور"
                 android:textColor="@color/white"
                 android:textSize="17sp" />
+
+            <RadioButton
+                android:id="@+id/themeIboClassic"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_login_input"
+                android:focusable="true"
+                android:padding="18dp"
+                android:text="iBO Classic — داكن أنيق بتمييز أحمر وقوائم مريحة"
+                android:textColor="@color/white"
+                android:textSize="17sp" />
+
+            <RadioButton
+                android:id="@+id/themeModernGrid"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_login_input"
+                android:focusable="true"
+                android:padding="18dp"
+                android:text="Modern Grid — بنفسجي حديث وبطاقات مستديرة وشبكة محتوى بارزة"
+                android:textColor="@color/white"
+                android:textSize="17sp" />
+
+            <RadioButton
+                android:id="@+id/themeTvMinimal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_login_input"
+                android:focusable="true"
+                android:padding="18dp"
+                android:text="TV Minimal — أسود وأبيض بسيط بعناصر واضحة للتلفزيونات الضعيفة"
+                android:textColor="@color/white"
+                android:textSize="17sp" />
         </RadioGroup>
 
         <TextView

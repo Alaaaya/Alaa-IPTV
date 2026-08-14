@@ -98,7 +98,7 @@ class DashboardActivity : AppCompatActivity() {
             SidebarItem(getString(R.string.menu_settings), R.drawable.ic_settings, false) { startActivity(Intent(this, SettingsActivity::class.java)) }
         )
 
-        val adapter = SidebarAdapter(items, prefs.isHotPlayerTheme) { item ->
+        val adapter = SidebarAdapter(items, prefs.displayTheme) { item ->
             item.action.invoke()
         }
 

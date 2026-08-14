@@ -14,84 +14,98 @@ import com.alaa.iptv.databinding.ItemMovieCardBinding
 
 /**
  * طبقة ألوان اختيارية فقط. لا تغيّر أي حساب أو TV ID أو بيانات محتوى.
- * يبقى مظهر Alaa Classic هو الافتراضي ما لم يختر المستخدم Hot Player من الإعدادات.
+ * يبقى مظهر Alaa Classic هو الافتراضي ما لم يختر المستخدم مظهراً آخر من الإعدادات.
  */
 object DisplayTheme {
-    private const val HOT_BACKGROUND = "#0A1426"
-    private const val HOT_SIDEBAR = "#101D31"
-    private const val HOT_PANEL = "#1B2A40"
-    private const val HOT_ACCENT = "#D8CA28"
-    private const val HOT_BLUE = "#2497DE"
+    private data class Palette(
+        val background: String,
+        val sidebar: String,
+        val panel: String,
+        val accent: String,
+        val accentText: String,
+        val metadata: String,
+        val radius: Float
+    )
+
+    private fun palette(theme: String): Palette? = when (theme) {
+        AppPreferences.THEME_HOT_PLAYER -> Palette("#0A1426", "#101D31", "#1B2A40", "#D8CA28", "#0A1426", "#2497DE", 7f)
+        AppPreferences.THEME_IBO_CLASSIC -> Palette("#111319", "#191D25", "#242A35", "#E53935", "#FFFFFF", "#5EB5F7", 10f)
+        AppPreferences.THEME_MODERN_GRID -> Palette("#110D22", "#1B1433", "#282047", "#8B5CF6", "#FFFFFF", "#22D3EE", 18f)
+        AppPreferences.THEME_TV_MINIMAL -> Palette("#070707", "#101010", "#1A1A1A", "#F2F2F2", "#050505", "#BDBDBD", 4f)
+        else -> null
+    }
 
     fun applyDashboard(binding: ActivityDashboardBinding, prefs: AppPreferences) {
-        if (!prefs.isHotPlayerTheme) return
-        binding.root.setBackgroundColor(Color.parseColor(HOT_BACKGROUND))
-        binding.sidebarContainer.setBackgroundColor(Color.parseColor(HOT_SIDEBAR))
-        binding.heroWatchNow.background = rounded(HOT_ACCENT, 10f)
-        binding.heroWatchNow.setTextColor(Color.parseColor(HOT_BACKGROUND))
-        binding.categoriesViewAll.setTextColor(Color.parseColor(HOT_ACCENT))
-        binding.continueWatchingViewAll.setTextColor(Color.parseColor(HOT_ACCENT))
+        val palette = palette(prefs.displayTheme) ?: return
+        binding.root.setBackgroundColor(Color.parseColor(palette.background))
+        binding.sidebarContainer.setBackgroundColor(Color.parseColor(palette.sidebar))
+        binding.heroWatchNow.background = rounded(palette.accent, palette.radius)
+        binding.heroWatchNow.setTextColor(Color.parseColor(palette.accentText))
+        binding.categoriesViewAll.setTextColor(Color.parseColor(palette.accent))
+        binding.continueWatchingViewAll.setTextColor(Color.parseColor(palette.accent))
     }
 
     fun applyLive(binding: ActivityMainBinding, prefs: AppPreferences) {
-        if (!prefs.isHotPlayerTheme) return
-        binding.root.setBackgroundColor(Color.parseColor(HOT_BACKGROUND))
-        binding.channelPanel.background = rounded(HOT_PANEL, 10f)
-        binding.previewPanel.background = rounded(HOT_PANEL, 10f)
-        binding.filterAll.background = rounded(HOT_ACCENT, 8f)
-        binding.filterAll.setTextColor(Color.parseColor(HOT_BACKGROUND))
-        binding.channelCounterFooter.setTextColor(Color.parseColor(HOT_ACCENT))
+        val palette = palette(prefs.displayTheme) ?: return
+        binding.root.setBackgroundColor(Color.parseColor(palette.background))
+        binding.channelPanel.background = rounded(palette.panel, palette.radius)
+        binding.previewPanel.background = rounded(palette.panel, palette.radius)
+        binding.filterAll.background = rounded(palette.accent, palette.radius)
+        binding.filterAll.setTextColor(Color.parseColor(palette.accentText))
+        binding.channelCounterFooter.setTextColor(Color.parseColor(palette.accent))
     }
 
     fun applyMovies(binding: ActivityMoviesBinding, prefs: AppPreferences) {
-        if (!prefs.isHotPlayerTheme) return
-        binding.root.setBackgroundColor(Color.parseColor(HOT_BACKGROUND))
-        binding.sidebarContainer.setBackgroundColor(Color.parseColor(HOT_SIDEBAR))
-        binding.movieCategorySelector.background = rounded(HOT_ACCENT, 8f)
-        binding.movieCategorySelector.setTextColor(Color.parseColor(HOT_BACKGROUND))
+        val palette = palette(prefs.displayTheme) ?: return
+        binding.root.setBackgroundColor(Color.parseColor(palette.background))
+        binding.sidebarContainer.setBackgroundColor(Color.parseColor(palette.sidebar))
+        binding.movieCategorySelector.background = rounded(palette.accent, palette.radius)
+        binding.movieCategorySelector.setTextColor(Color.parseColor(palette.accentText))
     }
 
     fun applySeries(binding: ActivitySeriesBinding, prefs: AppPreferences) {
-        if (!prefs.isHotPlayerTheme) return
-        binding.root.setBackgroundColor(Color.parseColor(HOT_BACKGROUND))
-        binding.sidebarContainer.setBackgroundColor(Color.parseColor(HOT_SIDEBAR))
-        binding.seriesCategorySelector.background = rounded(HOT_ACCENT, 8f)
-        binding.seriesCategorySelector.setTextColor(Color.parseColor(HOT_BACKGROUND))
+        val palette = palette(prefs.displayTheme) ?: return
+        binding.root.setBackgroundColor(Color.parseColor(palette.background))
+        binding.sidebarContainer.setBackgroundColor(Color.parseColor(palette.sidebar))
+        binding.seriesCategorySelector.background = rounded(palette.accent, palette.radius)
+        binding.seriesCategorySelector.setTextColor(Color.parseColor(palette.accentText))
     }
 
     fun applyPlayer(binding: ActivityPlayerBinding, prefs: AppPreferences) {
-        if (!prefs.isHotPlayerTheme) return
-        binding.root.setBackgroundColor(Color.parseColor(HOT_BACKGROUND))
-        binding.loadingProgress.indeterminateTintList = android.content.res.ColorStateList.valueOf(Color.parseColor(HOT_ACCENT))
-        binding.trackSelectionButton.background = rounded(HOT_PANEL, 12f, HOT_ACCENT, 1)
+        val palette = palette(prefs.displayTheme) ?: return
+        binding.root.setBackgroundColor(Color.parseColor(palette.background))
+        binding.loadingProgress.indeterminateTintList = android.content.res.ColorStateList.valueOf(Color.parseColor(palette.accent))
+        binding.trackSelectionButton.background = rounded(palette.panel, palette.radius, palette.accent, 1)
     }
 
     fun applyPlayerControls(root: View, prefs: AppPreferences) {
-        if (!prefs.isHotPlayerTheme) return
+        val palette = palette(prefs.displayTheme) ?: return
         root.findViewById<SeekBar?>(com.alaa.iptv.R.id.exo_progress)?.let { progress ->
-            val accent = android.content.res.ColorStateList.valueOf(Color.parseColor(HOT_ACCENT))
+            val accent = android.content.res.ColorStateList.valueOf(Color.parseColor(palette.accent))
             progress.progressTintList = accent
             progress.thumbTintList = accent
         }
     }
 
-    fun applyPosterCard(binding: ItemMovieCardBinding, hotPlayerTheme: Boolean) {
-        if (!hotPlayerTheme) return
-        binding.posterCard.radius = 5f
-        binding.posterCard.setCardBackgroundColor(Color.parseColor(HOT_PANEL))
-        binding.ratingBadge.background = rounded(HOT_ACCENT, 6f)
-        binding.ratingBadge.setTextColor(Color.parseColor(HOT_BACKGROUND))
-        binding.yearText.background = rounded("#172941", 5f)
+    fun applyPosterCard(binding: ItemMovieCardBinding, theme: String) {
+        val palette = palette(theme) ?: return
+        binding.posterCard.radius = palette.radius
+        binding.posterCard.setCardBackgroundColor(Color.parseColor(palette.panel))
+        binding.ratingBadge.background = rounded(palette.accent, palette.radius)
+        binding.ratingBadge.setTextColor(Color.parseColor(palette.accentText))
+        binding.yearText.background = rounded(palette.sidebar, palette.radius)
         binding.yearText.setPadding(12, 4, 12, 4)
     }
 
-    fun hotFocusBackground(): GradientDrawable = rounded(HOT_ACCENT, 8f)
+    fun hasCustomTheme(theme: String): Boolean = palette(theme) != null
 
-    fun hotAccentColor(): Int = Color.parseColor(HOT_ACCENT)
+    fun focusBackground(theme: String): GradientDrawable = rounded(requireNotNull(palette(theme)).accent, requireNotNull(palette(theme)).radius)
 
-    fun hotBlueColor(): Int = Color.parseColor(HOT_BLUE)
+    fun focusTextColor(theme: String): Int = Color.parseColor(requireNotNull(palette(theme)).accentText)
 
-    fun hotPanelBackground(): GradientDrawable = rounded(HOT_PANEL, 7f)
+    fun metadataColor(theme: String): Int = Color.parseColor(requireNotNull(palette(theme)).metadata)
+
+    fun panelBackground(theme: String): GradientDrawable = rounded(requireNotNull(palette(theme)).panel, requireNotNull(palette(theme)).radius)
 
     private fun rounded(fill: String, radiusDp: Float, stroke: String? = null, strokeWidthDp: Int = 0): GradientDrawable {
         return GradientDrawable().apply {

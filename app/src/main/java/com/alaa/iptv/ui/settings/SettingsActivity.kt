@@ -20,20 +20,30 @@ class SettingsActivity : AppCompatActivity() {
 
         prefs = AppPreferences(this)
         binding.tvIdValue.text = prefs.getOrCreateTvId()
-        binding.themeAlaaClassic.isChecked = !prefs.isHotPlayerTheme
-        binding.themeHotPlayer.isChecked = prefs.isHotPlayerTheme
+        when (prefs.displayTheme) {
+            AppPreferences.THEME_HOT_PLAYER -> binding.themeHotPlayer.isChecked = true
+            AppPreferences.THEME_IBO_CLASSIC -> binding.themeIboClassic.isChecked = true
+            AppPreferences.THEME_MODERN_GRID -> binding.themeModernGrid.isChecked = true
+            AppPreferences.THEME_TV_MINIMAL -> binding.themeTvMinimal.isChecked = true
+            else -> binding.themeAlaaClassic.isChecked = true
+        }
 
         binding.themeGroup.setOnCheckedChangeListener { _, checkedId ->
             val newTheme = when (checkedId) {
                 R.id.themeHotPlayer -> AppPreferences.THEME_HOT_PLAYER
+                R.id.themeIboClassic -> AppPreferences.THEME_IBO_CLASSIC
+                R.id.themeModernGrid -> AppPreferences.THEME_MODERN_GRID
+                R.id.themeTvMinimal -> AppPreferences.THEME_TV_MINIMAL
                 else -> AppPreferences.THEME_ALAA_CLASSIC
             }
             if (prefs.displayTheme != newTheme) {
                 prefs.displayTheme = newTheme
-                binding.selectionState.text = if (newTheme == AppPreferences.THEME_HOT_PLAYER) {
-                    "تم اختيار مظهر Hot Player. اضغط تطبيق التصميم."
-                } else {
-                    "تم اختيار التصميم الأصلي لتطبيق Alaa IPTV. اضغط تطبيق التصميم."
+                binding.selectionState.text = when (newTheme) {
+                    AppPreferences.THEME_HOT_PLAYER -> "تم اختيار مظهر Hot Player. اضغط تطبيق التصميم."
+                    AppPreferences.THEME_IBO_CLASSIC -> "تم اختيار مظهر iBO Classic. اضغط تطبيق التصميم."
+                    AppPreferences.THEME_MODERN_GRID -> "تم اختيار مظهر Modern Grid. اضغط تطبيق التصميم."
+                    AppPreferences.THEME_TV_MINIMAL -> "تم اختيار مظهر TV Minimal. اضغط تطبيق التصميم."
+                    else -> "تم اختيار التصميم الأصلي لتطبيق Alaa IPTV. اضغط تطبيق التصميم."
                 }
             }
         }
