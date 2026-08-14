@@ -8,6 +8,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.alaa.iptv.R
 import com.alaa.iptv.data.models.Series
 import com.alaa.iptv.data.models.Category
@@ -27,6 +28,9 @@ class SeriesActivity : AppCompatActivity() {
     private lateinit var repository: MediaRepository
     private var seriesList: List<Series> = emptyList()
     private var categories: List<Category> = emptyList()
+    private var currentSeriesPage = 0
+    private var hasMoreSeriesPages = false
+    private var isLoadingSeries = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -62,6 +66,15 @@ class SeriesActivity : AppCompatActivity() {
     private fun setupSeriesGrid() {
         binding.seriesRecyclerView.apply {
             layoutManager = GridLayoutManager(this@SeriesActivity, 5)
+            addOnScrollListener(object : RecyclerView.OnScrollListener() {
+                override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                    if (dy <= 0 || isLoadingSeries || !hasMoreSeriesPages) return
+                    val layoutManager = recyclerView.layoutManager as? GridLayoutManager ?: return
+                    if (layoutManager.findLastVisibleItemPosition() >= seriesList.size - 15) {
+                        loadSeries(prefs.lastSeriesCategoryId, currentSeriesPage + 1, append = true)
+                    }
+                }
+            })
         }
     }
 
@@ -97,22 +110,35 @@ class SeriesActivity : AppCompatActivity() {
     private fun selectCategory(category: Category) {
         prefs.lastSeriesCategoryId = category.categoryId
         binding.seriesCategorySelector.text = category.categoryName
-        loadSeries(category.categoryId)
+        currentSeriesPage = 0
+        hasMoreSeriesPages = false
+        loadSeries(category.categoryId, page = 0, append = false)
     }
 
-    private fun loadSeries(categoryId: String) {
+    private fun loadSeries(categoryId: String, page: Int, append: Boolean) {
+        if (isLoadingSeries) return
+        isLoadingSeries = true
         lifecycleScope.launch {
             try {
-                val result = repository.getSeries(categoryId)
+                val result = repository.getSeries(categoryId, page)
                 if (result.isSuccess) {
-                    seriesList = result.getOrDefault(emptyList())
-                    binding.seriesCount.text = "${seriesList.size} مسلسل"
+                    val loadedSeries = result.getOrDefault(emptyList())
+                    seriesList = if (append) seriesList + loadedSeries else loadedSeries
+                    currentSeriesPage = page
+                    hasMoreSeriesPages = loadedSeries.size >= 120
+                    binding.seriesCount.text = if (hasMoreSeriesPages) {
+                        "${seriesList.size} مسلسل • تابع للأسفل لتحميل المزيد"
+                    } else {
+                        "${seriesList.size} مسلسل"
+                    }
                     binding.seriesRecyclerView.adapter = SeriesAdapter(seriesList, prefs.displayTheme) { series ->
                         openSeriesDetails(series)
                     }
                 }
             } catch (e: Exception) {
                 Log.e("SeriesActivity", "Error loading series", e)
+            } finally {
+                isLoadingSeries = false
             }
         }
     }

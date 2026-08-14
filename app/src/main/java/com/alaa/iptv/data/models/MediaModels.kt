@@ -29,34 +29,18 @@ data class Channel(
         username: String,
         password: String
     ): String {
-
-        val cleanUrl = serverUrl.removeSuffix("/")
         val type = streamType.lowercase()
 
-        // إذا السيرفر رجع direct source استخدمه
+        // استخدم direct source الذي يرسله المزود عندما يكون رابط HTTP صالحاً.
         if (!directSource.isNullOrEmpty()) {
             return directSource
         }
 
         return when (type) {
-
-            "live" -> {
-                // أغلب سيرفرات Xtream live = ts أو m3u8
-                "$cleanUrl/live/$username/$password/$streamId.ts"
-            }
-
-            "movie", "vod" -> {
-                // استخدم الامتداد الصحيح من container_extension أو ts كافتراضي
-                "$cleanUrl/movie/$username/$password/$streamId.ts"
-            }
-
-            "series" -> {
-                "$cleanUrl/series/$username/$password/$streamId.ts"
-            }
-
-            else -> {
-                "$cleanUrl/live/$username/$password/$streamId.ts"
-            }
+            "live" -> StreamUrlFactory.live(serverUrl, username, password, streamId)
+            "movie", "vod" -> StreamUrlFactory.movie(serverUrl, username, password, streamId, "mp4")
+            "series" -> StreamUrlFactory.episode(serverUrl, username, password, streamId, "mp4")
+            else -> StreamUrlFactory.live(serverUrl, username, password, streamId)
         }
     }
 }
@@ -97,11 +81,7 @@ data class Movie(
         username: String,
         password: String
     ): String {
-
-        val cleanUrl = serverUrl.removeSuffix("/")
-        val extension = containerExtension?.takeIf { it.isNotBlank() } ?: "mp4"
-
-        return "$cleanUrl/movie/$username/$password/$streamId.$extension"
+        return StreamUrlFactory.movie(serverUrl, username, password, streamId, containerExtension)
     }
 }
 
@@ -139,11 +119,7 @@ data class Episode(
         username: String,
         password: String
     ): String {
-
-        val cleanUrl = serverUrl.removeSuffix("/")
-        val extension = containerExtension?.takeIf { it.isNotBlank() } ?: "mp4"
-
-        return "$cleanUrl/series/$username/$password/$id.$extension"
+        return StreamUrlFactory.episode(serverUrl, username, password, id, containerExtension)
     }
 }
 

@@ -202,7 +202,17 @@ class MediaRepository(
                 for (i in startIndex until endIndex) {
                     val obj = array.getJSONObject(i)
                     val id = obj.optString("stream_id")
-                    val direct = "$base/live/${prefs.username}/${prefs.password}/$id.m3u8"
+                    val providerSource = obj.optString("direct_source")
+                        .trim()
+                        .takeIf { it.startsWith("http://", true) || it.startsWith("https://", true) }
+                    // نفضّل رابط المزود إن وجد، وإلا MPEG-TS المباشر. بعض المزودين يعيدون
+                    // توجيه .m3u8 إلى TS مستمر، ما يسبب فشل محلل HLS في Media3.
+                    val direct = providerSource ?: StreamUrlFactory.live(
+                        base,
+                        prefs.username,
+                        prefs.password,
+                        id
+                    )
 
                     channels.add(
                         Channel(
@@ -333,14 +343,16 @@ class MediaRepository(
 
     // ================= MOVIES (VOD) =================
 
-    suspend fun getMovies(categoryId: String?): Result<List<Movie>> =
+    suspend fun getMovies(categoryId: String?, page: Int = 0): Result<List<Movie>> =
         withContext(Dispatchers.IO) {
             val requestedCategory = categoryId?.takeIf { it != "all" }
             val effectiveCategory = requestedCategory ?: getMovieCategories()
                 .getOrDefault(emptyList())
                 .firstOrNull()
                 ?.categoryId
-            effectiveCategory?.let { key ->
+            val pageIndex = page.coerceAtLeast(0)
+            effectiveCategory?.let { category ->
+                val key = "$category:$pageIndex"
                 cachedMoviesByCategory[key]?.let { (savedAt, cached) ->
                     if (System.currentTimeMillis() - savedAt < CACHE_DURATION) {
                         return@withContext Result.success(cached)
@@ -349,13 +361,17 @@ class MediaRepository(
             }
 
             try {
-                val movies = effectiveCategory?.let { category -> fetchMovies(category) }
-                    ?.take(CONTENT_PAGE_SIZE)
+                val movies = effectiveCategory?.let { category -> fetchMovies(category, pageIndex) }
                     .orEmpty()
                 cachedMovies = movies
                 cachedMoviesTime = System.currentTimeMillis()
                 effectiveCategory?.let { category ->
-                    putBoundedCache(cachedMoviesByCategory, category, movies, MAX_MOVIE_CATEGORY_CACHES)
+                    putBoundedCache(
+                        cachedMoviesByCategory,
+                        "$category:$pageIndex",
+                        movies,
+                        MAX_MOVIE_CATEGORY_CACHES
+                    )
                 }
                 Result.success(movies)
             } catch (e: Exception) {
@@ -364,11 +380,13 @@ class MediaRepository(
             }
         }
 
-    private suspend fun fetchMovies(categoryId: String?): List<Movie> {
+    private suspend fun fetchMovies(categoryId: String?, page: Int = 0): List<Movie> {
         val extra = categoryId?.let { "&category_id=${encodeQueryParameter(it)}" }.orEmpty()
         val array = JSONArray(request(buildApiUrl("get_vod_streams", extra)))
-        return List(array.length()) { index ->
-            val obj = array.getJSONObject(index)
+        val startIndex = (page.coerceAtLeast(0) * CONTENT_PAGE_SIZE).coerceAtMost(array.length())
+        val endIndex = minOf(array.length(), startIndex + CONTENT_PAGE_SIZE)
+        return List(endIndex - startIndex) { offset ->
+            val obj = array.getJSONObject(startIndex + offset)
             Movie(
                 streamId = obj.optString("stream_id"), name = obj.optString("name"), streamIcon = obj.optString("stream_icon"),
                 rating = obj.optString("rating"), year = obj.optString("year", ""), plot = obj.optString("plot", ""),
@@ -396,14 +414,16 @@ class MediaRepository(
 
     // ================= SERIES =================
 
-    suspend fun getSeries(categoryId: String?): Result<List<Series>> =
+    suspend fun getSeries(categoryId: String?, page: Int = 0): Result<List<Series>> =
         withContext(Dispatchers.IO) {
             val requestedCategory = categoryId?.takeIf { it != "all" }
             val effectiveCategory = requestedCategory ?: getSeriesCategories()
                 .getOrDefault(emptyList())
                 .firstOrNull()
                 ?.categoryId
-            effectiveCategory?.let { key ->
+            val pageIndex = page.coerceAtLeast(0)
+            effectiveCategory?.let { category ->
+                val key = "$category:$pageIndex"
                 cachedSeriesByCategory[key]?.let { (savedAt, cached) ->
                     if (System.currentTimeMillis() - savedAt < CACHE_DURATION) {
                         return@withContext Result.success(cached)
@@ -412,13 +432,17 @@ class MediaRepository(
             }
 
             try {
-                val series = effectiveCategory?.let { category -> fetchSeries(category) }
+                val series = effectiveCategory?.let { category -> fetchSeries(category, pageIndex) }
                     .orEmpty()
-                    .take(CONTENT_PAGE_SIZE)
                 cachedSeries = series
                 cachedSeriesTime = System.currentTimeMillis()
                 effectiveCategory?.let { category ->
-                    putBoundedCache(cachedSeriesByCategory, category, series, MAX_SERIES_CATEGORY_CACHES)
+                    putBoundedCache(
+                        cachedSeriesByCategory,
+                        "$category:$pageIndex",
+                        series,
+                        MAX_SERIES_CATEGORY_CACHES
+                    )
                 }
                 Result.success(series)
             } catch (e: Exception) {
@@ -427,10 +451,12 @@ class MediaRepository(
             }
         }
 
-    private suspend fun fetchSeries(categoryId: String): List<Series> {
+    private suspend fun fetchSeries(categoryId: String, page: Int = 0): List<Series> {
         val array = JSONArray(request(buildApiUrl("get_series", "&category_id=${encodeQueryParameter(categoryId)}")))
-        return List(array.length()) { index ->
-            val obj = array.getJSONObject(index)
+        val startIndex = (page.coerceAtLeast(0) * CONTENT_PAGE_SIZE).coerceAtMost(array.length())
+        val endIndex = minOf(array.length(), startIndex + CONTENT_PAGE_SIZE)
+        return List(endIndex - startIndex) { offset ->
+            val obj = array.getJSONObject(startIndex + offset)
             Series(
                 seriesId = obj.optString("series_id"), name = obj.optString("name"), cover = obj.optString("cover"),
                 plot = obj.optString("plot"), cast = obj.optString("cast", ""), director = obj.optString("director", ""),
