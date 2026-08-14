@@ -55,6 +55,20 @@
         </RelativeLayout>
     </androidx.cardview.widget.CardView>
 
+    <View
+        android:id="@+id/focusGlow"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="@drawable/bg_poster_focus_glow"
+        android:clickable="false"
+        android:focusable="false"
+        android:importantForAccessibility="no"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toBottomOf="@id/posterCard"
+        app:layout_constraintEnd_toEndOf="@id/posterCard"
+        app:layout_constraintStart_toStartOf="@id/posterCard"
+        app:layout_constraintTop_toTopOf="@id/posterCard" />
+
     <TextView
         android:id="@+id/movieTitle"
         android:layout_width="0dp"

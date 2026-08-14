@@ -26,17 +26,7 @@ class SeriesAdapter(
                 if (position != RecyclerView.NO_POSITION) onSeriesClick(seriesList[position])
             }
             binding.root.setOnFocusChangeListener { _, hasFocus ->
-                if (hasFocus) {
-                    binding.posterCard.setCardBackgroundColor(
-                        if (DisplayTheme.hasCustomTheme(displayTheme)) DisplayTheme.metadataColor(displayTheme) else Color.parseColor("#E53935")
-                    )
-                    binding.root.scaleX = 1.05f
-                    binding.root.scaleY = 1.05f
-                } else {
-                    binding.posterCard.setCardBackgroundColor(Color.parseColor("#1AFFFFFF"))
-                    binding.root.scaleX = 1.0f
-                    binding.root.scaleY = 1.0f
-                }
+                renderFocusState(hasFocus)
             }
         }
 
@@ -51,6 +41,18 @@ class SeriesAdapter(
                 .placeholder(R.drawable.bg_dark_pattern)
                 .error(R.drawable.bg_dark_pattern)
                 .into(binding.moviePoster)
+            renderFocusState(binding.root.hasFocus())
+        }
+
+        private fun renderFocusState(hasFocus: Boolean) {
+            binding.focusGlow.visibility = if (hasFocus) android.view.View.VISIBLE else android.view.View.INVISIBLE
+            binding.posterCard.setCardBackgroundColor(Color.parseColor("#1AFFFFFF"))
+            binding.root.animate()
+                .scaleX(if (hasFocus) 1.025f else 1.0f)
+                .scaleY(if (hasFocus) 1.025f else 1.0f)
+                .translationZ(if (hasFocus) 18f else 0f)
+                .setDuration(140L)
+                .start()
         }
 
         private fun setOptionalText(view: android.widget.TextView, value: String?) {
