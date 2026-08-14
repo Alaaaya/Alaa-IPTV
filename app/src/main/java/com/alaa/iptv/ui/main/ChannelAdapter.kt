@@ -8,13 +8,14 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.alaa.iptv.R
 import com.alaa.iptv.data.models.Channel
+import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.databinding.ItemChannelBinding
 import com.alaa.iptv.ui.theme.DisplayTheme
 import com.bumptech.glide.Glide
 
 class ChannelAdapter(
     private var channels: List<Channel>,
-    private val hotPlayerTheme: Boolean = false,
+    private val displayTheme: String = AppPreferences.THEME_ALAA_CLASSIC,
     private val onChannelClick: (Channel) -> Unit,
     private val onChannelLongClick: (Channel) -> Unit
 ) : RecyclerView.Adapter<ChannelAdapter.ChannelViewHolder>() {
@@ -76,12 +77,12 @@ class ChannelAdapter(
             binding.favoriteIndicator.visibility = View.VISIBLE
             binding.favoriteIndicator.alpha = if (channel.isFavorite) 1.0f else 0.3f
 
-            if (hotPlayerTheme) {
-                binding.root.background = DisplayTheme.hotPanelBackground()
-                binding.channelNumber.background = DisplayTheme.hotFocusBackground()
-                binding.channelNumber.setTextColor(Color.parseColor("#0A1426"))
-                binding.qualityTag.background = DisplayTheme.hotPanelBackground()
-                binding.qualityTag.setTextColor(DisplayTheme.hotBlueColor())
+            if (DisplayTheme.hasCustomTheme(displayTheme)) {
+                binding.root.background = DisplayTheme.panelBackground(displayTheme)
+                binding.channelNumber.background = DisplayTheme.focusBackground(displayTheme)
+                binding.channelNumber.setTextColor(DisplayTheme.focusTextColor(displayTheme))
+                binding.qualityTag.background = DisplayTheme.panelBackground(displayTheme)
+                binding.qualityTag.setTextColor(DisplayTheme.metadataColor(displayTheme))
             }
 
             if (!channel.streamIcon.isNullOrEmpty()) {
@@ -99,12 +100,12 @@ class ChannelAdapter(
 
         private fun updateUI(hasFocus: Boolean) {
             if (hasFocus) {
-                if (hotPlayerTheme) {
-                    binding.root.background = DisplayTheme.hotFocusBackground()
-                    binding.channelName.setTextColor(Color.parseColor("#0A1426"))
-                    binding.channelNumber.setTextColor(Color.parseColor("#0A1426"))
-                    binding.qualityTag.setTextColor(Color.parseColor("#0A1426"))
-                    binding.favoriteIndicator.setColorFilter(Color.parseColor("#0A1426"))
+                if (DisplayTheme.hasCustomTheme(displayTheme)) {
+                    binding.root.background = DisplayTheme.focusBackground(displayTheme)
+                    binding.channelName.setTextColor(DisplayTheme.focusTextColor(displayTheme))
+                    binding.channelNumber.setTextColor(DisplayTheme.focusTextColor(displayTheme))
+                    binding.qualityTag.setTextColor(DisplayTheme.focusTextColor(displayTheme))
+                    binding.favoriteIndicator.setColorFilter(DisplayTheme.focusTextColor(displayTheme))
                 } else {
                     binding.root.setBackgroundResource(R.drawable.bg_sidebar_selected)
                     binding.channelName.setTextColor(Color.WHITE)
@@ -113,15 +114,15 @@ class ChannelAdapter(
                     binding.favoriteIndicator.setColorFilter(Color.WHITE)
                 }
             } else {
-                if (hotPlayerTheme) {
-                    binding.root.background = DisplayTheme.hotPanelBackground()
-                    binding.channelNumber.setTextColor(Color.parseColor("#0A1426"))
-                    binding.qualityTag.setTextColor(DisplayTheme.hotBlueColor())
+                if (DisplayTheme.hasCustomTheme(displayTheme)) {
+                    binding.root.background = DisplayTheme.panelBackground(displayTheme)
+                    binding.channelNumber.setTextColor(DisplayTheme.focusTextColor(displayTheme))
+                    binding.qualityTag.setTextColor(DisplayTheme.metadataColor(displayTheme))
                 } else {
                     binding.root.setBackgroundColor(Color.TRANSPARENT)
                 }
                 binding.channelName.setTextColor(Color.WHITE)
-                if (!hotPlayerTheme) {
+                if (!DisplayTheme.hasCustomTheme(displayTheme)) {
                     binding.channelNumber.setTextColor(Color.parseColor("#808080"))
                     binding.qualityTag.setTextColor(Color.parseColor("#808080"))
                 }

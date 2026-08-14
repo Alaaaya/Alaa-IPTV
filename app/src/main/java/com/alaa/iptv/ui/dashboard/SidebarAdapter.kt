@@ -6,12 +6,13 @@ import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.alaa.iptv.R
+import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.databinding.ItemSidebarBinding
 import com.alaa.iptv.ui.theme.DisplayTheme
 
 class SidebarAdapter(
     private val items: List<SidebarItem>,
-    private val hotPlayerTheme: Boolean = false,
+    private val displayTheme: String = AppPreferences.THEME_ALAA_CLASSIC,
     private val onItemClick: (SidebarItem) -> Unit
 ) : RecyclerView.Adapter<SidebarAdapter.ViewHolder>() {
 
@@ -61,10 +62,10 @@ class SidebarAdapter(
         }
 
         private fun applySelectedStyle() {
-            if (hotPlayerTheme) {
-                binding.root.background = DisplayTheme.hotFocusBackground()
-                binding.sidebarIcon.setColorFilter(Color.parseColor("#0A1426"))
-                binding.sidebarTitle.setTextColor(Color.parseColor("#0A1426"))
+            if (DisplayTheme.hasCustomTheme(displayTheme)) {
+                binding.root.background = DisplayTheme.focusBackground(displayTheme)
+                binding.sidebarIcon.setColorFilter(DisplayTheme.focusTextColor(displayTheme))
+                binding.sidebarTitle.setTextColor(DisplayTheme.focusTextColor(displayTheme))
             } else {
                 binding.root.setBackgroundResource(R.drawable.bg_sidebar_selected)
                 binding.sidebarIcon.setColorFilter(ContextCompat.getColor(binding.root.context, R.color.white))
@@ -73,8 +74,8 @@ class SidebarAdapter(
         }
 
         private fun applyUnselectedStyle() {
-            if (hotPlayerTheme) {
-                binding.root.background = DisplayTheme.hotPanelBackground()
+            if (DisplayTheme.hasCustomTheme(displayTheme)) {
+                binding.root.background = DisplayTheme.panelBackground(displayTheme)
                 binding.sidebarIcon.setColorFilter(Color.WHITE)
                 binding.sidebarTitle.setTextColor(Color.WHITE)
             } else {

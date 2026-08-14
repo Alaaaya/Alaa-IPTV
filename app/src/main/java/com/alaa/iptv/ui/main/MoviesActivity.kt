@@ -56,7 +56,7 @@ class MoviesActivity : AppCompatActivity() {
 
         binding.sidebarRecyclerView.apply {
             layoutManager = LinearLayoutManager(this@MoviesActivity)
-            adapter = SidebarAdapter(items, prefs.isHotPlayerTheme) { it.action.invoke() }
+            adapter = SidebarAdapter(items, prefs.displayTheme) { it.action.invoke() }
         }
     }
 
@@ -108,7 +108,7 @@ class MoviesActivity : AppCompatActivity() {
                     result.onSuccess { loadedMovies ->
                         movies = loadedMovies
                         binding.moviesCount.text = "${movies.size} فيلم"
-                        binding.moviesRecyclerView.adapter = MovieAdapter(movies, prefs.isHotPlayerTheme, ::playMovie)
+                        binding.moviesRecyclerView.adapter = MovieAdapter(movies, prefs.displayTheme, ::playMovie)
                     }.onFailure { error ->
                         Log.e(TAG, "Unable to load movies", error)
                     }

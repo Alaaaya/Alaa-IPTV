@@ -75,7 +75,7 @@ class MainActivity : AppCompatActivity() {
     private fun setupChannelsList() {
         channelAdapter = ChannelAdapter(
             emptyList(),
-            prefs.isHotPlayerTheme,
+            prefs.displayTheme,
             onChannelClick = { channel -> playChannel(channel) },
             onChannelLongClick = { channel -> showChannelOptions(channel) }
         )

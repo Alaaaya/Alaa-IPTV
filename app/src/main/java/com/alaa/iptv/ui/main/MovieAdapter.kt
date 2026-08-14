@@ -6,13 +6,14 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.alaa.iptv.R
 import com.alaa.iptv.data.models.Movie
+import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.databinding.ItemMovieCardBinding
 import com.alaa.iptv.ui.theme.DisplayTheme
 import com.bumptech.glide.Glide
 
 class MovieAdapter(
     private val movies: List<Movie>,
-    private val hotPlayerTheme: Boolean = false,
+    private val displayTheme: String = AppPreferences.THEME_ALAA_CLASSIC,
     private val onMovieClick: (Movie) -> Unit
 ) : RecyclerView.Adapter<MovieAdapter.MovieViewHolder>() {
 
@@ -27,7 +28,7 @@ class MovieAdapter(
             binding.root.setOnFocusChangeListener { _, hasFocus ->
                 if (hasFocus) {
                     binding.posterCard.setCardBackgroundColor(
-                        if (hotPlayerTheme) DisplayTheme.hotAccentColor() else Color.parseColor("#E53935")
+                        if (DisplayTheme.hasCustomTheme(displayTheme)) DisplayTheme.metadataColor(displayTheme) else Color.parseColor("#E53935")
                     )
                     binding.root.scaleX = 1.05f
                     binding.root.scaleY = 1.05f
@@ -40,7 +41,7 @@ class MovieAdapter(
         }
 
         fun bind(movie: Movie) {
-            DisplayTheme.applyPosterCard(binding, hotPlayerTheme)
+            DisplayTheme.applyPosterCard(binding, displayTheme)
             binding.movieTitle.text = movie.name
             setOptionalText(binding.ratingBadge, movie.rating)
             setOptionalText(binding.yearText, movie.year ?: movie.releaseDate)

@@ -26,6 +26,9 @@ class AppPreferences(context: Context) {
 
         const val THEME_ALAA_CLASSIC = "alaa_classic"
         const val THEME_HOT_PLAYER = "hot_player"
+        const val THEME_IBO_CLASSIC = "ibo_classic"
+        const val THEME_MODERN_GRID = "modern_grid"
+        const val THEME_TV_MINIMAL = "tv_minimal"
     }
     
     var serverUrl: String

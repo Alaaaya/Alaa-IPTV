@@ -55,7 +55,7 @@ class SeriesActivity : AppCompatActivity() {
 
         binding.sidebarRecyclerView.apply {
             layoutManager = LinearLayoutManager(this@SeriesActivity)
-            adapter = SidebarAdapter(items, prefs.isHotPlayerTheme) { it.action.invoke() }
+            adapter = SidebarAdapter(items, prefs.displayTheme) { it.action.invoke() }
         }
     }
 
@@ -107,7 +107,7 @@ class SeriesActivity : AppCompatActivity() {
                 if (result.isSuccess) {
                     seriesList = result.getOrDefault(emptyList())
                     binding.seriesCount.text = "${seriesList.size} مسلسل"
-                    binding.seriesRecyclerView.adapter = SeriesAdapter(seriesList, prefs.isHotPlayerTheme) { series ->
+                    binding.seriesRecyclerView.adapter = SeriesAdapter(seriesList, prefs.displayTheme) { series ->
                         openSeriesDetails(series)
                     }
                 }
