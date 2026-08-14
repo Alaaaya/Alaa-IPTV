@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- iBO Player Core Palette -->
-    <color name="ibo_bg_dark">#0A0E17</color>
-    <color name="ibo_sidebar_bg">#0D1117</color>
-    <color name="ibo_accent_red">#E53935</color>
-    <color name="ibo_accent_blue">#2196F3</color>
-    <color name="ibo_accent_green">#4CAF50</color>
-    <color name="ibo_accent_orange">#FF9800</color>
-    <color name="ibo_accent_purple">#9C27B0</color>
+    <!-- Alaa Player core palette -->
+    <color name="alaa_bg_dark">#0A0E17</color>
+    <color name="alaa_sidebar_bg">#0D1117</color>
+    <color name="alaa_accent_red">#E53935</color>
+    <color name="alaa_accent_blue">#2196F3</color>
+    <color name="alaa_accent_green">#4CAF50</color>
+    <color name="alaa_accent_orange">#FF9800</color>
+    <color name="alaa_accent_purple">#9C27B0</color>
     
     <!-- Glassmorphism Effects -->
     <color name="glass_white_10">#1AFFFFFF</color>

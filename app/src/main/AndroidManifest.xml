@@ -17,7 +17,7 @@
     <application
         android:allowBackup="true"
         android:supportsRtl="false"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@drawable/ic_alaa_player_mark"
         android:label="@string/app_name"
         android:banner="@drawable/app_banner"
         android:theme="@style/AppTheme"
