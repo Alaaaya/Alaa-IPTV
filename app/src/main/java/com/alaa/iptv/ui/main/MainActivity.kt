@@ -194,7 +194,16 @@ class MainActivity : AppCompatActivity() {
             val position = allChannels.indexOf(target)
             binding.channelsRecyclerView.post {
                 binding.channelsRecyclerView.scrollToPosition(position)
-                binding.channelsRecyclerView.findViewHolderForAdapterPosition(position)?.itemView?.requestFocus()
+                val requestVisibleChannelFocus = {
+                    binding.channelsRecyclerView
+                        .findViewHolderForAdapterPosition(position)
+                        ?.itemView
+                        ?.requestFocus()
+                        ?: false
+                }
+                if (!requestVisibleChannelFocus()) {
+                    binding.channelsRecyclerView.post { requestVisibleChannelFocus() }
+                }
             }
         } else {
             binding.previewTitle.text = if (currentMode == MODE_FAVORITES) "لا توجد قنوات مفضلة" else "لا توجد قنوات متاحة"

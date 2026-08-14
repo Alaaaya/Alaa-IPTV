@@ -25,6 +25,9 @@ class MediaRepository(
         private const val CACHE_DURATION = 5 * 60 * 1000L // 5 دقائق
         private const val CONTENT_PAGE_SIZE = 120
         private const val LIVE_PAGE_SIZE = 100
+        private const val MAX_LIVE_PAGE_CACHES = 18
+        private const val MAX_MOVIE_CATEGORY_CACHES = 12
+        private const val MAX_SERIES_CATEGORY_CACHES = 12
 
         private var cachedChannels: List<Channel>? = null
         private var cachedChannelsTime = 0L
@@ -38,6 +41,23 @@ class MediaRepository(
         private var cachedSeries: List<Series>? = null
         private var cachedSeriesTime = 0L
         private val cachedSeriesByCategory = mutableMapOf<String, Pair<Long, List<Series>>>()
+
+        private fun <T> putBoundedCache(
+            cache: MutableMap<String, Pair<Long, List<T>>>,
+            key: String,
+            value: List<T>,
+            maxEntries: Int
+        ) {
+            if (key !in cache && cache.size >= maxEntries) {
+                cache.entries.iterator().let { iterator ->
+                    if (iterator.hasNext()) {
+                        iterator.next()
+                        iterator.remove()
+                    }
+                }
+            }
+            cache[key] = System.currentTimeMillis() to value
+        }
     }
 
     private val client: OkHttpClient by lazy {
@@ -207,7 +227,7 @@ class MediaRepository(
                 cachedChannels = channels
                 cachedChannelsTime = System.currentTimeMillis()
                 cachedChannelsCategoryId = effectiveCategory
-                cachedChannelPages[pageCacheKey] = System.currentTimeMillis() to channels
+                putBoundedCache(cachedChannelPages, pageCacheKey, channels, MAX_LIVE_PAGE_CACHES)
 
                 Result.success(channels)
 
@@ -316,30 +336,27 @@ class MediaRepository(
     suspend fun getMovies(categoryId: String?): Result<List<Movie>> =
         withContext(Dispatchers.IO) {
             val requestedCategory = categoryId?.takeIf { it != "all" }
-            requestedCategory?.let { key ->
+            val effectiveCategory = requestedCategory ?: getMovieCategories()
+                .getOrDefault(emptyList())
+                .firstOrNull()
+                ?.categoryId
+            effectiveCategory?.let { key ->
                 cachedMoviesByCategory[key]?.let { (savedAt, cached) ->
                     if (System.currentTimeMillis() - savedAt < CACHE_DURATION) {
                         return@withContext Result.success(cached)
                     }
                 }
             }
-            cachedMovies?.let { cached ->
-                if (requestedCategory == null && System.currentTimeMillis() - cachedMoviesTime < CACHE_DURATION) {
-                    val filtered = cached.take(CONTENT_PAGE_SIZE)
-                    return@withContext Result.success(filtered)
-                }
-            }
 
             try {
-                val allResponse = if (requestedCategory == null) fetchMovies(null) else emptyList()
-                val movies = when {
-                    requestedCategory != null -> fetchMovies(requestedCategory)
-                    allResponse.isNotEmpty() -> allResponse
-                    else -> fetchFeaturedMovies()
-                }.take(CONTENT_PAGE_SIZE)
+                val movies = effectiveCategory?.let { category -> fetchMovies(category) }
+                    ?.take(CONTENT_PAGE_SIZE)
+                    .orEmpty()
                 cachedMovies = movies
                 cachedMoviesTime = System.currentTimeMillis()
-                requestedCategory?.let { cachedMoviesByCategory[it] = System.currentTimeMillis() to movies }
+                effectiveCategory?.let { category ->
+                    putBoundedCache(cachedMoviesByCategory, category, movies, MAX_MOVIE_CATEGORY_CACHES)
+                }
                 Result.success(movies)
             } catch (e: Exception) {
                 Log.e(TAG, "getMovies error", e)
@@ -369,7 +386,9 @@ class MediaRepository(
         for (category in categories) {
             if (featured.size >= 500) break
             fetchMovies(category.categoryId).forEach { movie ->
-                if (featured.size < 500) featured.putIfAbsent(movie.streamId, movie)
+                if (featured.size < 500 && !featured.containsKey(movie.streamId)) {
+                    featured[movie.streamId] = movie
+                }
             }
         }
         return featured.values.toList()
@@ -380,25 +399,27 @@ class MediaRepository(
     suspend fun getSeries(categoryId: String?): Result<List<Series>> =
         withContext(Dispatchers.IO) {
             val requestedCategory = categoryId?.takeIf { it != "all" }
-            requestedCategory?.let { key ->
+            val effectiveCategory = requestedCategory ?: getSeriesCategories()
+                .getOrDefault(emptyList())
+                .firstOrNull()
+                ?.categoryId
+            effectiveCategory?.let { key ->
                 cachedSeriesByCategory[key]?.let { (savedAt, cached) ->
                     if (System.currentTimeMillis() - savedAt < CACHE_DURATION) {
                         return@withContext Result.success(cached)
                     }
                 }
             }
-            cachedSeries?.let { cached ->
-                if (requestedCategory == null && System.currentTimeMillis() - cachedSeriesTime < CACHE_DURATION) {
-                    return@withContext Result.success(cached.take(CONTENT_PAGE_SIZE))
-                }
-            }
 
             try {
-                val series = (if (requestedCategory == null) fetchFeaturedSeries() else fetchSeries(requestedCategory))
+                val series = effectiveCategory?.let { category -> fetchSeries(category) }
+                    .orEmpty()
                     .take(CONTENT_PAGE_SIZE)
                 cachedSeries = series
                 cachedSeriesTime = System.currentTimeMillis()
-                requestedCategory?.let { cachedSeriesByCategory[it] = System.currentTimeMillis() to series }
+                effectiveCategory?.let { category ->
+                    putBoundedCache(cachedSeriesByCategory, category, series, MAX_SERIES_CATEGORY_CACHES)
+                }
                 Result.success(series)
             } catch (e: Exception) {
                 Log.e(TAG, "getSeries error", e)
@@ -425,7 +446,9 @@ class MediaRepository(
         for (category in categories) {
             if (featured.size >= 500) break
             fetchSeries(category.categoryId).forEach { series ->
-                if (featured.size < 500) featured.putIfAbsent(series.seriesId, series)
+                if (featured.size < 500 && !featured.containsKey(series.seriesId)) {
+                    featured[series.seriesId] = series
+                }
             }
         }
         return featured.values.toList()
