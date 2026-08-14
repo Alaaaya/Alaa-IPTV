@@ -29,6 +29,8 @@ class AppPreferences(context: Context) {
         const val THEME_IBO_CLASSIC = "ibo_classic"
         const val THEME_MODERN_GRID = "modern_grid"
         const val THEME_TV_MINIMAL = "tv_minimal"
+        const val THEME_GLASS_UI = "glass_ui"
+        const val THEME_CLASSIC_BLACK_TV = "classic_black_tv"
     }
     
     var serverUrl: String
