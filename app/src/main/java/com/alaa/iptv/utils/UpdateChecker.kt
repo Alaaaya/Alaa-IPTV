@@ -12,6 +12,7 @@ import android.os.Environment
 import android.util.Log
 import android.widget.Toast
 import androidx.core.content.ContextCompat
+import com.alaa.iptv.BuildConfig
 import androidx.core.content.FileProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -24,7 +25,8 @@ class UpdateChecker(private val context: Context) {
     companion object {
         private const val TAG = "UpdateChecker"
         private const val GITHUB_API = "https://api.github.com/repos/Alaaaya/Alaa-IPTV/releases/latest"
-        private const val CURRENT_VERSION = "2.0.0"
+        private val CURRENT_VERSION: String
+            get() = BuildConfig.VERSION_NAME
     }
 
     suspend fun checkForUpdate(showToast: Boolean = false) {
@@ -95,7 +97,12 @@ class UpdateChecker(private val context: Context) {
         releaseUrl: String,
         releaseNotes: String
     ) {
-        val message = "Version $version is now available.\n\nCurrent: v$CURRENT_VERSION\n\nWould you like to update?"
+        val notes = releaseNotes.trim().take(600)
+        val message = buildString {
+            append("Version $version is now available.\n\nCurrent: v$CURRENT_VERSION")
+            if (notes.isNotBlank()) append("\n\nWhat's new:\n$notes")
+            append("\n\nWould you like to update?")
+        }
 
         AlertDialog.Builder(context)
             .setTitle("New Version Available!")

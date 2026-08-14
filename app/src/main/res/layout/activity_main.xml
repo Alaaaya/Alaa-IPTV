@@ -313,11 +313,11 @@
     </LinearLayout>
 
     <!-- Legacy Views (Hidden) -->
-    <View android:id="@+id/miniSidebar" android:layout_width="1dp" android:layout_height="1dp" android:visibility="gone"/>
-    <View android:id="@+id/backButton" android:layout_width="1dp" android:layout_height="1dp" android:visibility="gone"/>
-    <View android:id="@+id/moduleTitle" android:layout_width="1dp" android:layout_height="1dp" android:visibility="gone"/>
-    <View android:id="@+id/categoriesRecyclerView" android:layout_width="1dp" android:layout_height="1dp" android:visibility="gone"/>
-    <View android:id="@+id/favoriteButton" android:layout_width="1dp" android:layout_height="1dp" android:visibility="gone"/>
-    <View android:id="@+id/loadingProgress" android:layout_width="1dp" android:layout_height="1dp" android:visibility="gone"/>
+    <View android:id="@+id/miniSidebar" android:layout_width="1dp" android:layout_height="1dp" android:visibility="gone" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent" />
+    <View android:id="@+id/backButton" android:layout_width="1dp" android:layout_height="1dp" android:visibility="gone" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent" />
+    <View android:id="@+id/moduleTitle" android:layout_width="1dp" android:layout_height="1dp" android:visibility="gone" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent" />
+    <View android:id="@+id/categoriesRecyclerView" android:layout_width="1dp" android:layout_height="1dp" android:visibility="gone" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent" />
+    <View android:id="@+id/favoriteButton" android:layout_width="1dp" android:layout_height="1dp" android:visibility="gone" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent" />
+    <View android:id="@+id/loadingProgress" android:layout_width="1dp" android:layout_height="1dp" android:visibility="gone" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

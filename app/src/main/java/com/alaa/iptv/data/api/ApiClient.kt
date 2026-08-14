@@ -2,6 +2,7 @@ package com.alaa.iptv.data.api
 
 import okhttp3.*
 import okhttp3.logging.HttpLoggingInterceptor
+import com.alaa.iptv.BuildConfig
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
@@ -25,11 +26,7 @@ object ApiClient {
 
     private fun buildClient(): OkHttpClient {
 
-        val logging = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
-        }
-
-        return OkHttpClient.Builder()
+        val builder = OkHttpClient.Builder()
             .cookieJar(cookieJar)
             .addInterceptor { chain ->
                 val request = chain.request().newBuilder()
@@ -47,8 +44,13 @@ object ApiClient {
             .connectTimeout(20, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
-            .addInterceptor(logging)
-            .build()
+
+        if (BuildConfig.DEBUG) {
+            builder.addInterceptor(HttpLoggingInterceptor().apply {
+                level = HttpLoggingInterceptor.Level.BASIC
+            })
+        }
+        return builder.build()
     }
 
     private fun normalizeUrl(url: String): String {
@@ -61,6 +63,7 @@ object ApiClient {
         return clean.removeSuffix("/") + "/"
     }
 
+    @Synchronized
     fun getXtreamApiService(baseUrl: String): XtreamApiService {
 
         val cleanUrl = normalizeUrl(baseUrl)
@@ -76,6 +79,6 @@ object ApiClient {
             currentBaseUrl = cleanUrl
         }
 
-        return retrofit!!.create(XtreamApiService::class.java)
+        return requireNotNull(retrofit).create(XtreamApiService::class.java)
     }
 }

@@ -2,6 +2,7 @@ package com.alaa.iptv.ui.player
 
 import android.net.Uri
 import android.os.Bundle
+import android.annotation.SuppressLint
 import android.util.Log
 import android.view.KeyEvent
 import android.view.View
@@ -27,7 +28,7 @@ import com.alaa.iptv.databinding.ActivityPlayerBinding
 import com.alaa.iptv.ui.theme.DisplayTheme
 import java.util.Locale
 
-@UnstableApi
+@SuppressLint("UnsafeOptInUsageError")
 class PlayerActivity : AppCompatActivity() {
 
     companion object {
@@ -69,9 +70,7 @@ class PlayerActivity : AppCompatActivity() {
         Log.d(TAG, "▶️ onCreate - Channel: $channelName")
         Log.d(TAG, "▶️ onCreate - Type: $streamType")
 
-        if (!streamUrl.isNullOrBlank()) {
-            initializePlayer(streamUrl!!)
-        } else {
+        streamUrl?.takeIf { it.isNotBlank() }?.let(::initializePlayer) ?: run {
             Log.e(TAG, "❌ No stream URL provided")
             showError(getString(R.string.player_error))
         }
@@ -87,7 +86,8 @@ class PlayerActivity : AppCompatActivity() {
         try {
             val shouldAttachListener = player == null
             if (shouldAttachListener) {
-                trackSelector = DefaultTrackSelector(this)
+                val selector = DefaultTrackSelector(this)
+                trackSelector = selector
                 val fastLiveLoadControl = DefaultLoadControl.Builder()
                     .setBufferDurationsMs(
                         1_500,
@@ -97,7 +97,7 @@ class PlayerActivity : AppCompatActivity() {
                     )
                     .build()
                 player = ExoPlayer.Builder(this)
-                    .setTrackSelector(trackSelector!!)
+                    .setTrackSelector(selector)
                     .setLoadControl(fastLiveLoadControl)
                     .build()
                 binding.playerView.player = player

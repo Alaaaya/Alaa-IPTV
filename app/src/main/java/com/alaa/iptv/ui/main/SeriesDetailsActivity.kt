@@ -1,6 +1,7 @@
 package com.alaa.iptv.ui.main
 
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
@@ -28,7 +29,7 @@ class SeriesDetailsActivity : AppCompatActivity() {
         binding = ActivitySeriesDetailsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        series = intent.getParcelableExtra(EXTRA_SERIES)
+        series = readSeriesExtra()
             ?: run {
                 finish()
                 return
@@ -61,25 +62,33 @@ class SeriesDetailsActivity : AppCompatActivity() {
     private fun loadEpisodes() {
         setLoading(true)
         lifecycleScope.launch {
-            repository.getSeriesEpisodes(series.seriesId)
-                .onSuccess { episodes ->
-                    if (episodes.isEmpty()) {
-                        showError(getString(R.string.no_episodes))
-                    } else {
-                        binding.episodesRecyclerView.adapter = EpisodeAdapter(episodes, ::playEpisode)
+            try {
+                repository.getSeriesEpisodes(series.seriesId)
+                    .onSuccess { episodes ->
+                        if (episodes.isEmpty()) {
+                            showError(getString(R.string.no_episodes))
+                        } else {
+                            binding.episodesRecyclerView.adapter = EpisodeAdapter(episodes, ::playEpisode)
+                        }
                     }
-                }
-                .onFailure { error ->
-                    showError(error.message ?: getString(R.string.episodes_load_error))
-                }
-            setLoading(false)
+                    .onFailure { error ->
+                        showError(error.message ?: getString(R.string.episodes_load_error))
+                    }
+            } finally {
+                setLoading(false)
+            }
         }
     }
 
     private fun playEpisode(episode: Episode) {
+        val streamUrl = episode.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password)
+        if (streamUrl.isBlank()) {
+            showError(getString(R.string.player_error))
+            return
+        }
         startActivity(
             Intent(this, PlayerActivity::class.java)
-                .putExtra("STREAM_URL", episode.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password))
+                .putExtra("STREAM_URL", streamUrl)
                 .putExtra("CHANNEL_NAME", "${series.name} - ${episode.title}")
                 .putExtra("STREAM_TYPE", "series")
         )
@@ -92,6 +101,13 @@ class SeriesDetailsActivity : AppCompatActivity() {
     private fun showError(message: String) {
         binding.errorText.text = message
         binding.errorText.visibility = View.VISIBLE
+    }
+
+    private fun readSeriesExtra(): Series? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        intent.getParcelableExtra(EXTRA_SERIES, Series::class.java)
+    } else {
+        @Suppress("DEPRECATION")
+        intent.getParcelableExtra(EXTRA_SERIES)
     }
 
     companion object {
