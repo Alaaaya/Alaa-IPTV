@@ -24,7 +24,10 @@ object DisplayTheme {
         val accent: String,
         val accentText: String,
         val metadata: String,
-        val radius: Float
+        val radius: Float,
+        val focusFill: String = accent,
+        val focusStroke: String? = null,
+        val panelStroke: String? = null
     )
 
     private fun palette(theme: String): Palette? = when (theme) {
@@ -32,6 +35,8 @@ object DisplayTheme {
         AppPreferences.THEME_IBO_CLASSIC -> Palette("#111319", "#191D25", "#242A35", "#E53935", "#FFFFFF", "#5EB5F7", 10f)
         AppPreferences.THEME_MODERN_GRID -> Palette("#110D22", "#1B1433", "#282047", "#8B5CF6", "#FFFFFF", "#22D3EE", 18f)
         AppPreferences.THEME_TV_MINIMAL -> Palette("#070707", "#101010", "#1A1A1A", "#F2F2F2", "#050505", "#BDBDBD", 4f)
+        AppPreferences.THEME_GLASS_UI -> Palette("#081321", "#122437", "#368BB8CC", "#8AD7FF", "#06111E", "#C6EDFF", 18f, "#66A7D8EE", "#C0ECFF", "#66D1F2FF")
+        AppPreferences.THEME_CLASSIC_BLACK_TV -> Palette("#000000", "#060606", "#0E0E0E", "#2D8CFF", "#FFFFFF", "#84BBFF", 6f, "#050505", "#2D8CFF", "#262626")
         else -> null
     }
 
@@ -48,8 +53,8 @@ object DisplayTheme {
     fun applyLive(binding: ActivityMainBinding, prefs: AppPreferences) {
         val palette = palette(prefs.displayTheme) ?: return
         binding.root.setBackgroundColor(Color.parseColor(palette.background))
-        binding.channelPanel.background = rounded(palette.panel, palette.radius)
-        binding.previewPanel.background = rounded(palette.panel, palette.radius)
+        binding.channelPanel.background = panelBackground(prefs.displayTheme)
+        binding.previewPanel.background = panelBackground(prefs.displayTheme)
         binding.filterAll.background = rounded(palette.accent, palette.radius)
         binding.filterAll.setTextColor(Color.parseColor(palette.accentText))
         binding.channelCounterFooter.setTextColor(Color.parseColor(palette.accent))
@@ -75,7 +80,7 @@ object DisplayTheme {
         val palette = palette(prefs.displayTheme) ?: return
         binding.root.setBackgroundColor(Color.parseColor(palette.background))
         binding.loadingProgress.indeterminateTintList = android.content.res.ColorStateList.valueOf(Color.parseColor(palette.accent))
-        binding.trackSelectionButton.background = rounded(palette.panel, palette.radius, palette.accent, 1)
+        binding.trackSelectionButton.background = rounded(palette.panel, palette.radius, palette.focusStroke ?: palette.accent, 1)
     }
 
     fun applyPlayerControls(root: View, prefs: AppPreferences) {
@@ -99,13 +104,19 @@ object DisplayTheme {
 
     fun hasCustomTheme(theme: String): Boolean = palette(theme) != null
 
-    fun focusBackground(theme: String): GradientDrawable = rounded(requireNotNull(palette(theme)).accent, requireNotNull(palette(theme)).radius)
+    fun focusBackground(theme: String): GradientDrawable {
+        val palette = requireNotNull(palette(theme))
+        return rounded(palette.focusFill, palette.radius, palette.focusStroke, if (palette.focusStroke == null) 0 else 2)
+    }
 
     fun focusTextColor(theme: String): Int = Color.parseColor(requireNotNull(palette(theme)).accentText)
 
     fun metadataColor(theme: String): Int = Color.parseColor(requireNotNull(palette(theme)).metadata)
 
-    fun panelBackground(theme: String): GradientDrawable = rounded(requireNotNull(palette(theme)).panel, requireNotNull(palette(theme)).radius)
+    fun panelBackground(theme: String): GradientDrawable {
+        val palette = requireNotNull(palette(theme))
+        return rounded(palette.panel, palette.radius, palette.panelStroke, if (palette.panelStroke == null) 0 else 1)
+    }
 
     private fun rounded(fill: String, radiusDp: Float, stroke: String? = null, strokeWidthDp: Int = 0): GradientDrawable {
         return GradientDrawable().apply {

@@ -25,6 +25,8 @@ class SettingsActivity : AppCompatActivity() {
             AppPreferences.THEME_IBO_CLASSIC -> binding.themeIboClassic.isChecked = true
             AppPreferences.THEME_MODERN_GRID -> binding.themeModernGrid.isChecked = true
             AppPreferences.THEME_TV_MINIMAL -> binding.themeTvMinimal.isChecked = true
+            AppPreferences.THEME_GLASS_UI -> binding.themeGlassUi.isChecked = true
+            AppPreferences.THEME_CLASSIC_BLACK_TV -> binding.themeClassicBlackTv.isChecked = true
             else -> binding.themeAlaaClassic.isChecked = true
         }
 
@@ -34,6 +36,8 @@ class SettingsActivity : AppCompatActivity() {
                 R.id.themeIboClassic -> AppPreferences.THEME_IBO_CLASSIC
                 R.id.themeModernGrid -> AppPreferences.THEME_MODERN_GRID
                 R.id.themeTvMinimal -> AppPreferences.THEME_TV_MINIMAL
+                R.id.themeGlassUi -> AppPreferences.THEME_GLASS_UI
+                R.id.themeClassicBlackTv -> AppPreferences.THEME_CLASSIC_BLACK_TV
                 else -> AppPreferences.THEME_ALAA_CLASSIC
             }
             if (prefs.displayTheme != newTheme) {
@@ -43,6 +47,8 @@ class SettingsActivity : AppCompatActivity() {
                     AppPreferences.THEME_IBO_CLASSIC -> "تم اختيار مظهر iBO Classic. اضغط تطبيق التصميم."
                     AppPreferences.THEME_MODERN_GRID -> "تم اختيار مظهر Modern Grid. اضغط تطبيق التصميم."
                     AppPreferences.THEME_TV_MINIMAL -> "تم اختيار مظهر TV Minimal. اضغط تطبيق التصميم."
+                    AppPreferences.THEME_GLASS_UI -> "تم اختيار مظهر Glass UI الزجاجي. اضغط تطبيق التصميم."
+                    AppPreferences.THEME_CLASSIC_BLACK_TV -> "تم اختيار مظهر Classic Black TV. اضغط تطبيق التصميم."
                     else -> "تم اختيار التصميم الأصلي لتطبيق Alaa IPTV. اضغط تطبيق التصميم."
                 }
             }

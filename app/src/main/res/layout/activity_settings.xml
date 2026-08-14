@@ -77,58 +77,82 @@
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_login_input"
                 android:focusable="true"
-                android:padding="18dp"
+                android:padding="10dp"
                 android:text="Alaa IPTV Classic — التصميم الحالي الافتراضي"
                 android:textColor="@color/white"
-                android:textSize="17sp" />
+                android:textSize="15sp" />
 
             <RadioButton
                 android:id="@+id/themeHotPlayer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
+                android:layout_marginTop="8dp"
                 android:background="@drawable/bg_login_input"
                 android:focusable="true"
-                android:padding="18dp"
+                android:padding="10dp"
                 android:text="Hot Player — كحلي داكن مع أصفر وترتيب بصري مستوحى من الصور"
                 android:textColor="@color/white"
-                android:textSize="17sp" />
+                android:textSize="15sp" />
 
             <RadioButton
                 android:id="@+id/themeIboClassic"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
+                android:layout_marginTop="8dp"
                 android:background="@drawable/bg_login_input"
                 android:focusable="true"
-                android:padding="18dp"
+                android:padding="10dp"
                 android:text="iBO Classic — داكن أنيق بتمييز أحمر وقوائم مريحة"
                 android:textColor="@color/white"
-                android:textSize="17sp" />
+                android:textSize="15sp" />
 
             <RadioButton
                 android:id="@+id/themeModernGrid"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
+                android:layout_marginTop="8dp"
                 android:background="@drawable/bg_login_input"
                 android:focusable="true"
-                android:padding="18dp"
+                android:padding="10dp"
                 android:text="Modern Grid — بنفسجي حديث وبطاقات مستديرة وشبكة محتوى بارزة"
                 android:textColor="@color/white"
-                android:textSize="17sp" />
+                android:textSize="15sp" />
 
             <RadioButton
                 android:id="@+id/themeTvMinimal"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
+                android:layout_marginTop="8dp"
                 android:background="@drawable/bg_login_input"
                 android:focusable="true"
-                android:padding="18dp"
+                android:padding="10dp"
                 android:text="TV Minimal — أسود وأبيض بسيط بعناصر واضحة للتلفزيونات الضعيفة"
                 android:textColor="@color/white"
-                android:textSize="17sp" />
+                android:textSize="15sp" />
+
+            <RadioButton
+                android:id="@+id/themeGlassUi"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_login_input"
+                android:focusable="true"
+                android:padding="10dp"
+                android:text="Glass UI — ألواح زجاجية شفافة ولمسات ضوئية زرقاء"
+                android:textColor="@color/white"
+                android:textSize="15sp" />
+
+            <RadioButton
+                android:id="@+id/themeClassicBlackTv"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_login_input"
+                android:focusable="true"
+                android:padding="10dp"
+                android:text="Classic Black TV — أسود بسيط مع حدود زرقاء للتحديد"
+                android:textColor="@color/white"
+                android:textSize="15sp" />
         </RadioGroup>
 
         <TextView
