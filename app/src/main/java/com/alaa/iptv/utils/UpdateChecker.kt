@@ -132,7 +132,7 @@ class UpdateChecker(private val context: Context) {
         val fileName = "alaa-iptv-v$version.apk"
 
         val request = DownloadManager.Request(Uri.parse(downloadUrl))
-            .setTitle("Downloading Alaa IPTV v$version")
+            .setTitle("Downloading Alaa Player v$version")
             .setDescription("Please wait...")
             .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
             .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName)

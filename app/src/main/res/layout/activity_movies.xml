@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/ibo_bg_dark"
+    android:background="@color/alaa_bg_dark"
     android:layoutDirection="ltr">
 
     <!-- Sidebar (Left) -->
@@ -11,7 +11,7 @@
         android:id="@+id/sidebarContainer"
         android:layout_width="240dp"
         android:layout_height="match_parent"
-        android:background="@color/ibo_sidebar_bg"
+        android:background="@color/alaa_sidebar_bg"
         app:layout_constraintStart_toStartOf="parent">
 
         <ImageView
@@ -29,7 +29,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
-            android:text="@string/ibo_tv"
+            android:text="@string/alaa_player"
             android:textColor="@color/white"
             android:textSize="18sp"
             android:textStyle="bold"
@@ -42,7 +42,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/premium"
-            android:textColor="@color/ibo_accent_red"
+            android:textColor="@color/alaa_accent_red"
             android:textSize="10sp"
             android:textStyle="bold"
             app:layout_constraintStart_toStartOf="@id/sidebarAppName"
@@ -75,7 +75,7 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_security"
-                    app:tint="@color/ibo_accent_purple" />
+                    app:tint="@color/alaa_accent_purple" />
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

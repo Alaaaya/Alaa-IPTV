@@ -53,13 +53,13 @@
                 android:layout_height="84dp"
                 android:contentDescription="@string/app_name"
                 android:scaleType="fitCenter"
-                android:src="@drawable/ic_logo" />
+                android:src="@drawable/alaa_player_logo" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="IBO Player"
+                android:text="Alaa Player"
                 android:textColor="@color/white"
                 android:textSize="24sp"
                 android:textStyle="bold" />
@@ -322,7 +322,7 @@
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:layout_marginTop="10dp"
-                android:indeterminateTint="@color/ibo_accent_red"
+                android:indeterminateTint="@color/alaa_accent_red"
                 android:visibility="gone" />
 
             <TextView

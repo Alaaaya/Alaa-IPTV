@@ -4,14 +4,14 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/ibo_bg_dark">
+    android:background="@color/alaa_bg_dark">
 
     <!-- Sidebar (Left) -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/sidebarContainer"
         android:layout_width="240dp"
         android:layout_height="match_parent"
-        android:background="@color/ibo_sidebar_bg"
+        android:background="@color/alaa_sidebar_bg"
         app:layout_constraintStart_toStartOf="parent">
 
         <ImageView
@@ -29,7 +29,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="15dp"
-            android:text="@string/ibo_tv"
+            android:text="@string/alaa_player"
             android:textColor="@color/white"
             android:textSize="20sp"
             android:textStyle="bold"
@@ -42,7 +42,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/premium"
-            android:textColor="@color/ibo_accent_red"
+            android:textColor="@color/alaa_accent_red"
             android:textSize="12sp"
             android:textStyle="bold"
             app:layout_constraintStart_toStartOf="@id/sidebarAppName"
@@ -79,7 +79,7 @@
                     android:layout_width="32dp"
                     android:layout_height="32dp"
                     android:src="@drawable/ic_security"
-                    app:tint="@color/ibo_accent_purple" />
+                    app:tint="@color/alaa_accent_purple" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -281,7 +281,7 @@
                     android:layout_alignParentEnd="true"
                     android:layout_centerVertical="true"
                     android:text="@string/view_all"
-                    android:textColor="@color/ibo_accent_red"
+                    android:textColor="@color/alaa_accent_red"
                     android:textSize="14sp" />
             </RelativeLayout>
 
@@ -314,7 +314,7 @@
                     android:layout_alignParentEnd="true"
                     android:layout_centerVertical="true"
                     android:text="@string/view_all"
-                    android:textColor="@color/ibo_accent_red"
+                    android:textColor="@color/alaa_accent_red"
                     android:textSize="14sp" />
             </RelativeLayout>
 
@@ -348,7 +348,7 @@
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:src="@drawable/ic_security"
-                        app:tint="@color/ibo_accent_purple" />
+                        app:tint="@color/alaa_accent_purple" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -390,7 +390,7 @@
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:src="@drawable/ic_server"
-                        app:tint="@color/ibo_accent_purple" />
+                        app:tint="@color/alaa_accent_purple" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -432,7 +432,7 @@
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:src="@drawable/ic_quality"
-                        app:tint="@color/ibo_accent_purple" />
+                        app:tint="@color/alaa_accent_purple" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -473,7 +473,7 @@
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:src="@drawable/ic_support"
-                        app:tint="@color/ibo_accent_purple" />
+                        app:tint="@color/alaa_accent_purple" />
 
                     <LinearLayout
                         android:layout_width="match_parent"

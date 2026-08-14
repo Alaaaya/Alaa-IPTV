@@ -70,7 +70,7 @@ class ChannelAdapter(
             binding.channelName.text = channel.name
             binding.channelNumber.text = (position + 1).toString()
             
-            // iBO Player Style: Quality tag
+            // Quality tag
             binding.qualityTag.text = if (channel.name.contains("HD", true)) "HD" else "SD"
             
             // Favorite indicator

@@ -21,8 +21,8 @@ class SettingsActivity : AppCompatActivity() {
         prefs = AppPreferences(this)
         binding.tvIdValue.text = prefs.getOrCreateTvId()
         when (prefs.displayTheme) {
-            AppPreferences.THEME_HOT_PLAYER -> binding.themeHotPlayer.isChecked = true
-            AppPreferences.THEME_IBO_CLASSIC -> binding.themeIboClassic.isChecked = true
+            AppPreferences.THEME_MIDNIGHT_GOLD -> binding.themeMidnightGold.isChecked = true
+            AppPreferences.THEME_CRIMSON_CLASSIC -> binding.themeCrimsonClassic.isChecked = true
             AppPreferences.THEME_MODERN_GRID -> binding.themeModernGrid.isChecked = true
             AppPreferences.THEME_TV_MINIMAL -> binding.themeTvMinimal.isChecked = true
             AppPreferences.THEME_GLASS_UI -> binding.themeGlassUi.isChecked = true
@@ -32,8 +32,8 @@ class SettingsActivity : AppCompatActivity() {
 
         binding.themeGroup.setOnCheckedChangeListener { _, checkedId ->
             val newTheme = when (checkedId) {
-                R.id.themeHotPlayer -> AppPreferences.THEME_HOT_PLAYER
-                R.id.themeIboClassic -> AppPreferences.THEME_IBO_CLASSIC
+                R.id.themeMidnightGold -> AppPreferences.THEME_MIDNIGHT_GOLD
+                R.id.themeCrimsonClassic -> AppPreferences.THEME_CRIMSON_CLASSIC
                 R.id.themeModernGrid -> AppPreferences.THEME_MODERN_GRID
                 R.id.themeTvMinimal -> AppPreferences.THEME_TV_MINIMAL
                 R.id.themeGlassUi -> AppPreferences.THEME_GLASS_UI
@@ -43,13 +43,13 @@ class SettingsActivity : AppCompatActivity() {
             if (prefs.displayTheme != newTheme) {
                 prefs.displayTheme = newTheme
                 binding.selectionState.text = when (newTheme) {
-                    AppPreferences.THEME_HOT_PLAYER -> "تم اختيار مظهر Hot Player. اضغط تطبيق التصميم."
-                    AppPreferences.THEME_IBO_CLASSIC -> "تم اختيار مظهر iBO Classic. اضغط تطبيق التصميم."
+                    AppPreferences.THEME_MIDNIGHT_GOLD -> "تم اختيار مظهر Midnight Gold. اضغط تطبيق التصميم."
+                    AppPreferences.THEME_CRIMSON_CLASSIC -> "تم اختيار مظهر Crimson Classic. اضغط تطبيق التصميم."
                     AppPreferences.THEME_MODERN_GRID -> "تم اختيار مظهر Modern Grid. اضغط تطبيق التصميم."
                     AppPreferences.THEME_TV_MINIMAL -> "تم اختيار مظهر TV Minimal. اضغط تطبيق التصميم."
                     AppPreferences.THEME_GLASS_UI -> "تم اختيار مظهر Glass UI الزجاجي. اضغط تطبيق التصميم."
                     AppPreferences.THEME_CLASSIC_BLACK_TV -> "تم اختيار مظهر Classic Black TV. اضغط تطبيق التصميم."
-                    else -> "تم اختيار التصميم الأصلي لتطبيق Alaa IPTV. اضغط تطبيق التصميم."
+                    else -> "تم اختيار التصميم الأصلي لتطبيق Alaa Player. اضغط تطبيق التصميم."
                 }
             }
         }

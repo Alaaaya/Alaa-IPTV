@@ -63,7 +63,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="▶"
-            android:textColor="@color/ibo_accent_red"
+            android:textColor="@color/alaa_accent_red"
             android:textSize="20sp" />
     </LinearLayout>
 

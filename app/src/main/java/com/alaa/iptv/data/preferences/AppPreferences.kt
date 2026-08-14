@@ -25,8 +25,8 @@ class AppPreferences(context: Context) {
         private const val KEY_DISPLAY_THEME = "display_theme"
 
         const val THEME_ALAA_CLASSIC = "alaa_classic"
-        const val THEME_HOT_PLAYER = "hot_player"
-        const val THEME_IBO_CLASSIC = "ibo_classic"
+        const val THEME_MIDNIGHT_GOLD = "midnight_gold"
+        const val THEME_CRIMSON_CLASSIC = "crimson_classic"
         const val THEME_MODERN_GRID = "modern_grid"
         const val THEME_TV_MINIMAL = "tv_minimal"
         const val THEME_GLASS_UI = "glass_ui"
@@ -77,8 +77,8 @@ class AppPreferences(context: Context) {
         get() = prefs.getString(KEY_DISPLAY_THEME, THEME_ALAA_CLASSIC) ?: THEME_ALAA_CLASSIC
         set(value) = prefs.edit().putString(KEY_DISPLAY_THEME, value).apply()
 
-    val isHotPlayerTheme: Boolean
-        get() = displayTheme == THEME_HOT_PLAYER
+    val isMidnightGoldTheme: Boolean
+        get() = displayTheme == THEME_MIDNIGHT_GOLD
 
     fun getOrCreateTvId(): String {
         if (tvId.isNotBlank()) return tvId

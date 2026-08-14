@@ -78,31 +78,31 @@
                 android:background="@drawable/bg_login_input"
                 android:focusable="true"
                 android:padding="10dp"
-                android:text="Alaa IPTV Classic — التصميم الحالي الافتراضي"
+                android:text="Alaa Player Classic — التصميم الحالي الافتراضي"
                 android:textColor="@color/white"
                 android:textSize="15sp" />
 
             <RadioButton
-                android:id="@+id/themeHotPlayer"
+                android:id="@+id/themeMidnightGold"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/bg_login_input"
                 android:focusable="true"
                 android:padding="10dp"
-                android:text="Hot Player — كحلي داكن مع أصفر وترتيب بصري مستوحى من الصور"
+                android:text="Midnight Gold — كحلي داكن مع أصفر ولمسات ذهبية"
                 android:textColor="@color/white"
                 android:textSize="15sp" />
 
             <RadioButton
-                android:id="@+id/themeIboClassic"
+                android:id="@+id/themeCrimsonClassic"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/bg_login_input"
                 android:focusable="true"
                 android:padding="10dp"
-                android:text="iBO Classic — داكن أنيق بتمييز أحمر وقوائم مريحة"
+                android:text="Crimson Classic — داكن أنيق بتمييز أحمر وقوائم مريحة"
                 android:textColor="@color/white"
                 android:textSize="15sp" />
 

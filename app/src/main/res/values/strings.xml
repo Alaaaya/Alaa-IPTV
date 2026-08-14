@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- App -->
-    <string name="app_name">Alaa IPTV</string>
+    <string name="app_name">Alaa Player</string>
     <string name="premium">PREMIUM</string>
-    <string name="ibo_tv">IBO TV</string>
+    <string name="alaa_player">Alaa Player</string>
 
     <!-- Sidebar -->
     <string name="menu_home">الصفحة الرئيسية</string>
@@ -42,7 +42,7 @@
     <string name="info_support_desc">نحن هنا دائماً لمساعدتك</string>
 
     <!-- Login -->
-    <string name="login_title">مرحباً بك في Alaa IPTV</string>
+    <string name="login_title">مرحباً بك في Alaa Player</string>
     <string name="server_url">رابط السيرفر</string>
     <string name="username">اسم المستخدم</string>
     <string name="password">كلمة المرور</string>

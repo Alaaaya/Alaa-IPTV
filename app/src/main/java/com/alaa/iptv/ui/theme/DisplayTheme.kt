@@ -31,8 +31,8 @@ object DisplayTheme {
     )
 
     private fun palette(theme: String): Palette? = when (theme) {
-        AppPreferences.THEME_HOT_PLAYER -> Palette("#0A1426", "#101D31", "#1B2A40", "#D8CA28", "#0A1426", "#2497DE", 7f)
-        AppPreferences.THEME_IBO_CLASSIC -> Palette("#111319", "#191D25", "#242A35", "#E53935", "#FFFFFF", "#5EB5F7", 10f)
+        AppPreferences.THEME_MIDNIGHT_GOLD -> Palette("#0A1426", "#101D31", "#1B2A40", "#D8CA28", "#0A1426", "#2497DE", 7f)
+        AppPreferences.THEME_CRIMSON_CLASSIC -> Palette("#111319", "#191D25", "#242A35", "#E53935", "#FFFFFF", "#5EB5F7", 10f)
         AppPreferences.THEME_MODERN_GRID -> Palette("#110D22", "#1B1433", "#282047", "#8B5CF6", "#FFFFFF", "#22D3EE", 18f)
         AppPreferences.THEME_TV_MINIMAL -> Palette("#070707", "#101010", "#1A1A1A", "#F2F2F2", "#050505", "#BDBDBD", 4f)
         AppPreferences.THEME_GLASS_UI -> Palette("#081321", "#122437", "#368BB8CC", "#8AD7FF", "#06111E", "#C6EDFF", 18f, "#66A7D8EE", "#C0ECFF", "#66D1F2FF")
