@@ -8,6 +8,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.alaa.iptv.R
 import com.alaa.iptv.data.models.Movie
 import com.alaa.iptv.data.models.Category
@@ -28,6 +29,9 @@ class MoviesActivity : AppCompatActivity() {
     private lateinit var repository: MediaRepository
     private var movies: List<Movie> = emptyList()
     private var categories: List<Category> = emptyList()
+    private var currentMoviePage = 0
+    private var hasMoreMoviePages = false
+    private var isLoadingMovies = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,6 +67,15 @@ class MoviesActivity : AppCompatActivity() {
     private fun setupMoviesGrid() {
         binding.moviesRecyclerView.apply {
             layoutManager = GridLayoutManager(this@MoviesActivity, 5) // 5 columns as in image
+            addOnScrollListener(object : RecyclerView.OnScrollListener() {
+                override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                    if (dy <= 0 || isLoadingMovies || !hasMoreMoviePages) return
+                    val grid = recyclerView.layoutManager as? GridLayoutManager ?: return
+                    if (grid.findLastVisibleItemPosition() >= movies.size - 15) {
+                        loadMovies(prefs.lastMovieCategoryId, currentMoviePage + 1, append = true)
+                    }
+                }
+            })
         }
     }
 
@@ -98,16 +111,26 @@ class MoviesActivity : AppCompatActivity() {
     private fun selectCategory(category: Category) {
         prefs.lastMovieCategoryId = category.categoryId
         binding.movieCategorySelector.text = category.categoryName
-        loadMovies(category.categoryId)
+        currentMoviePage = 0
+        hasMoreMoviePages = false
+        loadMovies(category.categoryId, page = 0, append = false)
     }
 
-    private fun loadMovies(categoryId: String) {
+    private fun loadMovies(categoryId: String, page: Int, append: Boolean) {
+        if (isLoadingMovies) return
+        isLoadingMovies = true
         lifecycleScope.launch {
-            runCatching { repository.getMovies(categoryId) }
+            runCatching { repository.getMovies(categoryId, page) }
                 .onSuccess { result ->
                     result.onSuccess { loadedMovies ->
-                        movies = loadedMovies
-                        binding.moviesCount.text = "${movies.size} فيلم"
+                        movies = if (append) movies + loadedMovies else loadedMovies
+                        currentMoviePage = page
+                        hasMoreMoviePages = loadedMovies.size >= 120
+                        binding.moviesCount.text = if (hasMoreMoviePages) {
+                            "${movies.size} فيلم • تابع للأسفل لتحميل المزيد"
+                        } else {
+                            "${movies.size} فيلم"
+                        }
                         binding.moviesRecyclerView.adapter = MovieAdapter(movies, prefs.displayTheme, ::playMovie)
                     }.onFailure { error ->
                         Log.e(TAG, "Unable to load movies", error)
@@ -116,6 +139,7 @@ class MoviesActivity : AppCompatActivity() {
                 .onFailure { error ->
                     Log.e(TAG, "Unable to request movies", error)
                 }
+            isLoadingMovies = false
         }
     }
 

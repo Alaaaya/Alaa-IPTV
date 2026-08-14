@@ -11,6 +11,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.TrackSelectionOverride
@@ -66,6 +67,9 @@ class PlayerActivity : AppCompatActivity() {
 
         binding.channelNameText.text = channelName ?: ""
         binding.trackSelectionButton.setOnClickListener { showTrackSelection() }
+        binding.errorText.setOnClickListener {
+            streamUrl?.takeIf { it.isNotBlank() }?.let(::initializePlayer)
+        }
 
         Log.d(TAG, "▶️ onCreate - Channel: $channelName")
         Log.d(TAG, "▶️ onCreate - Type: $streamType")
@@ -109,6 +113,7 @@ class PlayerActivity : AppCompatActivity() {
             // Configure HTTP data source to allow cleartext and custom headers
             val httpDataSourceFactory = DefaultHttpDataSource.Factory()
                 .setAllowCrossProtocolRedirects(true)
+                .setUserAgent("AlaaPlayer/2.1.9 (Android TV; Media3)")
                 .setConnectTimeoutMs(5_000)
                 .setReadTimeoutMs(8_000)
 
@@ -121,78 +126,79 @@ class PlayerActivity : AppCompatActivity() {
                 }
                 else -> {
                     Log.d(TAG, "📺 Using Progressive media source")
+                    val progressiveItem = if (url.substringBefore('?').endsWith(".ts", ignoreCase = true)) {
+                        mediaItem.buildUpon().setMimeType(MimeTypes.VIDEO_MP2T).build()
+                    } else {
+                        mediaItem
+                    }
                     ProgressiveMediaSource.Factory(httpDataSourceFactory)
-                        .createMediaSource(mediaItem)
+                        .createMediaSource(progressiveItem)
                 }
             }
 
             player?.apply {
+                // سجّل المستمع قبل prepare حتى لا تضيع أخطاء التهيئة الأولى.
+                if (shouldAttachListener) addListener(playerListener)
                 setMediaSource(mediaSource)
                 prepare()
                 play()
-
-                if (shouldAttachListener) addListener(object : Player.Listener {
-                    override fun onPlaybackStateChanged(playbackState: Int) {
-                        when (playbackState) {
-                            Player.STATE_BUFFERING -> {
-                                Log.d(TAG, "⏳ STATE_BUFFERING")
-                                showLoading(true)
-                            }
-                            Player.STATE_READY -> {
-                                Log.d(TAG, "✅ STATE_READY - Playing")
-                                showLoading(false)
-                                hideChannelName()
-                                updateTrackSelectionVisibility()
-                            }
-                            Player.STATE_ENDED -> {
-                                Log.d(TAG, "🏁 STATE_ENDED")
-                                showLoading(false)
-                                val message = if (streamType.equals("live", ignoreCase = true)) {
-                                    "انتهى البث مؤقتاً، جرّب قناة أخرى"
-                                } else {
-                                    "انتهى التشغيل أو تعذر متابعة الفيديو"
-                                }
-                                showError(message)
-                            }
-                            Player.STATE_IDLE -> {
-                                Log.d(TAG, "⏸️ STATE_IDLE")
-                                showLoading(false)
-                            }
-                        }
-                    }
-
-                    override fun onPlayerError(error: PlaybackException) {
-                        Log.e(TAG, "❌ Player Error: ${error.errorCodeName}", error)
-                        showLoading(false)
-
-                        val errorMsg = when (error.errorCode) {
-                            PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED ->
-                                "فشل الاتصال بالشبكة"
-                            PlaybackException.ERROR_CODE_IO_INVALID_HTTP_CONTENT_TYPE ->
-                                "نوع المحتوى غير مدعوم"
-                            PlaybackException.ERROR_CODE_PARSING_CONTAINER_UNSUPPORTED ->
-                                "صيغة الملف غير مدعومة"
-                            PlaybackException.ERROR_CODE_DECODER_INIT_FAILED ->
-                                "فشل تشغيل الفيديو (Decoder)"
-                            PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS ->
-                                "خطأ في الخادم (HTTP ${error.message})"
-                            else -> "خطأ في التشغيل: ${error.message}"
-                        }
-
-                        showError(errorMsg)
-                        Toast.makeText(this@PlayerActivity, errorMsg, Toast.LENGTH_LONG).show()
-                    }
-
-                    override fun onIsPlayingChanged(isPlaying: Boolean) {
-                        Log.d(TAG, "▶️ isPlaying changed: $isPlaying")
-                    }
-                })
             }
 
         } catch (e: Exception) {
             Log.e(TAG, "❌ Failed to initialize player", e)
             showLoading(false)
             showError("فشل تهيئة المشغل: ${e.message}")
+        }
+    }
+
+    private val playerListener = object : Player.Listener {
+        override fun onPlaybackStateChanged(playbackState: Int) {
+            when (playbackState) {
+                Player.STATE_BUFFERING -> {
+                    Log.d(TAG, "⏳ STATE_BUFFERING")
+                    showLoading(true)
+                }
+                Player.STATE_READY -> {
+                    Log.d(TAG, "✅ STATE_READY - Playing")
+                    showLoading(false)
+                    hideChannelName()
+                    updateTrackSelectionVisibility()
+                }
+                Player.STATE_ENDED -> {
+                    Log.d(TAG, "🏁 STATE_ENDED")
+                    showLoading(false)
+                    val message = if (streamType.equals("live", ignoreCase = true)) {
+                        "انتهى البث مؤقتاً، جرّب قناة أخرى"
+                    } else {
+                        "انتهى التشغيل أو تعذر متابعة الفيديو"
+                    }
+                    showError(message)
+                }
+                Player.STATE_IDLE -> {
+                    Log.d(TAG, "⏸️ STATE_IDLE")
+                    showLoading(false)
+                }
+            }
+        }
+
+        override fun onPlayerError(error: PlaybackException) {
+            Log.e(TAG, "❌ Player Error: ${error.errorCodeName}", error)
+            showLoading(false)
+            val errorMsg = when (error.errorCode) {
+                PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED -> "فشل الاتصال بالشبكة"
+                PlaybackException.ERROR_CODE_IO_INVALID_HTTP_CONTENT_TYPE -> "نوع المحتوى غير مدعوم"
+                PlaybackException.ERROR_CODE_PARSING_CONTAINER_UNSUPPORTED -> "صيغة الملف غير مدعومة"
+                PlaybackException.ERROR_CODE_DECODER_INIT_FAILED -> "فشل تشغيل الفيديو (Decoder)"
+                PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS -> "خطأ في الخادم (HTTP ${error.message})"
+                else -> "خطأ في التشغيل: ${error.message}"
+            }
+            // لا تُغلق الشاشة عند خطأ البث؛ النص قابل للضغط لإعادة المحاولة.
+            showError("$errorMsg\nاضغط هنا لإعادة المحاولة")
+            Toast.makeText(this@PlayerActivity, errorMsg, Toast.LENGTH_LONG).show()
+        }
+
+        override fun onIsPlayingChanged(isPlaying: Boolean) {
+            Log.d(TAG, "▶️ isPlaying changed: $isPlaying")
         }
     }
 
