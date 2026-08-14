@@ -63,6 +63,12 @@
             android:screenOrientation="landscape"
             android:configChanges="orientation|keyboardHidden|screenSize" />
 
+        <activity
+            android:name=".ui.categories.CategoryPickerActivity"
+            android:exported="false"
+            android:screenOrientation="landscape"
+            android:configChanges="orientation|keyboardHidden|screenSize" />
+
         <!-- 📺 Main -->
         <activity
             android:name=".ui.main.MainActivity"

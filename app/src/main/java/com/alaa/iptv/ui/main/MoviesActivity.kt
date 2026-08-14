@@ -3,6 +3,7 @@ package com.alaa.iptv.ui.main
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -17,6 +18,7 @@ import com.alaa.iptv.data.repository.MediaRepository
 import com.alaa.iptv.databinding.ActivityMoviesBinding
 import com.alaa.iptv.ui.dashboard.SidebarAdapter
 import com.alaa.iptv.ui.dashboard.SidebarItem
+import com.alaa.iptv.ui.categories.CategoryPickerActivity
 import com.alaa.iptv.ui.player.PlayerActivity
 import com.alaa.iptv.ui.settings.SettingsActivity
 import com.alaa.iptv.ui.theme.DisplayTheme
@@ -32,6 +34,12 @@ class MoviesActivity : AppCompatActivity() {
     private var currentMoviePage = 0
     private var hasMoreMoviePages = false
     private var isLoadingMovies = false
+    private val movieCategoryPicker = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val categoryId = result.data?.getStringExtra(CategoryPickerActivity.EXTRA_CATEGORY_ID) ?: return@registerForActivityResult
+        categories.firstOrNull { it.categoryId == categoryId }?.let(::selectCategory)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -100,12 +108,9 @@ class MoviesActivity : AppCompatActivity() {
 
     private fun showCategorySelector() {
         if (categories.isEmpty()) return
-        AlertDialog.Builder(this)
-            .setTitle("فئات الأفلام")
-            .setItems(categories.map { it.categoryName }.toTypedArray()) { _, index ->
-                selectCategory(categories[index])
-            }
-            .show()
+        movieCategoryPicker.launch(
+            CategoryPickerActivity.createIntent(this, "فئات الأفلام", categories)
+        )
     }
 
     private fun selectCategory(category: Category) {

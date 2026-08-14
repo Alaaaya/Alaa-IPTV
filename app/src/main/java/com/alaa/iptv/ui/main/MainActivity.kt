@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -17,6 +18,7 @@ import com.alaa.iptv.databinding.ActivityMainBinding
 import com.alaa.iptv.ui.player.PlayerActivity
 import com.alaa.iptv.ui.player.PlayableChannel
 import com.alaa.iptv.ui.player.PlayerChannelNavigator
+import com.alaa.iptv.ui.categories.CategoryPickerActivity
 import com.alaa.iptv.ui.theme.DisplayTheme
 import com.bumptech.glide.Glide
 import kotlinx.coroutines.launch
@@ -42,6 +44,12 @@ class MainActivity : AppCompatActivity() {
     private var selectedLiveCategory: Category? = null
     private var currentLivePage = 0
     private var hasMoreLivePages = false
+    private val liveCategoryPicker = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val categoryId = result.data?.getStringExtra(CategoryPickerActivity.EXTRA_CATEGORY_ID) ?: return@registerForActivityResult
+        liveCategories.firstOrNull { it.categoryId == categoryId }?.let(::selectLiveCategory)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -115,12 +123,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun showLiveCategorySelector() {
         if (liveCategories.isEmpty()) return
-        AlertDialog.Builder(this)
-            .setTitle("فئات القنوات")
-            .setItems(liveCategories.map { it.categoryName }.toTypedArray()) { _, index ->
-                selectLiveCategory(liveCategories[index])
-            }
-            .show()
+        liveCategoryPicker.launch(
+            CategoryPickerActivity.createIntent(this, "فئات القنوات", liveCategories)
+        )
     }
 
     private fun selectLiveCategory(category: Category) {
@@ -148,7 +153,10 @@ class MainActivity : AppCompatActivity() {
                 val result = repository.getLiveStreams(categoryId, page)
 
                 result.onSuccess { loadedChannels ->
-                    val decoratedChannels = decorateChannels(if (append) allChannels + loadedChannels else loadedChannels)
+                    val namedChannels = loadedChannels.map { channel ->
+                        channel.copy(categoryName = selectedLiveCategory?.categoryName)
+                    }
+                    val decoratedChannels = decorateChannels(if (append) allChannels + namedChannels else namedChannels)
                     allChannels = if (currentMode == MODE_FAVORITES) {
                         decoratedChannels.filter { it.isFavorite }
                     } else {
