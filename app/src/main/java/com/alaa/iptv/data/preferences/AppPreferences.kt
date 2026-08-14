@@ -22,6 +22,10 @@ class AppPreferences(context: Context) {
         private const val KEY_LAST_LIVE_CATEGORY = "last_live_category"
         private const val KEY_LAST_MOVIE_CATEGORY = "last_movie_category"
         private const val KEY_LAST_SERIES_CATEGORY = "last_series_category"
+        private const val KEY_DISPLAY_THEME = "display_theme"
+
+        const val THEME_ALAA_CLASSIC = "alaa_classic"
+        const val THEME_HOT_PLAYER = "hot_player"
     }
     
     var serverUrl: String
@@ -63,6 +67,13 @@ class AppPreferences(context: Context) {
     var lastSeriesCategoryId: String
         get() = prefs.getString(KEY_LAST_SERIES_CATEGORY, "") ?: ""
         set(value) = prefs.edit().putString(KEY_LAST_SERIES_CATEGORY, value).apply()
+
+    var displayTheme: String
+        get() = prefs.getString(KEY_DISPLAY_THEME, THEME_ALAA_CLASSIC) ?: THEME_ALAA_CLASSIC
+        set(value) = prefs.edit().putString(KEY_DISPLAY_THEME, value).apply()
+
+    val isHotPlayerTheme: Boolean
+        get() = displayTheme == THEME_HOT_PLAYER
 
     fun getOrCreateTvId(): String {
         if (tvId.isNotBlank()) return tvId

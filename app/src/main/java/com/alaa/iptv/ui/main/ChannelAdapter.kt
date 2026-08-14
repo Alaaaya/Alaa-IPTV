@@ -9,10 +9,12 @@ import androidx.recyclerview.widget.RecyclerView
 import com.alaa.iptv.R
 import com.alaa.iptv.data.models.Channel
 import com.alaa.iptv.databinding.ItemChannelBinding
+import com.alaa.iptv.ui.theme.DisplayTheme
 import com.bumptech.glide.Glide
 
 class ChannelAdapter(
     private var channels: List<Channel>,
+    private val hotPlayerTheme: Boolean = false,
     private val onChannelClick: (Channel) -> Unit,
     private val onChannelLongClick: (Channel) -> Unit
 ) : RecyclerView.Adapter<ChannelAdapter.ChannelViewHolder>() {
@@ -74,6 +76,14 @@ class ChannelAdapter(
             binding.favoriteIndicator.visibility = View.VISIBLE
             binding.favoriteIndicator.alpha = if (channel.isFavorite) 1.0f else 0.3f
 
+            if (hotPlayerTheme) {
+                binding.root.background = DisplayTheme.hotPanelBackground()
+                binding.channelNumber.background = DisplayTheme.hotFocusBackground()
+                binding.channelNumber.setTextColor(Color.parseColor("#0A1426"))
+                binding.qualityTag.background = DisplayTheme.hotPanelBackground()
+                binding.qualityTag.setTextColor(DisplayTheme.hotBlueColor())
+            }
+
             if (!channel.streamIcon.isNullOrEmpty()) {
                 Glide.with(binding.root.context)
                     .load(channel.streamIcon)
@@ -89,16 +99,32 @@ class ChannelAdapter(
 
         private fun updateUI(hasFocus: Boolean) {
             if (hasFocus) {
-                binding.root.setBackgroundResource(R.drawable.bg_sidebar_selected)
-                binding.channelName.setTextColor(Color.WHITE)
-                binding.channelNumber.setTextColor(Color.WHITE)
-                binding.qualityTag.setTextColor(Color.WHITE)
-                binding.favoriteIndicator.setColorFilter(Color.WHITE)
+                if (hotPlayerTheme) {
+                    binding.root.background = DisplayTheme.hotFocusBackground()
+                    binding.channelName.setTextColor(Color.parseColor("#0A1426"))
+                    binding.channelNumber.setTextColor(Color.parseColor("#0A1426"))
+                    binding.qualityTag.setTextColor(Color.parseColor("#0A1426"))
+                    binding.favoriteIndicator.setColorFilter(Color.parseColor("#0A1426"))
+                } else {
+                    binding.root.setBackgroundResource(R.drawable.bg_sidebar_selected)
+                    binding.channelName.setTextColor(Color.WHITE)
+                    binding.channelNumber.setTextColor(Color.WHITE)
+                    binding.qualityTag.setTextColor(Color.WHITE)
+                    binding.favoriteIndicator.setColorFilter(Color.WHITE)
+                }
             } else {
-                binding.root.setBackgroundColor(Color.TRANSPARENT)
+                if (hotPlayerTheme) {
+                    binding.root.background = DisplayTheme.hotPanelBackground()
+                    binding.channelNumber.setTextColor(Color.parseColor("#0A1426"))
+                    binding.qualityTag.setTextColor(DisplayTheme.hotBlueColor())
+                } else {
+                    binding.root.setBackgroundColor(Color.TRANSPARENT)
+                }
                 binding.channelName.setTextColor(Color.WHITE)
-                binding.channelNumber.setTextColor(Color.parseColor("#808080"))
-                binding.qualityTag.setTextColor(Color.parseColor("#808080"))
+                if (!hotPlayerTheme) {
+                    binding.channelNumber.setTextColor(Color.parseColor("#808080"))
+                    binding.qualityTag.setTextColor(Color.parseColor("#808080"))
+                }
                 binding.favoriteIndicator.setColorFilter(Color.parseColor("#808080"))
             }
         }

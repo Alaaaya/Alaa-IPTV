@@ -17,6 +17,8 @@ import com.alaa.iptv.databinding.ActivityMoviesBinding
 import com.alaa.iptv.ui.dashboard.SidebarAdapter
 import com.alaa.iptv.ui.dashboard.SidebarItem
 import com.alaa.iptv.ui.player.PlayerActivity
+import com.alaa.iptv.ui.settings.SettingsActivity
+import com.alaa.iptv.ui.theme.DisplayTheme
 import kotlinx.coroutines.launch
 
 class MoviesActivity : AppCompatActivity() {
@@ -34,6 +36,7 @@ class MoviesActivity : AppCompatActivity() {
 
         prefs = AppPreferences(this)
         repository = MediaRepository(prefs, this)
+        DisplayTheme.applyMovies(binding, prefs)
 
         setupSidebar()
         setupMoviesGrid()
@@ -48,12 +51,12 @@ class MoviesActivity : AppCompatActivity() {
             SidebarItem(getString(R.string.menu_movies), R.drawable.ic_movies, true) { /* Already here */ },
             SidebarItem(getString(R.string.menu_series), R.drawable.ic_series, false) { openMain(MainActivity.MODE_SERIES) },
             SidebarItem(getString(R.string.menu_favorites), R.drawable.ic_favorite, false) { },
-            SidebarItem(getString(R.string.menu_settings), R.drawable.ic_settings, false) { }
+            SidebarItem(getString(R.string.menu_settings), R.drawable.ic_settings, false) { startActivity(Intent(this, SettingsActivity::class.java)) }
         )
 
         binding.sidebarRecyclerView.apply {
             layoutManager = LinearLayoutManager(this@MoviesActivity)
-            adapter = SidebarAdapter(items) { it.action.invoke() }
+            adapter = SidebarAdapter(items, prefs.isHotPlayerTheme) { it.action.invoke() }
         }
     }
 
@@ -105,7 +108,7 @@ class MoviesActivity : AppCompatActivity() {
                     result.onSuccess { loadedMovies ->
                         movies = loadedMovies
                         binding.moviesCount.text = "${movies.size} فيلم"
-                        binding.moviesRecyclerView.adapter = MovieAdapter(movies, ::playMovie)
+                        binding.moviesRecyclerView.adapter = MovieAdapter(movies, prefs.isHotPlayerTheme, ::playMovie)
                     }.onFailure { error ->
                         Log.e(TAG, "Unable to load movies", error)
                     }

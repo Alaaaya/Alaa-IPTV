@@ -20,6 +20,8 @@ import com.alaa.iptv.ui.main.MainActivity
 import com.alaa.iptv.ui.main.MoviesActivity
 import com.alaa.iptv.ui.main.SeriesActivity
 import com.alaa.iptv.ui.player.PlayerActivity
+import com.alaa.iptv.ui.settings.SettingsActivity
+import com.alaa.iptv.ui.theme.DisplayTheme
 import com.alaa.iptv.utils.UpdateChecker
 import com.bumptech.glide.Glide
 import kotlinx.coroutines.launch
@@ -58,6 +60,7 @@ class DashboardActivity : AppCompatActivity() {
 
         prefs = AppPreferences(this)
         repository = MediaRepository(prefs, this)
+        DisplayTheme.applyDashboard(binding, prefs)
 
         setupSidebar()
         setupHeroBanner()
@@ -92,10 +95,10 @@ class DashboardActivity : AppCompatActivity() {
             SidebarItem(getString(R.string.menu_recent), R.drawable.ic_recent, false) { showToast("قريباً") },
             SidebarItem(getString(R.string.menu_categories), R.drawable.ic_categories, false) { showToast("قريباً") },
             SidebarItem(getString(R.string.menu_server), R.drawable.ic_server, false) { showToast("قريباً") },
-            SidebarItem(getString(R.string.menu_settings), R.drawable.ic_settings, false) { showToast("قريباً") }
+            SidebarItem(getString(R.string.menu_settings), R.drawable.ic_settings, false) { startActivity(Intent(this, SettingsActivity::class.java)) }
         )
 
-        val adapter = SidebarAdapter(items) { item ->
+        val adapter = SidebarAdapter(items, prefs.isHotPlayerTheme) { item ->
             item.action.invoke()
         }
 

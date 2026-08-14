@@ -7,9 +7,11 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.alaa.iptv.R
 import com.alaa.iptv.databinding.ItemSidebarBinding
+import com.alaa.iptv.ui.theme.DisplayTheme
 
 class SidebarAdapter(
     private val items: List<SidebarItem>,
+    private val hotPlayerTheme: Boolean = false,
     private val onItemClick: (SidebarItem) -> Unit
 ) : RecyclerView.Adapter<SidebarAdapter.ViewHolder>() {
 
@@ -41,13 +43,9 @@ class SidebarAdapter(
             binding.sidebarTitle.text = item.title
 
             if (isSelected) {
-                binding.root.setBackgroundResource(R.drawable.bg_sidebar_selected)
-                binding.sidebarIcon.setColorFilter(ContextCompat.getColor(binding.root.context, R.color.white))
-                binding.sidebarTitle.setTextColor(Color.WHITE)
+                applySelectedStyle()
             } else {
-                binding.root.setBackgroundResource(android.R.color.transparent)
-                binding.sidebarIcon.setColorFilter(ContextCompat.getColor(binding.root.context, R.color.text_secondary))
-                binding.sidebarTitle.setTextColor(ContextCompat.getColor(binding.root.context, R.color.text_secondary))
+                applyUnselectedStyle()
             }
         }
 
@@ -56,8 +54,28 @@ class SidebarAdapter(
             val isSelected = pos == selectedPosition
 
             if (hasFocus || isSelected) {
+                applySelectedStyle()
+            } else {
+                applyUnselectedStyle()
+            }
+        }
+
+        private fun applySelectedStyle() {
+            if (hotPlayerTheme) {
+                binding.root.background = DisplayTheme.hotFocusBackground()
+                binding.sidebarIcon.setColorFilter(Color.parseColor("#0A1426"))
+                binding.sidebarTitle.setTextColor(Color.parseColor("#0A1426"))
+            } else {
                 binding.root.setBackgroundResource(R.drawable.bg_sidebar_selected)
                 binding.sidebarIcon.setColorFilter(ContextCompat.getColor(binding.root.context, R.color.white))
+                binding.sidebarTitle.setTextColor(Color.WHITE)
+            }
+        }
+
+        private fun applyUnselectedStyle() {
+            if (hotPlayerTheme) {
+                binding.root.background = DisplayTheme.hotPanelBackground()
+                binding.sidebarIcon.setColorFilter(Color.WHITE)
                 binding.sidebarTitle.setTextColor(Color.WHITE)
             } else {
                 binding.root.setBackgroundResource(android.R.color.transparent)
