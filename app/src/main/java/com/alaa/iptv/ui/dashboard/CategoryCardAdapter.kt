@@ -20,6 +20,7 @@ class CategoryCardAdapter(
             binding.root.isFocusableInTouchMode = true
 
             binding.root.setOnFocusChangeListener { _, hasFocus ->
+                binding.focusOutline.visibility = if (hasFocus) android.view.View.VISIBLE else android.view.View.GONE
                 if (hasFocus) {
                     binding.root.scaleX = 1.05f
                     binding.root.scaleY = 1.05f
@@ -42,9 +43,10 @@ class CategoryCardAdapter(
         fun bind(item: CategoryItem) {
             binding.categoryName.text = item.name
             binding.categoryCount.text = if (item.count > 0) item.count.toString() else ""
+            binding.categoryBackdrop.setImageResource(item.backgroundRes)
             binding.categoryIcon.setImageResource(item.iconRes)
-            binding.categoryIcon.setColorFilter(Color.parseColor(item.colorHex))
-            binding.cardBackground.setCardBackgroundColor(Color.parseColor(item.colorHex + "20")) // 20 = 12% opacity
+            binding.categoryIcon.setColorFilter(Color.WHITE)
+            binding.cardBackground.setCardBackgroundColor(Color.TRANSPARENT)
         }
     }
 
