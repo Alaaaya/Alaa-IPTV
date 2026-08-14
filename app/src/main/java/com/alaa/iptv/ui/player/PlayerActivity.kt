@@ -2,6 +2,7 @@ package com.alaa.iptv.ui.player
 
 import android.net.Uri
 import android.os.Bundle
+import android.os.SystemClock
 import android.annotation.SuppressLint
 import android.util.Log
 import android.view.KeyEvent
@@ -44,6 +45,8 @@ class PlayerActivity : AppCompatActivity() {
     private var channelName: String? = null
     private var streamType: String? = null
     private var channelIndex = -1
+    private var alternateLiveUrlAttempted: String? = null
+    private var playerOpenedAtMs = 0L
 
     private data class TrackOption(
         val type: Int,
@@ -54,6 +57,7 @@ class PlayerActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        playerOpenedAtMs = SystemClock.elapsedRealtime()
         binding = ActivityPlayerBinding.inflate(layoutInflater)
         setContentView(binding.root)
         val displayPrefs = AppPreferences(this)
@@ -68,6 +72,7 @@ class PlayerActivity : AppCompatActivity() {
         binding.channelNameText.text = channelName ?: ""
         binding.trackSelectionButton.setOnClickListener { showTrackSelection() }
         binding.errorText.setOnClickListener {
+            alternateLiveUrlAttempted = null
             streamUrl?.takeIf { it.isNotBlank() }?.let(::initializePlayer)
         }
 
@@ -113,9 +118,9 @@ class PlayerActivity : AppCompatActivity() {
             // Configure HTTP data source to allow cleartext and custom headers
             val httpDataSourceFactory = DefaultHttpDataSource.Factory()
                 .setAllowCrossProtocolRedirects(true)
-                .setUserAgent("AlaaPlayer/2.1.9 (Android TV; Media3)")
-                .setConnectTimeoutMs(5_000)
-                .setReadTimeoutMs(8_000)
+                .setUserAgent("Mozilla/5.0 (Linux; Android 11; Android TV) AppleWebKit/537.36 Chrome/120.0 Mobile Safari/537.36")
+                .setConnectTimeoutMs(15_000)
+                .setReadTimeoutMs(30_000)
 
             val mediaSource = when {
                 url.endsWith(".m3u8", ignoreCase = true) || 
@@ -184,6 +189,7 @@ class PlayerActivity : AppCompatActivity() {
         override fun onPlayerError(error: PlaybackException) {
             Log.e(TAG, "❌ Player Error: ${error.errorCodeName}", error)
             showLoading(false)
+            if (tryAlternativeLiveUrl()) return
             val errorMsg = when (error.errorCode) {
                 PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED -> "فشل الاتصال بالشبكة"
                 PlaybackException.ERROR_CODE_IO_INVALID_HTTP_CONTENT_TYPE -> "نوع المحتوى غير مدعوم"
@@ -200,6 +206,28 @@ class PlayerActivity : AppCompatActivity() {
         override fun onIsPlayingChanged(isPlaying: Boolean) {
             Log.d(TAG, "▶️ isPlaying changed: $isPlaying")
         }
+    }
+
+    private fun tryAlternativeLiveUrl(): Boolean {
+        if (!streamType.equals("live", ignoreCase = true)) return false
+        val currentUrl = streamUrl ?: return false
+        val pathWithoutQuery = currentUrl.substringBefore('?')
+        val replacement = when {
+            pathWithoutQuery.endsWith(".ts", ignoreCase = true) -> ".m3u8"
+            pathWithoutQuery.endsWith(".m3u8", ignoreCase = true) -> ".ts"
+            else -> return false
+        }
+        val alternativeUrl = currentUrl.replace(
+            Regex("\\.(ts|m3u8)(?=\\?|$)", RegexOption.IGNORE_CASE),
+            replacement
+        )
+        if (alternativeUrl == currentUrl || alternativeUrl == alternateLiveUrlAttempted) return false
+
+        alternateLiveUrlAttempted = alternativeUrl
+        streamUrl = alternativeUrl
+        Log.w(TAG, "↻ Retrying live stream with alternate container")
+        initializePlayer(alternativeUrl)
+        return true
     }
 
     private fun hideChannelName() {
@@ -311,6 +339,7 @@ class PlayerActivity : AppCompatActivity() {
 
         channelIndex = nextIndex
         streamUrl = nextChannel.streamUrl
+        alternateLiveUrlAttempted = null
         channelName = nextChannel.name
         streamType = nextChannel.streamType
         binding.channelNameText.text = nextChannel.name
@@ -322,6 +351,7 @@ class PlayerActivity : AppCompatActivity() {
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         return when (keyCode) {
             KeyEvent.KEYCODE_BACK, KeyEvent.KEYCODE_ESCAPE -> {
+                if (SystemClock.elapsedRealtime() - playerOpenedAtMs < 1_500L) return true
                 finish()
                 true
             }
