@@ -73,7 +73,7 @@ class MainActivity : AppCompatActivity() {
         setupLiveCategoriesList()
         binding.filterAll.setOnClickListener { focusSelectedCategory() }
         binding.channelCounterFooter.setOnClickListener { loadMoreChannels() }
-        loadLiveCategories()
+        if (currentMode == MODE_FAVORITES) loadFavoriteChannels() else loadLiveCategories()
     }
 
     private fun setupChannelsList() {
@@ -95,7 +95,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupLiveCategoriesList() {
-        liveCategoryAdapter = LiveCategoryAdapter(::selectLiveCategory)
+        liveCategoryAdapter = LiveCategoryAdapter { category ->
+            if (currentMode == MODE_FAVORITES) {
+                binding.channelsRecyclerView.findViewHolderForAdapterPosition(0)?.itemView?.requestFocus()
+                    ?: binding.channelsRecyclerView.requestFocus()
+            } else {
+                selectLiveCategory(category)
+            }
+        }
         binding.liveCategoriesRecyclerView.apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             adapter = liveCategoryAdapter
@@ -124,6 +131,24 @@ class MainActivity : AppCompatActivity() {
                 showContentError(e)
             }
         }
+    }
+
+    private fun loadFavoriteChannels() {
+        val favoriteChannels = prefs.getFavoriteChannels().map { it.copy(isFavorite = true) }
+        val favoritesCategory = Category(
+            categoryId = "favorites",
+            categoryName = "المفضلة",
+            channelCount = favoriteChannels.size
+        )
+        liveCategories = listOf(favoritesCategory)
+        selectedLiveCategory = favoritesCategory
+        currentLivePage = 0
+        hasMoreLivePages = false
+        binding.filterAll.text = "المفضلة"
+        binding.categoryTitle.text = "القنوات المفضلة"
+        liveCategoryAdapter.submit(liveCategories, favoritesCategory.categoryId)
+        allChannels = decorateChannels(favoriteChannels).filter { it.isFavorite }
+        updateChannelList()
     }
 
     private fun selectLiveCategory(category: Category) {
@@ -268,6 +293,7 @@ class MainActivity : AppCompatActivity() {
         val adding = favorites.add(key)
         if (!adding) favorites.remove(key)
         prefs.saveFavorites(favorites)
+        if (adding) prefs.saveFavoriteChannel(channel) else prefs.removeFavoriteChannel(channel)
 
         allChannels = allChannels
             .map { item -> if (channelKey(item) == key) item.copy(isFavorite = adding) else item }

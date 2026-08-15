@@ -186,7 +186,12 @@ class MediaRepository(
             try {
                 if (isM3U()) {
                     return@withContext loadM3U(prefs.serverUrl).map { channels ->
-                        channels.drop(pageIndex * LIVE_PAGE_SIZE).take(LIVE_PAGE_SIZE)
+                        M3UCategoryMapper.page(
+                            channels = channels,
+                            categoryId = effectiveCategory,
+                            page = pageIndex,
+                            pageSize = LIVE_PAGE_SIZE
+                        )
                     }
                 }
 
@@ -251,6 +256,10 @@ class MediaRepository(
 
     suspend fun getLiveCategories(): Result<List<Category>> =
         withContext(Dispatchers.IO) {
+
+            if (isM3U()) {
+                return@withContext loadM3U(prefs.serverUrl).map(M3UCategoryMapper::categories)
+            }
 
             // كاش
             cachedCategories?.let { cached ->
