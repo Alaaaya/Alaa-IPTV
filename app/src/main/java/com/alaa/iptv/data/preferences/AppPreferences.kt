@@ -37,6 +37,7 @@ class AppPreferences(context: Context) {
         private const val KEY_LAST_LIVE_CATEGORY = "last_live_category"
         private const val KEY_LAST_MOVIE_CATEGORY = "last_movie_category"
         private const val KEY_LAST_SERIES_CATEGORY = "last_series_category"
+        private const val KEY_LAST_VISITED_SECTION = "last_visited_section"
         private const val KEY_DISPLAY_THEME = "display_theme"
         private const val KEY_CREDENTIAL_ENCRYPTION_COMPLETE = "credential_encryption_complete"
         private const val KEY_FEATURE_PREFIX = "feature_enabled_"
@@ -133,6 +134,11 @@ class AppPreferences(context: Context) {
     var lastSeriesCategoryId: String
         get() = prefs.getString(KEY_LAST_SERIES_CATEGORY, "") ?: ""
         set(value) = prefs.edit().putString(KEY_LAST_SERIES_CATEGORY, value).apply()
+
+    /** آخر قسم اختاره المستخدم، ويُستخدم فقط عند تفعيل خيار شاشة البدء المخصصة. */
+    var lastVisitedSection: String
+        get() = prefs.getString(KEY_LAST_VISITED_SECTION, "") ?: ""
+        set(value) = prefs.edit().putString(KEY_LAST_VISITED_SECTION, value).apply()
 
     var displayTheme: String
         get() = prefs.getString(KEY_DISPLAY_THEME, THEME_ALAA_CLASSIC) ?: THEME_ALAA_CLASSIC

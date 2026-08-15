@@ -49,6 +49,7 @@ class DashboardActivity : AppCompatActivity() {
     private var allChannels: List<Channel> = emptyList()
     private var allMovies: List<Channel> = emptyList()
     private var allSeries: List<Channel> = emptyList()
+    private var smartStartHandled = false
 
     private val updateTimeRunnable = object : Runnable {
         override fun run() {
@@ -76,7 +77,7 @@ class DashboardActivity : AppCompatActivity() {
         checkUpdates()
         startClock()
         refreshControlPlane(force = true) {
-            binding.root.post { loadContent() }
+            if (!applySmartStart()) binding.root.post { loadContent() }
         }
     }
 
@@ -395,12 +396,46 @@ class DashboardActivity : AppCompatActivity() {
             refreshControlPlane()
             return
         }
+        prefs.lastVisitedSection = mode
         val intent = when (mode) {
             MainActivity.MODE_MOVIES -> Intent(this, MoviesActivity::class.java)
             MainActivity.MODE_SERIES -> Intent(this, SeriesActivity::class.java)
             else -> Intent(this, MainActivity::class.java).apply { putExtra(MainActivity.EXTRA_MODE, mode) }
         }
         startActivity(intent)
+    }
+
+    /**
+     * لا يُنفذ إلا مرة واحدة لكل فتح للصفحة الرئيسية، ولا يجلب أي فهرس أو بيانات جديدة.
+     * أولوية البدء السريع للقناة الأخيرة؛ ثم آخر قسم محفوظ إذا اختاره المستخدم.
+     */
+    private fun applySmartStart(): Boolean {
+        if (smartStartHandled) return false
+        smartStartHandled = true
+
+        if (prefs.isFeatureEnabled(FeatureCatalog.QUICK_START)) {
+            val recent = prefs.getRecentChannels().firstOrNull { it.streamType.equals("live", ignoreCase = true) }
+            if (recent != null && recent.streamUrl.isNotBlank()) {
+                startActivity(Intent(this, PlayerActivity::class.java)
+                    .putExtra("STREAM_URL", recent.streamUrl)
+                    .putExtra("CHANNEL_NAME", recent.title)
+                    .putExtra("STREAM_TYPE", recent.streamType))
+                return true
+            }
+        }
+
+        if (prefs.isFeatureEnabled(FeatureCatalog.START_SCREEN)) {
+            when (prefs.lastVisitedSection) {
+                MainActivity.MODE_LIVE,
+                MainActivity.MODE_MOVIES,
+                MainActivity.MODE_SERIES,
+                MainActivity.MODE_FAVORITES -> {
+                    openMain(prefs.lastVisitedSection)
+                    return true
+                }
+            }
+        }
+        return false
     }
 
     private fun playContent(item: ContinueWatchingItem) {

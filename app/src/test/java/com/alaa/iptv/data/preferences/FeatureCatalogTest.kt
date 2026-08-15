@@ -23,6 +23,8 @@ class FeatureCatalogTest {
         assertFalse(FeatureCatalog.option(FeatureCatalog.MULTI_SUBSCRIPTIONS).defaultEnabled)
         assertFalse(FeatureCatalog.option(FeatureCatalog.ENCRYPTED_BACKUP).defaultEnabled)
         assertFalse(FeatureCatalog.option(FeatureCatalog.OWNER_ALERTS).defaultEnabled)
+        assertFalse(FeatureCatalog.option(FeatureCatalog.QUICK_START).defaultEnabled)
+        assertFalse(FeatureCatalog.option(FeatureCatalog.START_SCREEN).defaultEnabled)
     }
 
     @Test
