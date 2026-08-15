@@ -46,16 +46,52 @@
         app:layout_constraintBottom_toTopOf="@+id/bottomGuide"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintWidth_percent="0.4">
+        app:layout_constraintWidth_percent="0.55">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/liveCategoryPanel"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_margin="10dp"
+            android:background="#101827"
+            android:padding="10dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintWidth_percent="0.34">
+
+            <TextView
+                android:id="@+id/liveCategoriesTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="6dp"
+                android:paddingVertical="8dp"
+                android:text="الفئات"
+                android:textColor="@color/white"
+                android:textSize="17sp"
+                android:textStyle="bold"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/liveCategoriesRecyclerView"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:clipToPadding="false"
+                android:paddingBottom="8dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/liveCategoriesTitle" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
         <!-- Filter Tabs -->
         <LinearLayout
             android:id="@+id/filterTabs"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:padding="16dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/liveCategoryPanel"
             app:layout_constraintTop_toTopOf="parent">
 
             <TextView
@@ -102,17 +138,19 @@
         <!-- Recycler View -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/channelsRecyclerView"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="0dp"
             android:clipToPadding="false"
             android:padding="8dp"
             app:layout_constraintBottom_toTopOf="@+id/channelCounterFooter"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/liveCategoryPanel"
             app:layout_constraintTop_toBottomOf="@id/filterTabs" />
 
         <!-- Dynamic Counter -->
         <TextView
             android:id="@+id/channelCounterFooter"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:clickable="true"
             android:focusable="true"
@@ -121,7 +159,9 @@
             android:text="1 / 780"
             android:textColor="#808080"
             android:textSize="14sp"
-            app:layout_constraintBottom_toBottomOf="parent" />
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/liveCategoryPanel" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <!-- Preview Panel (Right Side) -->
@@ -298,7 +338,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="← رجوع"
+            android:text="← الفئات"
             android:textColor="#40FFFFFF"
             android:textSize="12sp"
             android:layout_marginHorizontal="16dp"/>

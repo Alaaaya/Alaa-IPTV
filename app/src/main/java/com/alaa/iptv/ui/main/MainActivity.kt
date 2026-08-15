@@ -3,8 +3,8 @@ package com.alaa.iptv.ui.main
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.view.KeyEvent
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -18,7 +18,6 @@ import com.alaa.iptv.databinding.ActivityMainBinding
 import com.alaa.iptv.ui.player.PlayerActivity
 import com.alaa.iptv.ui.player.PlayableChannel
 import com.alaa.iptv.ui.player.PlayerChannelNavigator
-import com.alaa.iptv.ui.categories.CategoryPickerActivity
 import com.alaa.iptv.ui.theme.DisplayTheme
 import com.bumptech.glide.Glide
 import kotlinx.coroutines.launch
@@ -38,19 +37,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var prefs: AppPreferences
     private lateinit var repository: MediaRepository
     private lateinit var channelAdapter: ChannelAdapter
+    private lateinit var liveCategoryAdapter: LiveCategoryAdapter
     private var allChannels: List<Channel> = emptyList()
     private var currentMode = MODE_LIVE
     private var liveCategories: List<Category> = emptyList()
     private var selectedLiveCategory: Category? = null
     private var currentLivePage = 0
     private var hasMoreLivePages = false
-    private val liveCategoryPicker = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        val categoryId = result.data?.getStringExtra(CategoryPickerActivity.EXTRA_CATEGORY_ID) ?: return@registerForActivityResult
-        liveCategories.firstOrNull { it.categoryId == categoryId }?.let(::selectLiveCategory)
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -75,7 +68,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         setupChannelsList()
-        binding.filterAll.setOnClickListener { showLiveCategorySelector() }
+        setupLiveCategoriesList()
+        binding.filterAll.setOnClickListener { focusSelectedCategory() }
         binding.channelCounterFooter.setOnClickListener { loadMoreChannels() }
         loadLiveCategories()
     }
@@ -98,6 +92,14 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun setupLiveCategoriesList() {
+        liveCategoryAdapter = LiveCategoryAdapter(::selectLiveCategory)
+        binding.liveCategoriesRecyclerView.apply {
+            layoutManager = LinearLayoutManager(this@MainActivity)
+            adapter = liveCategoryAdapter
+        }
+    }
+
     private fun loadLiveCategories() {
         lifecycleScope.launch {
             try {
@@ -107,6 +109,7 @@ class MainActivity : AppCompatActivity() {
                     return@launch
                 }
                 liveCategories = categoriesResult.getOrDefault(emptyList())
+                liveCategoryAdapter.submit(liveCategories, prefs.lastLiveCategoryId)
                 val selected = liveCategories.firstOrNull { it.categoryId == prefs.lastLiveCategoryId }
                     ?: liveCategories.firstOrNull()
                 if (selected == null) {
@@ -121,20 +124,14 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun showLiveCategorySelector() {
-        if (liveCategories.isEmpty()) return
-        liveCategoryPicker.launch(
-            CategoryPickerActivity.createIntent(this, "فئات القنوات", liveCategories)
-        )
-    }
-
     private fun selectLiveCategory(category: Category) {
         prefs.lastLiveCategoryId = category.categoryId
         selectedLiveCategory = category
         currentLivePage = 0
         hasMoreLivePages = false
-        binding.filterAll.text = category.categoryName
+        binding.filterAll.text = "الفئات"
         binding.categoryTitle.text = "البث المباشر / ${category.categoryName}"
+        liveCategoryAdapter.submit(liveCategories, category.categoryId)
         loadContent(category.categoryId, page = 0, append = false)
     }
 
@@ -327,6 +324,31 @@ class MainActivity : AppCompatActivity() {
                 .putExtra("STREAM_TYPE", channel.streamType)
                 .putExtra(PlayerActivity.EXTRA_CHANNEL_INDEX, playerIndex)
         )
+    }
+
+    private fun focusSelectedCategory() {
+        if (liveCategories.isEmpty()) return
+        val position = liveCategories.indexOfFirst { it.categoryId == selectedLiveCategory?.categoryId }
+            .takeIf { it >= 0 } ?: 0
+        binding.liveCategoriesRecyclerView.scrollToPosition(position)
+        binding.liveCategoriesRecyclerView.post {
+            binding.liveCategoriesRecyclerView.findViewHolderForAdapterPosition(position)
+                ?.itemView?.requestFocus()
+                ?: binding.liveCategoriesRecyclerView.requestFocus()
+        }
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT && binding.channelsRecyclerView.hasFocus()) {
+            focusSelectedCategory()
+            return true
+        }
+        if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && binding.liveCategoriesRecyclerView.hasFocus()) {
+            binding.channelsRecyclerView.findViewHolderForAdapterPosition(0)?.itemView?.requestFocus()
+                ?: binding.channelsRecyclerView.requestFocus()
+            return true
+        }
+        return super.onKeyDown(keyCode, event)
     }
 
 }
