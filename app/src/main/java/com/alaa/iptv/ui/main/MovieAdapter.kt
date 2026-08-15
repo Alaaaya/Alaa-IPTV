@@ -61,6 +61,7 @@ class MovieAdapter(
             binding.movieTitle.text = movie.name
             setOptionalText(binding.ratingBadge, movie.rating)
             setOptionalText(binding.yearText, movie.year ?: movie.releaseDate)
+            setOptionalText(binding.contentBadge, qualityOrNewBadge(movie.name, movie.year ?: movie.releaseDate))
 
             Glide.with(binding.root.context)
                 .load(movie.streamIcon)
@@ -85,6 +86,14 @@ class MovieAdapter(
             val text = value?.trim().orEmpty()
             view.text = text
             view.visibility = if (text.isEmpty()) android.view.View.GONE else android.view.View.VISIBLE
+        }
+
+        private fun qualityOrNewBadge(name: String, date: String?): String? = when {
+            name.contains("4k", ignoreCase = true) || name.contains("uhd", ignoreCase = true) -> "4K"
+            name.contains("fhd", ignoreCase = true) || name.contains("1080", ignoreCase = true) -> "FHD"
+            name.contains("hd", ignoreCase = true) -> "HD"
+            date?.startsWith("2026") == true -> "جديد"
+            else -> null
         }
     }
 

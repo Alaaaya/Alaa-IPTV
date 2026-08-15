@@ -79,7 +79,19 @@ class SeriesDetailsActivity : AppCompatActivity() {
                                     streamUrl = episode.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password)
                                 )
                             })
-                            binding.episodesRecyclerView.adapter = EpisodeAdapter(episodes, ::playEpisode)
+                            val completedTitles = prefs.getPlaybackHistory()
+                                .filter { entry ->
+                                    entry.streamType.equals("series", ignoreCase = true) &&
+                                        entry.durationMs > 0L && entry.positionMs * 100L >= entry.durationMs * 90L
+                                }
+                                .map { it.title }
+                                .toSet()
+                            binding.episodesRecyclerView.adapter = EpisodeAdapter(
+                                episodes = episodes,
+                                onEpisodeClick = ::playEpisode,
+                                completedEpisodeTitles = completedTitles,
+                                seriesName = series.name
+                            )
                         }
                     }
                     .onFailure { error ->

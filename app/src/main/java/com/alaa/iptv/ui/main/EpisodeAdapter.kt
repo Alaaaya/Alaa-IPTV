@@ -11,7 +11,9 @@ import com.alaa.iptv.ui.navigation.FocusBoundaryPolicy
 
 class EpisodeAdapter(
     private val episodes: List<Episode>,
-    private val onEpisodeClick: (Episode, Int) -> Unit
+    private val onEpisodeClick: (Episode, Int) -> Unit,
+    private val completedEpisodeTitles: Set<String> = emptySet(),
+    private val seriesName: String = ""
 ) : RecyclerView.Adapter<EpisodeAdapter.EpisodeViewHolder>() {
 
     inner class EpisodeViewHolder(private val binding: ItemEpisodeBinding) :
@@ -49,6 +51,12 @@ class EpisodeAdapter(
                 episode.info?.rating?.takeIf { it.isNotBlank() }?.let { "★ $it" }
             )
             binding.episodeMeta.text = details.joinToString("  •  ")
+            val fullTitle = "$seriesName - ${episode.title}"
+            binding.episodeCompletedBadge.visibility = if (completedEpisodeTitles.contains(fullTitle)) {
+                android.view.View.VISIBLE
+            } else {
+                android.view.View.GONE
+            }
         }
     }
 
