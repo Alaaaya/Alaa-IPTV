@@ -7,9 +7,12 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.alaa.iptv.R
 import com.alaa.iptv.data.models.Category
+import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.databinding.ItemLiveCategoryBinding
+import com.alaa.iptv.ui.theme.DisplayTheme
 
 class LiveCategoryAdapter(
+    private val displayTheme: String = AppPreferences.THEME_ALAA_CLASSIC,
     private val onCategorySelected: (Category) -> Unit
 ) : RecyclerView.Adapter<LiveCategoryAdapter.CategoryViewHolder>() {
     private var categories: List<Category> = emptyList()
@@ -47,16 +50,38 @@ class LiveCategoryAdapter(
         }
 
         fun bind(category: Category) {
-            binding.categoryName.text = category.categoryName
+            val spec = DisplayTheme.liveCategorySpec(displayTheme)
+            val suffix = if (spec.labelPrefix == "[ ") " ]" else ""
+            binding.categoryName.text = "${spec.labelPrefix}${category.categoryName}$suffix"
+            binding.categoryName.textSize = spec.textSizeSp
+            val density = binding.root.resources.displayMetrics.density
+            binding.root.layoutParams = binding.root.layoutParams.apply {
+                height = (spec.itemHeightDp * density).toInt()
+            }
+            val horizontalPadding = if (spec.spanCount > 1) 8 else 14
+            binding.categoryName.setPadding((horizontalPadding * density).toInt(), (6 * density).toInt(), (horizontalPadding * density).toInt(), (6 * density).toInt())
             render(category)
         }
 
         private fun render(category: Category) {
             val highlighted = binding.root.hasFocus() || category.categoryId == selectedCategoryId
-            binding.root.setBackgroundResource(
-                if (highlighted) R.drawable.bg_live_category_selected else R.drawable.bg_live_category_default
-            )
-            binding.categoryName.setTextColor(if (highlighted) Color.WHITE else Color.parseColor("#D8E1EF"))
+            if (DisplayTheme.hasCustomTheme(displayTheme)) {
+                binding.root.background = if (highlighted) {
+                    DisplayTheme.focusBackground(displayTheme)
+                } else {
+                    DisplayTheme.panelBackground(displayTheme)
+                }
+                binding.categoryName.setTextColor(
+                    if (highlighted) DisplayTheme.focusTextColor(displayTheme) else DisplayTheme.metadataColor(displayTheme)
+                )
+                binding.root.scaleX = if (binding.root.hasFocus()) 1.025f else 1f
+                binding.root.scaleY = if (binding.root.hasFocus()) 1.025f else 1f
+            } else {
+                binding.root.setBackgroundResource(
+                    if (highlighted) R.drawable.bg_live_category_selected else R.drawable.bg_live_category_default
+                )
+                binding.categoryName.setTextColor(if (highlighted) Color.WHITE else Color.parseColor("#D8E1EF"))
+            }
         }
     }
 }

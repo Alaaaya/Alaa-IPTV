@@ -21,4 +21,31 @@ class ThemeCatalogTest {
             assertTrue(DisplayTheme.categoryCardStyle(option.id).focusScale >= 1f)
         }
     }
+
+    @Test
+    fun `ten new themes expose distinct structural layouts not only palette changes`() {
+        val newThemeIds = ThemeCatalog.options.drop(7).map { it.id }
+        assertEquals(10, newThemeIds.size)
+
+        val signatures = newThemeIds.map { id ->
+            val live = DisplayTheme.liveCategorySpec(id)
+            val channel = DisplayTheme.channelRowSpec(id)
+            val card = DisplayTheme.dashboardCardSpec(id)
+            listOf(
+                live.placement.name,
+                live.spanCount.toString(),
+                live.itemHeightDp.toString(),
+                channel.heightDp.toString(),
+                channel.showNumber.toString(),
+                card.widthDp.toString(),
+                card.heightDp.toString(),
+                DisplayTheme.mediaGridSpan(id).toString()
+            ).joinToString("|")
+        }
+
+        assertEquals(10, signatures.toSet().size)
+        assertTrue(newThemeIds.any { DisplayTheme.liveCategorySpec(it).placement == DisplayTheme.LiveCategoryPlacement.TOP_RAIL })
+        assertTrue(newThemeIds.any { DisplayTheme.liveCategorySpec(it).placement == DisplayTheme.LiveCategoryPlacement.SIDE_GRID })
+        assertTrue(newThemeIds.any { DisplayTheme.liveCategorySpec(it).placement == DisplayTheme.LiveCategoryPlacement.SIDE_LIST })
+    }
 }

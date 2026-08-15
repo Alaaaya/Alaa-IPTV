@@ -74,7 +74,7 @@ class MoviesActivity : AppCompatActivity() {
 
     private fun setupMoviesGrid() {
         binding.moviesRecyclerView.apply {
-            layoutManager = GridLayoutManager(this@MoviesActivity, 5) // 5 columns as in image
+            layoutManager = GridLayoutManager(this@MoviesActivity, DisplayTheme.mediaGridSpan(prefs.displayTheme))
             addOnScrollListener(object : RecyclerView.OnScrollListener() {
                 override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                     if (dy <= 0 || isLoadingMovies || !hasMoreMoviePages) return

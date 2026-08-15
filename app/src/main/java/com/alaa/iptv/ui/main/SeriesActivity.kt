@@ -73,7 +73,7 @@ class SeriesActivity : AppCompatActivity() {
 
     private fun setupSeriesGrid() {
         binding.seriesRecyclerView.apply {
-            layoutManager = GridLayoutManager(this@SeriesActivity, 5)
+            layoutManager = GridLayoutManager(this@SeriesActivity, DisplayTheme.mediaGridSpan(prefs.displayTheme))
             addOnScrollListener(object : RecyclerView.OnScrollListener() {
                 override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                     if (dy <= 0 || isLoadingSeries || !hasMoreSeriesPages) return
