@@ -18,6 +18,7 @@ import com.alaa.iptv.databinding.ActivitySettingsBinding
 import com.alaa.iptv.ui.dashboard.DashboardActivity
 import com.alaa.iptv.ui.theme.ThemeCatalog
 import com.alaa.iptv.ui.common.ControlPlaneActivityGuard
+import com.alaa.iptv.utils.ConnectionDiagnostics
 import kotlinx.coroutines.launch
 import java.text.DateFormat
 import java.util.Date
@@ -66,6 +67,18 @@ class SettingsActivity : AppCompatActivity() {
                     Toast.makeText(this@SettingsActivity, "تمت مزامنة حالة الجهاز والإعدادات.", Toast.LENGTH_SHORT).show()
                 }
                 binding.manualSyncButton.isEnabled = true
+            }
+        }
+        binding.connectionTestButton.setOnClickListener {
+            lifecycleScope.launch {
+                binding.connectionTestButton.isEnabled = false
+                binding.connectionTestState.text = "جاري فحص الاتصال…"
+                val result = ConnectionDiagnostics.inspect(this@SettingsActivity, prefs.serverUrl)
+                binding.connectionTestState.text = result.summary
+                if (!result.serverReachable && prefs.isFeatureEnabled(FeatureCatalog.SAFE_ERROR_LOG)) {
+                    prefs.addSafeDiagnostic("connection-diagnostics")
+                }
+                binding.connectionTestButton.isEnabled = true
             }
         }
         binding.backButton.setOnClickListener { finish() }
