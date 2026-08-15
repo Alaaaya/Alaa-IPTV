@@ -4,11 +4,13 @@ import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.view.View
+import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.Switch
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.alaa.iptv.R
@@ -41,6 +43,11 @@ class SettingsActivity : AppCompatActivity() {
         updateSyncState()
         buildThemeOptions()
         buildOptionalFeatureSettings()
+        addPermissionsInfoAction()
+        updateDiagnosticsVisibility()
+        if (prefs.isFeatureEnabled(FeatureCatalog.SETTINGS_LOCK) && prefs.getActiveProfile().pinHash.isNotBlank()) {
+            requestSettingsUnlock()
+        }
 
         binding.themeGroup.setOnCheckedChangeListener { _, checkedId ->
             val newTheme = themeButtons.entries.firstOrNull { it.value.id == checkedId }?.key
@@ -158,6 +165,7 @@ class SettingsActivity : AppCompatActivity() {
                     ).apply { bottomMargin = dp(8) }
                     setOnCheckedChangeListener { _, enabled ->
                         prefs.setFeatureEnabled(feature.id, enabled)
+                        if (feature.id == FeatureCatalog.HIDE_DIAGNOSTICS) updateDiagnosticsVisibility()
                         Toast.makeText(
                             this@SettingsActivity,
                             "${feature.title}: ${if (enabled) "مفعّلة" else "متوقفة"}",
@@ -168,6 +176,50 @@ class SettingsActivity : AppCompatActivity() {
                 binding.featureSettingsContainer.addView(toggle)
             }
         }
+    }
+
+    private fun requestSettingsUnlock() {
+        val input = EditText(this).apply {
+            hint = "رمز PIN للمالك"
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD
+        }
+        AlertDialog.Builder(this)
+            .setTitle("الإعدادات مقفلة")
+            .setMessage("أدخل رمز PIN للملف الحالي لفتح إعدادات Alaa Player.")
+            .setView(input)
+            .setCancelable(false)
+            .setPositiveButton("فتح") { _, _ ->
+                if (!prefs.switchProfile(prefs.activeProfileId, input.text.toString())) {
+                    Toast.makeText(this, "رمز PIN غير صحيح", Toast.LENGTH_SHORT).show()
+                    requestSettingsUnlock()
+                }
+            }
+            .setNegativeButton("خروج") { _, _ -> finish() }
+            .show()
+    }
+
+    private fun addPermissionsInfoAction() {
+        if (!prefs.isFeatureEnabled(FeatureCatalog.PERMISSIONS_INFO)) return
+        binding.featureSettingsContainer.addView(android.widget.Button(this).apply {
+            text = "لماذا يطلب التطبيق هذه الأذونات؟"
+            isAllCaps = false
+            setOnClickListener {
+                AlertDialog.Builder(this@SettingsActivity)
+                    .setTitle("الأذونات والخصوصية")
+                    .setMessage("الاتصال بالإنترنت ضروري لجلب قوائم IPTV وتشغيل البث. لا يطلب Alaa Player صلاحيات الموقع أو جهات الاتصال أو الرسائل. تستخدم مساحة التخزين المؤقتة فقط لحفظ صور البوسترات والبيانات المؤقتة ويمكن مسحها من هذه الصفحة.")
+                    .setPositiveButton("حسناً", null)
+                    .show()
+            }
+        })
+    }
+
+    private fun updateDiagnosticsVisibility() {
+        val visibility = if (prefs.isFeatureEnabled(FeatureCatalog.HIDE_DIAGNOSTICS)) View.GONE else View.VISIBLE
+        binding.tvIdValue.visibility = visibility
+        binding.syncStateValue.visibility = visibility
+        binding.manualSyncButton.visibility = visibility
+        binding.connectionTestState.visibility = visibility
+        binding.connectionTestButton.visibility = visibility
     }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
