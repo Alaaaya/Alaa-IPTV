@@ -34,6 +34,16 @@ class AppPreferences(context: Context) {
         const val THEME_TV_MINIMAL = "tv_minimal"
         const val THEME_GLASS_UI = "glass_ui"
         const val THEME_CLASSIC_BLACK_TV = "classic_black_tv"
+        const val THEME_NEON_ARCADE = "neon_arcade"
+        const val THEME_CINEMA_SPOTLIGHT = "cinema_spotlight"
+        const val THEME_SAPPHIRE_HORIZON = "sapphire_horizon"
+        const val THEME_EMERALD_PULSE = "emerald_pulse"
+        const val THEME_AMBER_CONSOLE = "amber_console"
+        const val THEME_NORDIC_LIGHT = "nordic_light"
+        const val THEME_SUNSET_LOUNGE = "sunset_lounge"
+        const val THEME_MONO_STUDIO = "mono_studio"
+        const val THEME_OCEAN_WAVE = "ocean_wave"
+        const val THEME_ROYAL_VELVET = "royal_velvet"
     }
     
     var serverUrl: String

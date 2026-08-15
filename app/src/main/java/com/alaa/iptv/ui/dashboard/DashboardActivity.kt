@@ -162,7 +162,7 @@ class DashboardActivity : AppCompatActivity() {
 
     private fun updateCategories(categories: List<CategoryItem>) {
         if (_binding == null) return
-        val adapter = CategoryCardAdapter(categories) { category ->
+        val adapter = CategoryCardAdapter(categories, prefs.displayTheme) { category ->
             when (category.type) {
                 "live" -> openMain(MainActivity.MODE_LIVE)
                 "movie" -> openMain(MainActivity.MODE_MOVIES)
@@ -171,7 +171,8 @@ class DashboardActivity : AppCompatActivity() {
             }
         }
         binding.categoriesRecyclerView.apply {
-            layoutManager = GridLayoutManager(this@DashboardActivity, 1, GridLayoutManager.HORIZONTAL, false)
+            val gridStyle = DisplayTheme.dashboardCategoryGrid(prefs.displayTheme)
+            layoutManager = GridLayoutManager(this@DashboardActivity, gridStyle.spanCount, gridStyle.orientation, false)
             this.adapter = adapter
         }
     }

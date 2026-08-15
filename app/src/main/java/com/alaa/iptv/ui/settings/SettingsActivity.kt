@@ -1,17 +1,23 @@
 package com.alaa.iptv.ui.settings
 
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
+import android.view.View
+import android.widget.RadioButton
+import android.widget.RadioGroup
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.alaa.iptv.R
 import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.databinding.ActivitySettingsBinding
 import com.alaa.iptv.ui.dashboard.DashboardActivity
+import com.alaa.iptv.ui.theme.ThemeCatalog
 
 class SettingsActivity : AppCompatActivity() {
     private lateinit var binding: ActivitySettingsBinding
     private lateinit var prefs: AppPreferences
+    private val themeButtons = mutableMapOf<String, RadioButton>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -20,37 +26,14 @@ class SettingsActivity : AppCompatActivity() {
 
         prefs = AppPreferences(this)
         binding.tvIdValue.text = prefs.getOrCreateTvId()
-        when (prefs.displayTheme) {
-            AppPreferences.THEME_MIDNIGHT_GOLD -> binding.themeMidnightGold.isChecked = true
-            AppPreferences.THEME_CRIMSON_CLASSIC -> binding.themeCrimsonClassic.isChecked = true
-            AppPreferences.THEME_MODERN_GRID -> binding.themeModernGrid.isChecked = true
-            AppPreferences.THEME_TV_MINIMAL -> binding.themeTvMinimal.isChecked = true
-            AppPreferences.THEME_GLASS_UI -> binding.themeGlassUi.isChecked = true
-            AppPreferences.THEME_CLASSIC_BLACK_TV -> binding.themeClassicBlackTv.isChecked = true
-            else -> binding.themeAlaaClassic.isChecked = true
-        }
+        buildThemeOptions()
 
         binding.themeGroup.setOnCheckedChangeListener { _, checkedId ->
-            val newTheme = when (checkedId) {
-                R.id.themeMidnightGold -> AppPreferences.THEME_MIDNIGHT_GOLD
-                R.id.themeCrimsonClassic -> AppPreferences.THEME_CRIMSON_CLASSIC
-                R.id.themeModernGrid -> AppPreferences.THEME_MODERN_GRID
-                R.id.themeTvMinimal -> AppPreferences.THEME_TV_MINIMAL
-                R.id.themeGlassUi -> AppPreferences.THEME_GLASS_UI
-                R.id.themeClassicBlackTv -> AppPreferences.THEME_CLASSIC_BLACK_TV
-                else -> AppPreferences.THEME_ALAA_CLASSIC
-            }
+            val newTheme = themeButtons.entries.firstOrNull { it.value.id == checkedId }?.key
+                ?: AppPreferences.THEME_ALAA_CLASSIC
             if (prefs.displayTheme != newTheme) {
                 prefs.displayTheme = newTheme
-                binding.selectionState.text = when (newTheme) {
-                    AppPreferences.THEME_MIDNIGHT_GOLD -> "تم اختيار مظهر Midnight Gold. اضغط تطبيق التصميم."
-                    AppPreferences.THEME_CRIMSON_CLASSIC -> "تم اختيار مظهر Crimson Classic. اضغط تطبيق التصميم."
-                    AppPreferences.THEME_MODERN_GRID -> "تم اختيار مظهر Modern Grid. اضغط تطبيق التصميم."
-                    AppPreferences.THEME_TV_MINIMAL -> "تم اختيار مظهر TV Minimal. اضغط تطبيق التصميم."
-                    AppPreferences.THEME_GLASS_UI -> "تم اختيار مظهر Glass UI الزجاجي. اضغط تطبيق التصميم."
-                    AppPreferences.THEME_CLASSIC_BLACK_TV -> "تم اختيار مظهر Classic Black TV. اضغط تطبيق التصميم."
-                    else -> "تم اختيار التصميم الأصلي لتطبيق Alaa Player. اضغط تطبيق التصميم."
-                }
+                binding.selectionState.text = "تم اختيار ${ThemeCatalog.option(newTheme).title}. اضغط تطبيق التصميم."
             }
         }
 
@@ -63,4 +46,31 @@ class SettingsActivity : AppCompatActivity() {
         }
         binding.backButton.setOnClickListener { finish() }
     }
+
+    private fun buildThemeOptions() {
+        binding.themeGroup.removeAllViews()
+        themeButtons.clear()
+        ThemeCatalog.options.forEach { option ->
+            val button = RadioButton(this).apply {
+                id = View.generateViewId()
+                text = "${option.title} — ${option.description}"
+                setTextColor(Color.WHITE)
+                textSize = 15f
+                isFocusable = true
+                setPadding(dp(12), dp(10), dp(12), dp(10))
+                setBackgroundResource(R.drawable.bg_login_input)
+                layoutParams = RadioGroup.LayoutParams(
+                    RadioGroup.LayoutParams.MATCH_PARENT,
+                    RadioGroup.LayoutParams.WRAP_CONTENT
+                ).apply { bottomMargin = dp(8) }
+            }
+            themeButtons[option.id] = button
+            binding.themeGroup.addView(button)
+        }
+        val activeTheme = ThemeCatalog.option(prefs.displayTheme).id
+        themeButtons[activeTheme]?.isChecked = true
+        binding.selectionState.text = "التصميم الحالي: ${ThemeCatalog.option(activeTheme).title}."
+    }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 }
