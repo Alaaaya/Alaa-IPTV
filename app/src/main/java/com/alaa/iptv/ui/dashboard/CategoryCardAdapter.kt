@@ -50,6 +50,15 @@ class CategoryCardAdapter(
         }
 
         fun bind(item: CategoryItem) {
+            val spec = DisplayTheme.dashboardCardSpec(theme)
+            val density = binding.root.resources.displayMetrics.density
+            binding.cardBackground.layoutParams = binding.cardBackground.layoutParams.apply {
+                width = (spec.widthDp * density).toInt()
+                height = (spec.heightDp * density).toInt()
+            }
+            binding.cardBackground.radius = spec.radiusDp * density
+            binding.categoryName.textSize = spec.titleSizeSp
+            binding.categoryCount.visibility = if (spec.showCount) android.view.View.VISIBLE else android.view.View.GONE
             binding.categoryName.text = item.name
             binding.categoryCount.text = if (item.count > 0) item.count.toString() else ""
             binding.categoryBackdrop.setImageResource(item.backgroundRes)
@@ -58,6 +67,8 @@ class CategoryCardAdapter(
             val neonColor = Color.parseColor(item.colorHex)
             val style = DisplayTheme.categoryCardStyle(theme)
             binding.categoryIcon.setColorFilter(if (style.monochrome) Color.WHITE else neonColor)
+            binding.categoryIcon.scaleX = spec.iconScale
+            binding.categoryIcon.scaleY = spec.iconScale
             binding.iconGlow.background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
                 val alpha = (70 * style.glowMultiplier).toInt().coerceAtMost(120)

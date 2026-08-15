@@ -8,6 +8,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.alaa.iptv.R
 import com.alaa.iptv.data.models.Channel
@@ -95,7 +96,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupLiveCategoriesList() {
-        liveCategoryAdapter = LiveCategoryAdapter { category ->
+        liveCategoryAdapter = LiveCategoryAdapter(prefs.displayTheme) { category ->
             if (currentMode == MODE_FAVORITES) {
                 binding.channelsRecyclerView.findViewHolderForAdapterPosition(0)?.itemView?.requestFocus()
                     ?: binding.channelsRecyclerView.requestFocus()
@@ -103,8 +104,16 @@ class MainActivity : AppCompatActivity() {
                 selectLiveCategory(category)
             }
         }
+        val categorySpec = DisplayTheme.liveCategorySpec(prefs.displayTheme)
         binding.liveCategoriesRecyclerView.apply {
-            layoutManager = LinearLayoutManager(this@MainActivity)
+            layoutManager = when (categorySpec.placement) {
+                DisplayTheme.LiveCategoryPlacement.TOP_RAIL ->
+                    LinearLayoutManager(this@MainActivity, LinearLayoutManager.HORIZONTAL, false)
+                DisplayTheme.LiveCategoryPlacement.SIDE_GRID ->
+                    GridLayoutManager(this@MainActivity, categorySpec.spanCount)
+                DisplayTheme.LiveCategoryPlacement.SIDE_LIST ->
+                    LinearLayoutManager(this@MainActivity)
+            }
             adapter = liveCategoryAdapter
         }
     }
@@ -414,6 +423,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        val categorySpec = DisplayTheme.liveCategorySpec(prefs.displayTheme)
+        if (categorySpec.placement == DisplayTheme.LiveCategoryPlacement.TOP_RAIL) {
+            if (keyCode == KeyEvent.KEYCODE_DPAD_UP && binding.channelsRecyclerView.hasFocus()) {
+                focusSelectedCategory()
+                return true
+            }
+            if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN && binding.liveCategoriesRecyclerView.hasFocus()) {
+                binding.channelsRecyclerView.findViewHolderForAdapterPosition(0)?.itemView?.requestFocus()
+                    ?: binding.channelsRecyclerView.requestFocus()
+                return true
+            }
+        }
         if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT && binding.channelsRecyclerView.hasFocus()) {
             focusSelectedCategory()
             return true

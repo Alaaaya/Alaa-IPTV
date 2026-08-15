@@ -70,6 +70,20 @@ class ChannelAdapter(
 
         fun bind(channel: Channel, isSelected: Boolean, position: Int) {
             boundChannel = channel
+            val rowSpec = DisplayTheme.channelRowSpec(displayTheme)
+            val density = binding.root.resources.displayMetrics.density
+            binding.root.layoutParams = binding.root.layoutParams.apply {
+                height = (rowSpec.heightDp * density).toInt()
+            }
+            binding.root.setPadding((rowSpec.horizontalPaddingDp * density).toInt(), 0, (rowSpec.horizontalPaddingDp * density).toInt(), 0)
+            binding.channelLogoCard.layoutParams = binding.channelLogoCard.layoutParams.apply {
+                width = (rowSpec.logoWidthDp * density).toInt()
+                height = (rowSpec.logoHeightDp * density).toInt()
+            }
+            binding.channelName.textSize = rowSpec.nameSizeSp
+            binding.channelNumber.textSize = rowSpec.numberSizeSp
+            binding.channelNumber.visibility = if (rowSpec.showNumber) View.VISIBLE else View.GONE
+            binding.qualityTag.visibility = if (rowSpec.showQuality) View.VISIBLE else View.GONE
             binding.channelName.text = channel.name
             binding.channelNumber.text = (position + 1).toString()
             
