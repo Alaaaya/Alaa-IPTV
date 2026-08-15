@@ -380,34 +380,25 @@ class MediaRepository(
     suspend fun getMovies(categoryId: String?, page: Int = 0): Result<List<Movie>> =
         withContext(Dispatchers.IO) {
             ensureContentAccess().exceptionOrNull()?.let { return@withContext Result.failure(it) }
-            val requestedCategory = categoryId?.takeIf { it != "all" }
-            val effectiveCategory = requestedCategory ?: getMovieCategories()
-                .getOrDefault(emptyList())
-                .firstOrNull()
-                ?.categoryId
+            val effectiveCategory = categoryId?.takeIf { it.isNotBlank() && it != "all" }
             val pageIndex = page.coerceAtLeast(0)
-            effectiveCategory?.let { category ->
-                val key = "$category:$pageIndex"
-                cachedMoviesByCategory[key]?.let { (savedAt, cached) ->
-                    if (System.currentTimeMillis() - savedAt < CACHE_DURATION) {
-                        return@withContext Result.success(cached)
-                    }
+            val cacheKey = "${effectiveCategory ?: "all"}:$pageIndex"
+            cachedMoviesByCategory[cacheKey]?.let { (savedAt, cached) ->
+                if (System.currentTimeMillis() - savedAt < CACHE_DURATION) {
+                    return@withContext Result.success(cached)
                 }
             }
 
             try {
-                val movies = effectiveCategory?.let { category -> fetchMovies(category, pageIndex) }
-                    .orEmpty()
+                val movies = fetchMovies(effectiveCategory, pageIndex)
                 cachedMovies = movies
                 cachedMoviesTime = System.currentTimeMillis()
-                effectiveCategory?.let { category ->
-                    putBoundedCache(
-                        cachedMoviesByCategory,
-                        "$category:$pageIndex",
-                        movies,
-                        MAX_MOVIE_CATEGORY_CACHES
-                    )
-                }
+                putBoundedCache(
+                    cachedMoviesByCategory,
+                    cacheKey,
+                    movies,
+                    MAX_MOVIE_CATEGORY_CACHES
+                )
                 Result.success(movies)
             } catch (e: Exception) {
                 Log.e(TAG, "getMovies error", e)
@@ -416,7 +407,11 @@ class MediaRepository(
         }
 
     private suspend fun fetchMovies(categoryId: String?, page: Int = 0): List<Movie> {
-        val extra = categoryId?.let { "&category_id=${encodeQueryParameter(it)}" }.orEmpty()
+        val extra = if (!categoryId.isNullOrBlank() && categoryId != "all") {
+            "&category_id=${encodeQueryParameter(categoryId)}"
+        } else {
+            ""
+        }
         val array = JSONArray(request(buildApiUrl("get_vod_streams", extra)))
         val startIndex = (page.coerceAtLeast(0) * CONTENT_PAGE_SIZE).coerceAtMost(array.length())
         val endIndex = minOf(array.length(), startIndex + CONTENT_PAGE_SIZE)
@@ -456,34 +451,25 @@ class MediaRepository(
     suspend fun getSeries(categoryId: String?, page: Int = 0): Result<List<Series>> =
         withContext(Dispatchers.IO) {
             ensureContentAccess().exceptionOrNull()?.let { return@withContext Result.failure(it) }
-            val requestedCategory = categoryId?.takeIf { it != "all" }
-            val effectiveCategory = requestedCategory ?: getSeriesCategories()
-                .getOrDefault(emptyList())
-                .firstOrNull()
-                ?.categoryId
+            val effectiveCategory = categoryId?.takeIf { it.isNotBlank() && it != "all" }
             val pageIndex = page.coerceAtLeast(0)
-            effectiveCategory?.let { category ->
-                val key = "$category:$pageIndex"
-                cachedSeriesByCategory[key]?.let { (savedAt, cached) ->
-                    if (System.currentTimeMillis() - savedAt < CACHE_DURATION) {
-                        return@withContext Result.success(cached)
-                    }
+            val cacheKey = "${effectiveCategory ?: "all"}:$pageIndex"
+            cachedSeriesByCategory[cacheKey]?.let { (savedAt, cached) ->
+                if (System.currentTimeMillis() - savedAt < CACHE_DURATION) {
+                    return@withContext Result.success(cached)
                 }
             }
 
             try {
-                val series = effectiveCategory?.let { category -> fetchSeries(category, pageIndex) }
-                    .orEmpty()
+                val series = fetchSeries(effectiveCategory, pageIndex)
                 cachedSeries = series
                 cachedSeriesTime = System.currentTimeMillis()
-                effectiveCategory?.let { category ->
-                    putBoundedCache(
-                        cachedSeriesByCategory,
-                        "$category:$pageIndex",
-                        series,
-                        MAX_SERIES_CATEGORY_CACHES
-                    )
-                }
+                putBoundedCache(
+                    cachedSeriesByCategory,
+                    cacheKey,
+                    series,
+                    MAX_SERIES_CATEGORY_CACHES
+                )
                 Result.success(series)
             } catch (e: Exception) {
                 Log.e(TAG, "getSeries error", e)
@@ -491,8 +477,13 @@ class MediaRepository(
             }
         }
 
-    private suspend fun fetchSeries(categoryId: String, page: Int = 0): List<Series> {
-        val array = JSONArray(request(buildApiUrl("get_series", "&category_id=${encodeQueryParameter(categoryId)}")))
+    private suspend fun fetchSeries(categoryId: String?, page: Int = 0): List<Series> {
+        val extra = if (!categoryId.isNullOrBlank() && categoryId != "all") {
+            "&category_id=${encodeQueryParameter(categoryId)}"
+        } else {
+            ""
+        }
+        val array = JSONArray(request(buildApiUrl("get_series", extra)))
         val startIndex = (page.coerceAtLeast(0) * CONTENT_PAGE_SIZE).coerceAtMost(array.length())
         val endIndex = minOf(array.length(), startIndex + CONTENT_PAGE_SIZE)
         val series = mutableListOf<Series>()
