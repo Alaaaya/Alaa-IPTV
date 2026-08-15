@@ -61,6 +61,7 @@ class PlayerActivity : AppCompatActivity() {
     private var resumePositionMs = 0L
     private lateinit var prefs: AppPreferences
     private var sleepTimerJob: Job? = null
+    private var inactivityReminderJob: Job? = null
 
     private data class TrackOption(
         val type: Int,
@@ -95,6 +96,7 @@ class PlayerActivity : AppCompatActivity() {
             else Toast.makeText(this, "فعّل مؤقت النوم من الإعدادات أولاً", Toast.LENGTH_SHORT).show()
             true
         }
+        scheduleInactivityReminder()
         binding.errorText.setOnClickListener {
             streamUrl?.takeIf { it.isNotBlank() }?.let {
                 attemptedLiveUrls.clear()
@@ -116,6 +118,7 @@ class PlayerActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        scheduleInactivityReminder()
         lifecycleScope.launch {
             ControlPlaneActivityGuard.refreshAndEnforce(this@PlayerActivity, prefs)
         }
@@ -503,6 +506,7 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     override fun onStop() {
+        inactivityReminderJob?.cancel()
         Log.d(TAG, "⏸️ onStop - Pausing player")
         player?.pause()
         super.onStop()
@@ -510,6 +514,7 @@ class PlayerActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         sleepTimerJob?.cancel()
+        inactivityReminderJob?.cancel()
         persistPlaybackState()
         Log.d(TAG, "🛑 onDestroy - Releasing player")
         player?.release()
@@ -559,5 +564,22 @@ class PlayerActivity : AppCompatActivity() {
                 Toast.makeText(this, "سيتوقف التشغيل بعد $selectedMinutes دقيقة", Toast.LENGTH_SHORT).show()
             }
             .show()
+    }
+
+    override fun onUserInteraction() {
+        super.onUserInteraction()
+        scheduleInactivityReminder()
+    }
+
+    private fun scheduleInactivityReminder() {
+        inactivityReminderJob?.cancel()
+        if (!::prefs.isInitialized || !prefs.isFeatureEnabled(FeatureCatalog.IDLE_REMINDER)) return
+        inactivityReminderJob = lifecycleScope.launch {
+            delay(120 * 60_000L)
+            Toast.makeText(this@PlayerActivity, "لا يزال البث يعمل. اضغط أي زر للمتابعة؛ سيتوقف محلياً بعد 5 دقائق.", Toast.LENGTH_LONG).show()
+            delay(5 * 60_000L)
+            player?.pause()
+            finish()
+        }
     }
 }
