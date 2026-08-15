@@ -69,6 +69,7 @@ class DashboardActivity : AppCompatActivity() {
         repository = MediaRepository(prefs, this)
         DisplayTheme.applyDashboard(binding, prefs)
         DisplayTheme.applyViewingPreferences(binding.root, prefs)
+        binding.root.isSoundEffectsEnabled = prefs.isFeatureEnabled(FeatureCatalog.NAVIGATION_SOUNDS)
         if (prefs.isFeatureEnabled(FeatureCatalog.EYE_COMFORT)) window.attributes = window.attributes.apply { screenBrightness = 0.82f }
 
         setupSidebar()
@@ -455,7 +456,7 @@ class DashboardActivity : AppCompatActivity() {
     }
 
     private fun showToast(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, message, if (prefs.isFeatureEnabled(FeatureCatalog.LONG_NOTIFICATIONS)) Toast.LENGTH_LONG else Toast.LENGTH_SHORT).show()
     }
 
     private fun com.alaa.iptv.data.models.Movie.toChannel() = Channel(

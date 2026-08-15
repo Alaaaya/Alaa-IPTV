@@ -55,6 +55,7 @@ class MoviesActivity : AppCompatActivity() {
         repository = MediaRepository(prefs, this)
         DisplayTheme.applyMovies(binding, prefs)
         DisplayTheme.applyViewingPreferences(binding.root, prefs)
+        binding.root.isSoundEffectsEnabled = prefs.isFeatureEnabled(FeatureCatalog.NAVIGATION_SOUNDS)
         if (prefs.isFeatureEnabled(FeatureCatalog.EYE_COMFORT)) window.attributes = window.attributes.apply { screenBrightness = 0.82f }
         prefs.lastVisitedSection = MainActivity.MODE_MOVIES
 

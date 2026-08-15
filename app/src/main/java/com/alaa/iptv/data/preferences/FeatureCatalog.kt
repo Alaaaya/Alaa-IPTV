@@ -58,6 +58,8 @@ object FeatureCatalog {
     const val SETTINGS_LOCK = "settings_lock"
     const val HIDE_DIAGNOSTICS = "hide_diagnostics"
     const val PERMISSIONS_INFO = "permissions_info"
+    const val LONG_NOTIFICATIONS = "long_notifications"
+    const val NAVIGATION_SOUNDS = "navigation_sounds"
 
     val options = listOf(
         OptionalFeature(GLOBAL_SEARCH, "البحث الشامل", "ابحث في القنوات والأفلام والمسلسلات.", "المكتبة"),
@@ -107,7 +109,9 @@ object FeatureCatalog {
         OptionalFeature(SLEEP_TIMER, "مؤقت النوم", "اسمح بإيقاف التشغيل تلقائياً بعد مدة تختارها داخل المشغل.", "التشغيل", defaultEnabled = false),
         OptionalFeature(SETTINGS_LOCK, "قفل الإعدادات", "اطلب رمز ملف المالك قبل فتح الإعدادات عند وجوده.", "الخصوصية", defaultEnabled = false),
         OptionalFeature(HIDE_DIAGNOSTICS, "إخفاء معلومات التشخيص", "أخفِ TV ID وأدوات التشخيص من العرض العادي.", "الخصوصية", defaultEnabled = false),
-        OptionalFeature(PERMISSIONS_INFO, "شرح الأذونات", "اعرض شرحاً محلياً لسبب استخدام أذونات التطبيق.", "الخصوصية", defaultEnabled = false)
+        OptionalFeature(PERMISSIONS_INFO, "شرح الأذونات", "اعرض شرحاً محلياً لسبب استخدام أذونات التطبيق.", "الخصوصية", defaultEnabled = false),
+        OptionalFeature(LONG_NOTIFICATIONS, "تنبيهات أطول", "أطِل مدة رسائل الحالة لتكون أوضح من مسافة بعيدة.", "المظهر", defaultEnabled = false),
+        OptionalFeature(NAVIGATION_SOUNDS, "أصوات التنقل", "فعّل أصوات Android TV الخفيفة عند الضغط والتنقل.", "المظهر", defaultEnabled = false)
     )
 
     fun option(id: String): OptionalFeature = options.firstOrNull { it.id == id }
