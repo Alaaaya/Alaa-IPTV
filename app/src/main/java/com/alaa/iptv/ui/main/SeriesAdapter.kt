@@ -61,6 +61,7 @@ class SeriesAdapter(
             binding.movieTitle.text = series.name
             setOptionalText(binding.ratingBadge, series.rating)
             setOptionalText(binding.yearText, series.releaseDate)
+            setOptionalText(binding.contentBadge, if (series.releaseDate?.startsWith("2026") == true) "جديد" else null)
 
             Glide.with(binding.root.context)
                 .load(series.cover)
