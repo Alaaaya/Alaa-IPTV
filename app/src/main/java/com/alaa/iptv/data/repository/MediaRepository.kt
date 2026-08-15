@@ -17,6 +17,8 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.TimeUnit
 
+class SubscriptionSessionExpiredException(message: String) : IOException(message)
+
 class MediaRepository(
     private val prefs: AppPreferences,
     private val context: Context
@@ -97,6 +99,10 @@ class MediaRepository(
                 .build()
             client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
+                    if (response.code == 401 || response.code == 403) {
+                        prefs.isLoggedIn = false
+                        throw SubscriptionSessionExpiredException("انتهت صلاحية جلسة الاشتراك أو رُفض الوصول")
+                    }
                     throw IOException("HTTP ${response.code}")
                 }
                 response.body?.string() ?: throw IOException("Empty response body")
