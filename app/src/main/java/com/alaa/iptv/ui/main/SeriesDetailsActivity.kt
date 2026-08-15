@@ -14,6 +14,8 @@ import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.data.repository.MediaRepository
 import com.alaa.iptv.databinding.ActivitySeriesDetailsBinding
 import com.alaa.iptv.ui.player.PlayerActivity
+import com.alaa.iptv.ui.player.PlayableEpisode
+import com.alaa.iptv.ui.player.PlayerEpisodeNavigator
 import com.alaa.iptv.ui.theme.DisplayTheme
 import com.bumptech.glide.Glide
 import kotlinx.coroutines.launch
@@ -71,6 +73,12 @@ class SeriesDetailsActivity : AppCompatActivity() {
                             showError(getString(R.string.no_episodes))
                         } else {
                             binding.errorText.visibility = View.GONE
+                            PlayerEpisodeNavigator.setEpisodes(episodes.map { episode ->
+                                PlayableEpisode(
+                                    name = "${series.name} - ${episode.title}",
+                                    streamUrl = episode.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password)
+                                )
+                            })
                             binding.episodesRecyclerView.adapter = EpisodeAdapter(episodes, ::playEpisode)
                         }
                     }
@@ -83,7 +91,7 @@ class SeriesDetailsActivity : AppCompatActivity() {
         }
     }
 
-    private fun playEpisode(episode: Episode) {
+    private fun playEpisode(episode: Episode, episodeIndex: Int) {
         val streamUrl = episode.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password)
         if (streamUrl.isBlank()) {
             showError(getString(R.string.player_error))
@@ -94,6 +102,7 @@ class SeriesDetailsActivity : AppCompatActivity() {
                 .putExtra("STREAM_URL", streamUrl)
                 .putExtra("CHANNEL_NAME", "${series.name} - ${episode.title}")
                 .putExtra("STREAM_TYPE", "series")
+                .putExtra(PlayerActivity.EXTRA_EPISODE_INDEX, episodeIndex)
         )
     }
 

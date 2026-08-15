@@ -27,6 +27,8 @@ import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import com.alaa.iptv.R
 import com.alaa.iptv.data.models.LiveUrlFallbackPolicy
 import com.alaa.iptv.data.preferences.AppPreferences
+import com.alaa.iptv.data.preferences.FeatureCatalog
+import com.alaa.iptv.data.preferences.MediaLibraryEntry
 import com.alaa.iptv.databinding.ActivityPlayerBinding
 import com.alaa.iptv.ui.theme.DisplayTheme
 import java.util.Locale
@@ -37,6 +39,8 @@ class PlayerActivity : AppCompatActivity() {
     companion object {
         private const val TAG = "PlayerActivity"
         const val EXTRA_CHANNEL_INDEX = "CHANNEL_INDEX"
+        const val EXTRA_RESUME_POSITION_MS = "RESUME_POSITION_MS"
+        const val EXTRA_EPISODE_INDEX = "EPISODE_INDEX"
     }
 
     private lateinit var binding: ActivityPlayerBinding
@@ -46,8 +50,11 @@ class PlayerActivity : AppCompatActivity() {
     private var channelName: String? = null
     private var streamType: String? = null
     private var channelIndex = -1
+    private var episodeIndex = -1
     private val attemptedLiveUrls = linkedSetOf<String>()
     private var playerOpenedAtMs = 0L
+    private var resumePositionMs = 0L
+    private lateinit var prefs: AppPreferences
 
     private data class TrackOption(
         val type: Int,
@@ -61,14 +68,16 @@ class PlayerActivity : AppCompatActivity() {
         playerOpenedAtMs = SystemClock.elapsedRealtime()
         binding = ActivityPlayerBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        val displayPrefs = AppPreferences(this)
-        DisplayTheme.applyPlayer(binding, displayPrefs)
-        binding.playerView.post { DisplayTheme.applyPlayerControls(binding.playerView, displayPrefs) }
+        prefs = AppPreferences(this)
+        DisplayTheme.applyPlayer(binding, prefs)
+        binding.playerView.post { DisplayTheme.applyPlayerControls(binding.playerView, prefs) }
 
         streamUrl = intent.getStringExtra("STREAM_URL")
         channelName = intent.getStringExtra("CHANNEL_NAME")
         streamType = intent.getStringExtra("STREAM_TYPE") ?: "live"
         channelIndex = intent.getIntExtra(EXTRA_CHANNEL_INDEX, -1)
+        episodeIndex = intent.getIntExtra(EXTRA_EPISODE_INDEX, -1)
+        resumePositionMs = intent.getLongExtra(EXTRA_RESUME_POSITION_MS, 0L)
 
         binding.channelNameText.text = channelName ?: ""
         binding.trackSelectionButton.setOnClickListener { showTrackSelection() }
@@ -150,6 +159,12 @@ class PlayerActivity : AppCompatActivity() {
                 if (shouldAttachListener) addListener(playerListener)
                 setMediaSource(mediaSource)
                 prepare()
+                if (!streamType.equals("live", ignoreCase = true) &&
+                    prefs.isFeatureEnabled(FeatureCatalog.RESUME_PLAYBACK) && resumePositionMs > 0L
+                ) {
+                    seekTo(resumePositionMs)
+                    resumePositionMs = 0L
+                }
                 play()
             }
 
@@ -176,6 +191,10 @@ class PlayerActivity : AppCompatActivity() {
                 Player.STATE_ENDED -> {
                     Log.d(TAG, "🏁 STATE_ENDED")
                     showLoading(false)
+                    if (streamType.equals("series", ignoreCase = true) &&
+                        prefs.isFeatureEnabled(FeatureCatalog.AUTO_NEXT_EPISODE) &&
+                        promptNextEpisode()
+                    ) return
                     val message = if (streamType.equals("live", ignoreCase = true)) {
                         "انتهى البث مؤقتاً، جرّب قناة أخرى"
                     } else {
@@ -193,7 +212,7 @@ class PlayerActivity : AppCompatActivity() {
         override fun onPlayerError(error: PlaybackException) {
             Log.e(TAG, "❌ Player Error: ${error.errorCodeName}", error)
             showLoading(false)
-            if (tryAlternativeLiveUrl()) return
+            if (prefs.isFeatureEnabled(FeatureCatalog.AUTO_RECONNECT) && tryAlternativeLiveUrl()) return
             val errorMsg = when (error.errorCode) {
                 PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED -> "فشل الاتصال بالشبكة"
                 PlaybackException.ERROR_CODE_IO_INVALID_HTTP_CONTENT_TYPE -> "نوع المحتوى غير مدعوم"
@@ -245,8 +264,11 @@ class PlayerActivity : AppCompatActivity() {
 
     private fun updateTrackSelectionVisibility() {
         val hasTrackOptions = player?.currentTracks?.groups?.any { group ->
-            !streamType.equals("live", ignoreCase = true) &&
-                (group.type == C.TRACK_TYPE_AUDIO || group.type == C.TRACK_TYPE_TEXT) &&
+            val isMediaLanguageTrack = !streamType.equals("live", ignoreCase = true) &&
+                (group.type == C.TRACK_TYPE_AUDIO || group.type == C.TRACK_TYPE_TEXT)
+            val isVideoQualityTrack = prefs.isFeatureEnabled(FeatureCatalog.QUALITY_SELECTION) &&
+                group.type == C.TRACK_TYPE_VIDEO
+            (isMediaLanguageTrack || isVideoQualityTrack) &&
                 (0 until group.length).any { group.isTrackSupported(it) }
         } == true
         binding.trackSelectionButton.visibility = if (hasTrackOptions) View.VISIBLE else View.GONE
@@ -259,14 +281,23 @@ class PlayerActivity : AppCompatActivity() {
         var hasSubtitleTrack = false
 
         activePlayer.currentTracks.groups.forEach { group ->
-            if (group.type != C.TRACK_TYPE_AUDIO && group.type != C.TRACK_TYPE_TEXT) return@forEach
+            val isAllowed = group.type == C.TRACK_TYPE_AUDIO ||
+                group.type == C.TRACK_TYPE_TEXT ||
+                (group.type == C.TRACK_TYPE_VIDEO && prefs.isFeatureEnabled(FeatureCatalog.QUALITY_SELECTION))
+            if (!isAllowed) return@forEach
             (0 until group.length)
                 .filter { group.isTrackSupported(it) }
                 .forEach { index ->
                     if (group.type == C.TRACK_TYPE_TEXT) hasSubtitleTrack = true
                     val format = group.getTrackFormat(index)
-                    val prefix = if (group.type == C.TRACK_TYPE_AUDIO) "الصوت" else "الترجمة"
-                    val details = format.label?.takeIf { it.isNotBlank() } ?: displayLanguage(format.language)
+                    val prefix = when (group.type) {
+                        C.TRACK_TYPE_AUDIO -> "الصوت"
+                        C.TRACK_TYPE_TEXT -> "الترجمة"
+                        else -> "الجودة"
+                    }
+                    val details = format.label?.takeIf { it.isNotBlank() }
+                        ?: if (group.type == C.TRACK_TYPE_VIDEO && format.height > 0) "${format.height}p"
+                        else displayLanguage(format.language)
                     options += TrackOption(group.type, "$prefix: $details", group, index)
                 }
         }
@@ -341,6 +372,27 @@ class PlayerActivity : AppCompatActivity() {
         initializePlayer(nextChannel.streamUrl)
     }
 
+    private fun promptNextEpisode(): Boolean {
+        val next = PlayerEpisodeNavigator.episodeAt(episodeIndex + 1) ?: return false
+        AlertDialog.Builder(this)
+            .setTitle("الحلقة التالية")
+            .setMessage("تشغيل ${next.name} الآن؟")
+            .setPositiveButton("تشغيل") { _, _ -> switchEpisode(next) }
+            .setNegativeButton("إلغاء", null)
+            .show()
+        return true
+    }
+
+    private fun switchEpisode(next: PlayableEpisode) {
+        episodeIndex += 1
+        streamUrl = next.streamUrl
+        channelName = next.name
+        attemptedLiveUrls.clear()
+        binding.channelNameText.text = next.name
+        binding.channelNameText.visibility = View.VISIBLE
+        initializePlayer(next.streamUrl)
+    }
+
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         if ((binding.trackSelectionButton.hasFocus() || binding.errorText.hasFocus()) &&
             keyCode in setOf(KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER)
@@ -384,15 +436,41 @@ class PlayerActivity : AppCompatActivity() {
                 true
             }
             KeyEvent.KEYCODE_MEDIA_FAST_FORWARD, KeyEvent.KEYCODE_DPAD_RIGHT -> {
-                player?.seekTo((player?.currentPosition ?: 0) + 10000)
+                if (prefs.isFeatureEnabled(FeatureCatalog.SKIP_CONTROLS)) {
+                    player?.seekTo((player?.currentPosition ?: 0) + 10000)
+                }
                 true
             }
             KeyEvent.KEYCODE_MEDIA_REWIND, KeyEvent.KEYCODE_DPAD_LEFT -> {
-                player?.seekTo(maxOf(0, (player?.currentPosition ?: 0) - 10000))
+                if (prefs.isFeatureEnabled(FeatureCatalog.SKIP_CONTROLS)) {
+                    player?.seekTo(maxOf(0, (player?.currentPosition ?: 0) - 10000))
+                }
+                true
+            }
+            KeyEvent.KEYCODE_PROG_RED -> {
+                if (prefs.isFeatureEnabled(FeatureCatalog.REMOTE_SHORTCUTS)) showTrackSelection()
+                true
+            }
+            KeyEvent.KEYCODE_PROG_GREEN -> {
+                if (prefs.isFeatureEnabled(FeatureCatalog.REMOTE_SHORTCUTS) && streamType.equals("live", true)) switchChannel(1)
+                true
+            }
+            KeyEvent.KEYCODE_INFO -> {
+                showStreamInfo()
                 true
             }
             else -> super.onKeyDown(keyCode, event)
         }
+    }
+
+    private fun showStreamInfo() {
+        val state = when (player?.playbackState) {
+            Player.STATE_READY -> "يعمل"
+            Player.STATE_BUFFERING -> "يخزن مؤقتاً"
+            Player.STATE_ENDED -> "منتهٍ"
+            else -> "غير جاهز"
+        }
+        Toast.makeText(this, "نوع المحتوى: ${streamType ?: "غير محدد"}\nالحالة: $state", Toast.LENGTH_LONG).show()
     }
 
     override fun onStart() {
@@ -407,9 +485,30 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
+        persistPlaybackState()
         Log.d(TAG, "🛑 onDestroy - Releasing player")
         player?.release()
         player = null
+        super.onDestroy()
+    }
+
+    private fun persistPlaybackState() {
+        val url = streamUrl ?: return
+        val title = channelName?.takeIf { it.isNotBlank() } ?: return
+        val type = streamType ?: "live"
+        val activePlayer = player
+        val entry = MediaLibraryEntry(
+            id = "$type:$title",
+            title = title,
+            streamUrl = url,
+            streamType = type,
+            positionMs = activePlayer?.currentPosition ?: 0L,
+            durationMs = activePlayer?.duration?.takeIf { it > 0L } ?: 0L
+        )
+        if (type.equals("live", ignoreCase = true)) {
+            if (prefs.isFeatureEnabled(FeatureCatalog.RECENT_CHANNELS)) prefs.saveRecentChannel(entry)
+        } else if (prefs.isFeatureEnabled(FeatureCatalog.WATCH_HISTORY)) {
+            prefs.savePlayback(entry)
+        }
     }
 }

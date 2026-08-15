@@ -16,7 +16,9 @@ import com.bumptech.glide.Glide
 class MovieAdapter(
     private val movies: List<Movie>,
     private val displayTheme: String = AppPreferences.THEME_ALAA_CLASSIC,
-    private val onMovieClick: (Movie) -> Unit
+    private val onMovieClick: (Movie) -> Unit,
+    private val onMovieLongClick: ((Movie) -> Unit)? = null,
+    private val onMovieFocused: ((Movie) -> Unit)? = null
 ) : RecyclerView.Adapter<MovieAdapter.MovieViewHolder>() {
 
     inner class MovieViewHolder(private val binding: ItemMovieCardBinding) :
@@ -27,8 +29,20 @@ class MovieAdapter(
                 val position = bindingAdapterPosition
                 if (position != RecyclerView.NO_POSITION) onMovieClick(movies[position])
             }
+            binding.root.setOnLongClickListener {
+                val position = bindingAdapterPosition
+                if (position == RecyclerView.NO_POSITION || onMovieLongClick == null) false
+                else {
+                    onMovieLongClick.invoke(movies[position])
+                    true
+                }
+            }
             binding.root.setOnFocusChangeListener { _, hasFocus ->
                 renderFocusState(hasFocus)
+                if (hasFocus) {
+                    val position = bindingAdapterPosition
+                    if (position != RecyclerView.NO_POSITION) onMovieFocused?.invoke(movies[position])
+                }
             }
             binding.root.setOnKeyListener { _, keyCode, event ->
                 if (event.action != KeyEvent.ACTION_DOWN) return@setOnKeyListener false

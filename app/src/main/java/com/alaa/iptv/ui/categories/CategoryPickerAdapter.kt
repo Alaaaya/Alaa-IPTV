@@ -7,7 +7,8 @@ import com.alaa.iptv.data.models.Category
 import com.alaa.iptv.databinding.ItemCategoryPickerBinding
 
 class CategoryPickerAdapter(
-    private val onSelected: (Category) -> Unit
+    private val onSelected: (Category) -> Unit,
+    private val onLongPressed: ((Category) -> Unit)? = null
 ) : RecyclerView.Adapter<CategoryPickerAdapter.CategoryViewHolder>() {
     private var categories: List<Category> = emptyList()
 
@@ -33,6 +34,10 @@ class CategoryPickerAdapter(
         fun bind(category: Category) {
             binding.categoryName.text = category.categoryName
             binding.root.setOnClickListener { onSelected(category) }
+            binding.root.setOnLongClickListener {
+                onLongPressed?.invoke(category)
+                onLongPressed != null
+            }
         }
     }
 }

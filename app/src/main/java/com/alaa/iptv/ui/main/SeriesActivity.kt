@@ -3,6 +3,8 @@ package com.alaa.iptv.ui.main
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.view.KeyEvent
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -14,6 +16,8 @@ import com.alaa.iptv.R
 import com.alaa.iptv.data.models.Series
 import com.alaa.iptv.data.models.Category
 import com.alaa.iptv.data.preferences.AppPreferences
+import com.alaa.iptv.data.preferences.FeatureCatalog
+import com.alaa.iptv.data.preferences.MediaLibraryEntry
 import com.alaa.iptv.data.repository.MediaRepository
 import com.alaa.iptv.databinding.ActivitySeriesBinding
 import com.alaa.iptv.ui.dashboard.SidebarAdapter
@@ -136,9 +140,13 @@ class SeriesActivity : AppCompatActivity() {
                     } else {
                         "${seriesList.size} مسلسل"
                     }
-                    binding.seriesRecyclerView.adapter = SeriesAdapter(seriesList, prefs.displayTheme) { series ->
-                        openSeriesDetails(series)
-                    }
+                    binding.seriesRecyclerView.adapter = SeriesAdapter(
+                        seriesList,
+                        prefs.displayTheme,
+                        ::openSeriesDetails,
+                        ::toggleWatchlist,
+                        ::showPreview
+                    )
                 } else {
                     binding.seriesCount.text = "تعذر تحميل المسلسلات. تحقق من الشبكة أو الفئة المختارة"
                 }
@@ -155,6 +163,51 @@ class SeriesActivity : AppCompatActivity() {
         startActivity(Intent(this, SeriesDetailsActivity::class.java).apply {
             putExtra(SeriesDetailsActivity.EXTRA_SERIES, series)
         })
+    }
+
+    private fun toggleWatchlist(series: Series) {
+        if (!prefs.isFeatureEnabled(FeatureCatalog.WATCHLIST)) {
+            Toast.makeText(this, "فعّل المشاهدة لاحقاً من الإعدادات أولاً", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val added = prefs.toggleWatchlist(
+            MediaLibraryEntry(
+                id = series.seriesId,
+                title = series.name,
+                streamUrl = "series://${series.seriesId}",
+                streamType = "series",
+                imageUrl = series.cover
+            )
+        )
+        Toast.makeText(this, if (added) "أُضيف إلى المشاهدة لاحقاً" else "أُزيل من المشاهدة لاحقاً", Toast.LENGTH_SHORT).show()
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_MENU && prefs.isFeatureEnabled(FeatureCatalog.LIBRARY_FILTERS)) {
+            showGenreFilter()
+            return true
+        }
+        return super.onKeyDown(keyCode, event)
+    }
+
+    private fun showGenreFilter() {
+        val genres = seriesList.flatMap { it.genre.orEmpty().split(",") }
+            .map { it.trim() }.filter { it.isNotBlank() }.distinct().sorted()
+        val options = listOf("الكل") + genres
+        AlertDialog.Builder(this)
+            .setTitle("فلترة المسلسلات")
+            .setItems(options.toTypedArray()) { _, index ->
+                val filtered = if (index == 0) seriesList else seriesList.filter { it.genre.orEmpty().contains(options[index], true) }
+                binding.seriesRecyclerView.adapter = SeriesAdapter(filtered, prefs.displayTheme, ::openSeriesDetails, ::toggleWatchlist, ::showPreview)
+                binding.seriesCount.text = "${filtered.size} مسلسل"
+            }
+            .show()
+    }
+
+    private fun showPreview(series: Series) {
+        if (!prefs.isFeatureEnabled(FeatureCatalog.FOCUS_PREVIEW)) return
+        val meta = listOfNotNull(series.genre?.takeIf { it.isNotBlank() }, series.rating?.takeIf { it.isNotBlank() }?.let { "★ $it" })
+        binding.seriesCount.text = listOf(series.name, meta.joinToString(" • ")).filter { it.isNotBlank() }.joinToString(" — ")
     }
 
     private fun openMain(mode: String) {

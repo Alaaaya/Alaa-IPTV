@@ -11,7 +11,7 @@ import com.alaa.iptv.ui.navigation.FocusBoundaryPolicy
 
 class EpisodeAdapter(
     private val episodes: List<Episode>,
-    private val onEpisodeClick: (Episode) -> Unit
+    private val onEpisodeClick: (Episode, Int) -> Unit
 ) : RecyclerView.Adapter<EpisodeAdapter.EpisodeViewHolder>() {
 
     inner class EpisodeViewHolder(private val binding: ItemEpisodeBinding) :
@@ -20,7 +20,7 @@ class EpisodeAdapter(
         init {
             binding.root.setOnClickListener {
                 val position = bindingAdapterPosition
-                if (position != RecyclerView.NO_POSITION) onEpisodeClick(episodes[position])
+                if (position != RecyclerView.NO_POSITION) onEpisodeClick(episodes[position], position)
             }
             binding.root.setOnFocusChangeListener { _, hasFocus ->
                 binding.episodeCard.setCardBackgroundColor(
