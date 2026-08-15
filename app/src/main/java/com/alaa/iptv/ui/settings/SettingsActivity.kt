@@ -19,7 +19,10 @@ import com.alaa.iptv.ui.dashboard.DashboardActivity
 import com.alaa.iptv.ui.theme.ThemeCatalog
 import com.alaa.iptv.ui.common.ControlPlaneActivityGuard
 import com.alaa.iptv.utils.ConnectionDiagnostics
+import com.bumptech.glide.Glide
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.text.DateFormat
 import java.util.Date
 
@@ -79,6 +82,15 @@ class SettingsActivity : AppCompatActivity() {
                     prefs.addSafeDiagnostic("connection-diagnostics")
                 }
                 binding.connectionTestButton.isEnabled = true
+            }
+        }
+        binding.clearImageCacheButton.setOnClickListener {
+            lifecycleScope.launch {
+                binding.clearImageCacheButton.isEnabled = false
+                withContext(Dispatchers.IO) { Glide.get(applicationContext).clearDiskCache() }
+                Glide.get(applicationContext).clearMemory()
+                Toast.makeText(this@SettingsActivity, "تم مسح صور البوسترات المؤقتة.", Toast.LENGTH_SHORT).show()
+                binding.clearImageCacheButton.isEnabled = true
             }
         }
         binding.backButton.setOnClickListener { finish() }
