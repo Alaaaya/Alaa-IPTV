@@ -5,6 +5,11 @@ import com.alaa.iptv.data.remote.RemoteFeatureFlag
 
 /** قواعد نقية قابلة للاختبار لتطبيق سياسات لوحة التحكم بدون تخزين أسرار أو بيانات اشتراك. */
 object ControlPlanePolicy {
+    fun isRefreshDue(lastAttemptAtMs: Long, nowMs: Long, refreshIntervalMs: Long): Boolean {
+        if (refreshIntervalMs <= 0L) return true
+        return nowMs - lastAttemptAtMs >= refreshIntervalMs
+    }
+
     fun isDeviceBlocked(enrolled: Boolean, deviceStatus: String): Boolean {
         return enrolled && deviceStatus.lowercase() in setOf("suspended", "unknown")
     }

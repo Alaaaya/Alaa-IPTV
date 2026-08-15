@@ -57,6 +57,7 @@ class AppPreferences(context: Context) {
         private const val KEY_CONTROL_PLANE_ENROLLED = "control_plane_enrolled"
         private const val KEY_CONTROL_PLANE_STATUS = "control_plane_status"
         private const val KEY_CONTROL_PLANE_SYNCED_AT = "control_plane_synced_at"
+        private const val KEY_CONTROL_PLANE_ATTEMPTED_AT = "control_plane_attempted_at"
         private const val KEY_REMOTE_CONFIG_SNAPSHOT = "remote_config_snapshot"
         private const val KEY_REMOTE_FEATURE_FLAGS = "remote_feature_flags"
         private const val KEY_REMOTE_LOGOUT_REQUESTED = "remote_logout_requested"
@@ -175,7 +176,15 @@ class AppPreferences(context: Context) {
         private set(value) = prefs.edit().putString(KEY_CONTROL_PLANE_STATUS, value).apply()
 
     fun shouldRefreshControlPlane(nowMs: Long = System.currentTimeMillis()): Boolean {
-        return nowMs - prefs.getLong(KEY_CONTROL_PLANE_SYNCED_AT, 0L) >= CONTROL_PLANE_REFRESH_MS
+        return ControlPlanePolicy.isRefreshDue(
+            lastAttemptAtMs = prefs.getLong(KEY_CONTROL_PLANE_ATTEMPTED_AT, 0L),
+            nowMs = nowMs,
+            refreshIntervalMs = CONTROL_PLANE_REFRESH_MS
+        )
+    }
+
+    fun markControlPlaneRefreshAttempt(nowMs: Long = System.currentTimeMillis()) {
+        prefs.edit().putLong(KEY_CONTROL_PLANE_ATTEMPTED_AT, nowMs).apply()
     }
 
     fun lastControlPlaneSyncAt(): Long = prefs.getLong(KEY_CONTROL_PLANE_SYNCED_AT, 0L)

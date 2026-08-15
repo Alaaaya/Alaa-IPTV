@@ -26,6 +26,7 @@ object ControlPlaneActivityGuard {
      */
     suspend fun refreshAndEnforce(activity: Activity, prefs: AppPreferences, force: Boolean = false): Boolean = refreshMutex.withLock {
         if (prefs.isControlPlaneEnrolled && (force || prefs.shouldRefreshControlPlane())) {
+            prefs.markControlPlaneRefreshAttempt()
             val tvId = prefs.getOrCreateTvId()
             val previousSync = prefs.lastControlPlaneSyncAt()
             val snapshot = TvProvisioningClient.syncControlPlane(tvId, BuildConfig.VERSION_NAME)

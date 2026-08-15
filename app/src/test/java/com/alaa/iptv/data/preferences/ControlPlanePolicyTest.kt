@@ -8,6 +8,13 @@ import org.junit.Test
 
 class ControlPlanePolicyTest {
     @Test
+    fun `control plane refresh is rate limited from the latest attempt even after a failure`() {
+        assertTrue(ControlPlanePolicy.isRefreshDue(lastAttemptAtMs = 0L, nowMs = 60_000L, refreshIntervalMs = 60_000L))
+        assertFalse(ControlPlanePolicy.isRefreshDue(lastAttemptAtMs = 60_000L, nowMs = 60_001L, refreshIntervalMs = 60_000L))
+        assertTrue(ControlPlanePolicy.isRefreshDue(lastAttemptAtMs = 60_000L, nowMs = 120_000L, refreshIntervalMs = 60_000L))
+    }
+
+    @Test
     fun `suspended enrolled device is blocked while manual device is not`() {
         assertTrue(ControlPlanePolicy.isDeviceBlocked(enrolled = true, deviceStatus = "suspended"))
         assertTrue(ControlPlanePolicy.isDeviceBlocked(enrolled = true, deviceStatus = "unknown"))

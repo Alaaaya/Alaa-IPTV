@@ -13,8 +13,8 @@ android {
         applicationId = "com.alaa.iptv"
         minSdk = 21
         targetSdk = 34
-        versionCode = 28
-        versionName = "2.6.1"
+        versionCode = 29
+        versionName = "2.6.2"
         buildConfigField(
             "String",
             "PROVISIONING_API_URL",
@@ -45,6 +45,11 @@ android {
         viewBinding = true
         buildConfig = true
     }
+}
+
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+    arg("room.incremental", "true")
 }
 
 dependencies {
