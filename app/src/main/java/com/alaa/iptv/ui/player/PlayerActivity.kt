@@ -33,6 +33,8 @@ import com.alaa.iptv.data.preferences.MediaLibraryEntry
 import com.alaa.iptv.databinding.ActivityPlayerBinding
 import com.alaa.iptv.ui.common.ControlPlaneActivityGuard
 import com.alaa.iptv.ui.theme.DisplayTheme
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Locale
 
@@ -58,6 +60,7 @@ class PlayerActivity : AppCompatActivity() {
     private var playerOpenedAtMs = 0L
     private var resumePositionMs = 0L
     private lateinit var prefs: AppPreferences
+    private var sleepTimerJob: Job? = null
 
     private data class TrackOption(
         val type: Int,
@@ -84,6 +87,11 @@ class PlayerActivity : AppCompatActivity() {
 
         binding.channelNameText.text = channelName ?: ""
         binding.trackSelectionButton.setOnClickListener { showTrackSelection() }
+        binding.trackSelectionButton.setOnLongClickListener {
+            if (prefs.isFeatureEnabled(FeatureCatalog.SLEEP_TIMER)) showSleepTimer()
+            else Toast.makeText(this, "فعّل مؤقت النوم من الإعدادات أولاً", Toast.LENGTH_SHORT).show()
+            true
+        }
         binding.errorText.setOnClickListener {
             streamUrl?.takeIf { it.isNotBlank() }?.let {
                 attemptedLiveUrls.clear()
@@ -498,6 +506,7 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        sleepTimerJob?.cancel()
         persistPlaybackState()
         Log.d(TAG, "🛑 onDestroy - Releasing player")
         player?.release()
@@ -506,6 +515,7 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun persistPlaybackState() {
+        if (prefs.isFeatureEnabled(FeatureCatalog.GUEST_MODE)) return
         val url = streamUrl ?: return
         val title = channelName?.takeIf { it.isNotBlank() } ?: return
         val type = streamType ?: "live"
@@ -523,5 +533,28 @@ class PlayerActivity : AppCompatActivity() {
         } else if (prefs.isFeatureEnabled(FeatureCatalog.WATCH_HISTORY)) {
             prefs.savePlayback(entry)
         }
+    }
+
+    private fun showSleepTimer() {
+        val labels = arrayOf("بعد 15 دقيقة", "بعد 30 دقيقة", "بعد 60 دقيقة", "إلغاء المؤقت")
+        val minutes = intArrayOf(15, 30, 60, 0)
+        AlertDialog.Builder(this)
+            .setTitle("مؤقت النوم")
+            .setItems(labels) { _, index ->
+                sleepTimerJob?.cancel()
+                val selectedMinutes = minutes[index]
+                if (selectedMinutes == 0) {
+                    Toast.makeText(this, "تم إلغاء مؤقت النوم", Toast.LENGTH_SHORT).show()
+                    return@setItems
+                }
+                sleepTimerJob = lifecycleScope.launch {
+                    delay(selectedMinutes * 60_000L)
+                    player?.pause()
+                    Toast.makeText(this@PlayerActivity, "انتهى مؤقت النوم", Toast.LENGTH_SHORT).show()
+                    finish()
+                }
+                Toast.makeText(this, "سيتوقف التشغيل بعد $selectedMinutes دقيقة", Toast.LENGTH_SHORT).show()
+            }
+            .show()
     }
 }

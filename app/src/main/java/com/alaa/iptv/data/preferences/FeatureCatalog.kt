@@ -48,6 +48,16 @@ object FeatureCatalog {
     const val MANUAL_SYNC = "manual_sync"
     const val REMOTE_CONFIG_CONFIRMATION = "remote_config_confirmation"
     const val IMAGE_CACHE_CLEAR = "image_cache_clear"
+    const val DATA_SAVER = "data_saver"
+    const val LOW_BANDWIDTH_POSTERS = "low_bandwidth_posters"
+    const val EYE_COMFORT = "eye_comfort"
+    const val LARGE_TEXT = "large_text"
+    const val ROOMY_POSTERS = "roomy_posters"
+    const val GUEST_MODE = "guest_mode"
+    const val SLEEP_TIMER = "sleep_timer"
+    const val SETTINGS_LOCK = "settings_lock"
+    const val HIDE_DIAGNOSTICS = "hide_diagnostics"
+    const val PERMISSIONS_INFO = "permissions_info"
 
     val options = listOf(
         OptionalFeature(GLOBAL_SEARCH, "البحث الشامل", "ابحث في القنوات والأفلام والمسلسلات.", "المكتبة"),
@@ -86,8 +96,18 @@ object FeatureCatalog {
         OptionalFeature(TV_ID_SHORTCUT, "اختصار TV ID", "أظهر معرف التلفزيون في الإعدادات لتسهيل الدعم.", "الاتصال"),
         OptionalFeature(SYNC_STATUS, "حالة المزامنة", "أظهر وقت آخر مزامنة مع لوحة الإدارة.", "الاتصال", defaultEnabled = false),
         OptionalFeature(MANUAL_SYNC, "مزامنة فورية", "اسمح بطلب مزامنة يدوية مع لوحة الإدارة.", "الاتصال", defaultEnabled = false),
-        OptionalFeature(REMOTE_CONFIG_CONFIRMATION, "تأكيد الإعدادات البعيدة", "أظهر إشعاراً عند تطبيق إعدادات مركزية جديدة.", "الاتصال", defaultEnabled = false)
-        ,OptionalFeature(IMAGE_CACHE_CLEAR, "تنظيف الصور المؤقتة", "اسمح بمسح صور البوسترات المؤقتة عند الحاجة.", "الاتصال", defaultEnabled = false)
+        OptionalFeature(REMOTE_CONFIG_CONFIRMATION, "تأكيد الإعدادات البعيدة", "أظهر إشعاراً عند تطبيق إعدادات مركزية جديدة.", "الاتصال", defaultEnabled = false),
+        OptionalFeature(IMAGE_CACHE_CLEAR, "تنظيف الصور المؤقتة", "اسمح بمسح صور البوسترات المؤقتة عند الحاجة.", "الاتصال", defaultEnabled = false),
+        OptionalFeature(DATA_SAVER, "وضع اقتصاد البيانات", "خفّض دقة تحميل صور البوسترات عند التصفح.", "الأداء والبيانات", defaultEnabled = false),
+        OptionalFeature(LOW_BANDWIDTH_POSTERS, "صور أخف للشبكة الضعيفة", "استخدم نسخة أصغر من صور البوسترات لتسريع التصفح.", "الأداء والبيانات", defaultEnabled = false),
+        OptionalFeature(EYE_COMFORT, "راحة العين", "خفف تباين الخلفيات ليلاً دون تغيير تصميمك المختار.", "المظهر", defaultEnabled = false),
+        OptionalFeature(LARGE_TEXT, "نص أكبر", "كبّر النصوص الأساسية لتكون أوضح من مسافة بعيدة.", "المظهر", defaultEnabled = false),
+        OptionalFeature(ROOMY_POSTERS, "بوسترات أكبر", "قلل عدد البطاقات في الصف لتظهر بوسترات المكتبة بشكل أوضح.", "المظهر", defaultEnabled = false),
+        OptionalFeature(GUEST_MODE, "وضع ضيف", "لا تحفظ سجل المشاهدة أو القنوات الحديثة أثناء تفعيله.", "الخصوصية", defaultEnabled = false),
+        OptionalFeature(SLEEP_TIMER, "مؤقت النوم", "اسمح بإيقاف التشغيل تلقائياً بعد مدة تختارها داخل المشغل.", "التشغيل", defaultEnabled = false),
+        OptionalFeature(SETTINGS_LOCK, "قفل الإعدادات", "اطلب رمز ملف المالك قبل فتح الإعدادات عند وجوده.", "الخصوصية", defaultEnabled = false),
+        OptionalFeature(HIDE_DIAGNOSTICS, "إخفاء معلومات التشخيص", "أخفِ TV ID وأدوات التشخيص من العرض العادي.", "الخصوصية", defaultEnabled = false),
+        OptionalFeature(PERMISSIONS_INFO, "شرح الأذونات", "اعرض شرحاً محلياً لسبب استخدام أذونات التطبيق.", "الخصوصية", defaultEnabled = false)
     )
 
     fun option(id: String): OptionalFeature = options.firstOrNull { it.id == id }
