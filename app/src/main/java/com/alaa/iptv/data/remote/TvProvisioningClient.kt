@@ -1,5 +1,6 @@
 package com.alaa.iptv.data.remote
 
+import android.os.Build
 import com.alaa.iptv.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -67,4 +68,78 @@ object TvProvisioningClient {
                 }
             }
         }
+
+    suspend fun syncControlPlane(tvId: String, appVersion: String): Result<DeviceControlPlaneSnapshot> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                require(tvId.length >= 16) { "يرجى إدخال TV ID صحيح" }
+                val deviceType = "${Build.MANUFACTURER} ${Build.MODEL}".trim().take(80)
+                val payload = JSONObject()
+                    .put("json", JSONObject().put("tvId", tvId).put("appVersion", appVersion).put("deviceType", deviceType))
+                    .toString()
+                    .toRequestBody("application/json; charset=utf-8".toMediaType())
+                val endpoint = "${BuildConfig.PROVISIONING_API_URL.trimEnd('/')}/devices.sync"
+                val request = Request.Builder()
+                    .url(endpoint)
+                    .post(payload)
+                    .header("Accept", "application/json")
+                    .build()
+
+                client.newCall(request).execute().use { response ->
+                    val body = response.body?.string().orEmpty()
+                    if (!response.isSuccessful) throw IOException("تعذر مزامنة حالة الجهاز")
+                    val data = JSONObject(body).optJSONObject("result")
+                        ?.optJSONObject("data")?.optJSONObject("json")
+                        ?: throw IOException("استجابة لوحة التحكم غير صالحة")
+                    val device = data.optJSONObject("device")
+                        ?: throw IOException("حالة الجهاز غير متاحة")
+                    DeviceControlPlaneSnapshot(
+                        tvId = device.optString("tvId", tvId),
+                        deviceStatus = device.optString("status", "unknown"),
+                        remoteLogoutRequested = device.optBoolean("remoteLogoutRequested", false),
+                        remoteConfig = parseRemoteConfig(data.optJSONObject("remoteConfig")),
+                        featureFlags = parseFeatureFlags(data.optJSONObject("featureFlags"))
+                    )
+                }
+            }
+        }
+
+    suspend fun acknowledgeRemoteLogout(tvId: String): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            val payload = JSONObject().put("json", JSONObject().put("tvId", tvId)).toString()
+                .toRequestBody("application/json; charset=utf-8".toMediaType())
+            val request = Request.Builder()
+                .url("${BuildConfig.PROVISIONING_API_URL.trimEnd('/')}/devices.acknowledgeRemoteLogout")
+                .post(payload)
+                .header("Accept", "application/json")
+                .build()
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) throw IOException("تعذر تأكيد الخروج البعيد")
+            }
+        }
+    }
+
+    private fun parseRemoteConfig(source: JSONObject?): Map<String, RemoteConfigValue> {
+        if (source == null) return emptyMap()
+        return buildMap {
+            val keys = source.keys()
+            while (keys.hasNext()) {
+                val key = keys.next()
+                val item = source.optJSONObject(key) ?: continue
+                put(key, RemoteConfigValue(item.optString("value"), item.optString("type", "string")))
+            }
+        }
+    }
+
+    private fun parseFeatureFlags(source: JSONObject?): Map<String, RemoteFeatureFlag> {
+        if (source == null) return emptyMap()
+        return buildMap {
+            val keys = source.keys()
+            while (keys.hasNext()) {
+                val key = keys.next()
+                val item = source.optJSONObject(key) ?: continue
+                put(key, RemoteFeatureFlag(item.optBoolean("enabled", false), item.optInt("rolloutPercent", 100).coerceIn(0, 100)))
+            }
+        }
+    }
 }

@@ -5,6 +5,9 @@ import android.content.SharedPreferences
 import android.os.Build
 import com.alaa.iptv.data.models.Channel
 import com.alaa.iptv.data.models.FavoriteChannelCodec
+import com.alaa.iptv.data.remote.DeviceControlPlaneSnapshot
+import com.alaa.iptv.data.remote.RemoteConfigValue
+import com.alaa.iptv.data.remote.RemoteFeatureFlag
 import org.json.JSONArray
 import org.json.JSONObject
 import java.security.MessageDigest
@@ -48,6 +51,14 @@ class AppPreferences(context: Context) {
         private const val KEY_WATCHLIST_PREFIX = "watchlist_"
         private const val KEY_HISTORY_PREFIX = "history_"
         private const val KEY_RECENT_CHANNELS_PREFIX = "recent_channels_"
+        private const val KEY_CONTROL_PLANE_ENROLLED = "control_plane_enrolled"
+        private const val KEY_CONTROL_PLANE_STATUS = "control_plane_status"
+        private const val KEY_CONTROL_PLANE_SYNCED_AT = "control_plane_synced_at"
+        private const val KEY_REMOTE_CONFIG_SNAPSHOT = "remote_config_snapshot"
+        private const val KEY_REMOTE_FEATURE_FLAGS = "remote_feature_flags"
+        private const val KEY_REMOTE_LOGOUT_REQUESTED = "remote_logout_requested"
+        private const val KEY_SAFE_DIAGNOSTICS = "safe_diagnostics"
+        private const val CONTROL_PLANE_REFRESH_MS = 60_000L
         private const val DEFAULT_PROFILE_ID = "owner"
 
         const val THEME_ALAA_CLASSIC = "alaa_classic"
@@ -132,7 +143,8 @@ class AppPreferences(context: Context) {
 
     fun isFeatureEnabled(featureId: String): Boolean {
         val defaultValue = FeatureCatalog.option(featureId).defaultEnabled
-        return prefs.getBoolean(featureKey(featureId), defaultValue)
+        return prefs.getBoolean(featureKey(featureId), defaultValue) &&
+            ControlPlanePolicy.isFeatureAllowed(featureId, tvId, getRemoteFeatureFlags())
     }
 
     fun setFeatureEnabled(featureId: String, enabled: Boolean) {
@@ -141,6 +153,96 @@ class AppPreferences(context: Context) {
     }
 
     private fun featureKey(featureId: String): String = "$KEY_FEATURE_PREFIX${activeProfileId}_$featureId"
+
+    var isControlPlaneEnrolled: Boolean
+        get() = prefs.getBoolean(KEY_CONTROL_PLANE_ENROLLED, false)
+        set(value) = prefs.edit().putBoolean(KEY_CONTROL_PLANE_ENROLLED, value).apply()
+
+    var controlPlaneStatus: String
+        get() = prefs.getString(KEY_CONTROL_PLANE_STATUS, "active").orEmpty().ifBlank { "active" }
+        private set(value) = prefs.edit().putString(KEY_CONTROL_PLANE_STATUS, value).apply()
+
+    fun shouldRefreshControlPlane(nowMs: Long = System.currentTimeMillis()): Boolean {
+        return nowMs - prefs.getLong(KEY_CONTROL_PLANE_SYNCED_AT, 0L) >= CONTROL_PLANE_REFRESH_MS
+    }
+
+    fun lastControlPlaneSyncAt(): Long = prefs.getLong(KEY_CONTROL_PLANE_SYNCED_AT, 0L)
+
+    fun addSafeDiagnostic(area: String, throwable: Throwable? = null): String {
+        val reference = "AL-${System.currentTimeMillis().toString(36).uppercase()}"
+        val message = throwable?.message.orEmpty()
+            .replace(serverUrl, "[server]")
+            .replace(username, "[user]")
+            .replace(password, "[secret]")
+            .take(180)
+        val entries = prefs.getStringSet(KEY_SAFE_DIAGNOSTICS, emptySet()).orEmpty().toMutableSet()
+        entries += "$reference|$area|$message"
+        prefs.edit().putStringSet(KEY_SAFE_DIAGNOSTICS, entries.toList().takeLast(20).toSet()).apply()
+        return reference
+    }
+
+    fun getSafeDiagnostics(): List<String> = prefs.getStringSet(KEY_SAFE_DIAGNOSTICS, emptySet())
+        ?.toList()?.sortedDescending().orEmpty()
+
+    fun clearSafeDiagnostics() {
+        prefs.edit().remove(KEY_SAFE_DIAGNOSTICS).apply()
+    }
+
+    fun isDeviceAccessBlocked(): Boolean = ControlPlanePolicy.isDeviceBlocked(isControlPlaneEnrolled, controlPlaneStatus)
+
+    fun isRemoteLogoutRequested(): Boolean = prefs.getBoolean(KEY_REMOTE_LOGOUT_REQUESTED, false)
+
+    fun applyControlPlaneSnapshot(snapshot: DeviceControlPlaneSnapshot) {
+        val remoteConfigJson = JSONObject().apply {
+            snapshot.remoteConfig.forEach { (key, item) -> put(key, JSONObject().put("value", item.value).put("type", item.type)) }
+        }
+        val flagsJson = JSONObject().apply {
+            snapshot.featureFlags.forEach { (key, item) -> put(key, JSONObject().put("enabled", item.enabled).put("rolloutPercent", item.rolloutPercent)) }
+        }
+        prefs.edit()
+            .putString(KEY_CONTROL_PLANE_STATUS, snapshot.deviceStatus)
+            .putString(KEY_REMOTE_CONFIG_SNAPSHOT, remoteConfigJson.toString())
+            .putString(KEY_REMOTE_FEATURE_FLAGS, flagsJson.toString())
+            .putBoolean(KEY_REMOTE_LOGOUT_REQUESTED, snapshot.remoteLogoutRequested)
+            .putLong(KEY_CONTROL_PLANE_SYNCED_AT, System.currentTimeMillis())
+            .apply()
+    }
+
+    fun isHomeCategoryRemotelyHidden(categoryType: String): Boolean =
+        ControlPlanePolicy.isHomeCategoryHidden(categoryType, getRemoteConfig())
+
+    fun isMaintenanceEnabled(): Boolean = ControlPlanePolicy.isMaintenanceEnabled(getRemoteConfig())
+
+    fun maintenanceMessage(): String = ControlPlanePolicy.maintenanceMessage(getRemoteConfig())
+
+    fun isForcedUpdateRequired(currentVersion: String): Boolean =
+        ControlPlanePolicy.isForcedUpdateRequired(currentVersion, getRemoteConfig())
+
+    fun forcedUpdateUrl(): String = ControlPlanePolicy.updateUrl(getRemoteConfig())
+
+    private fun getRemoteConfig(): Map<String, RemoteConfigValue> = runCatching {
+        val root = JSONObject(prefs.getString(KEY_REMOTE_CONFIG_SNAPSHOT, "{}").orEmpty())
+        buildMap {
+            val keys = root.keys()
+            while (keys.hasNext()) {
+                val key = keys.next()
+                val item = root.optJSONObject(key) ?: continue
+                put(key, RemoteConfigValue(item.optString("value"), item.optString("type", "string")))
+            }
+        }
+    }.getOrDefault(emptyMap())
+
+    private fun getRemoteFeatureFlags(): Map<String, RemoteFeatureFlag> = runCatching {
+        val root = JSONObject(prefs.getString(KEY_REMOTE_FEATURE_FLAGS, "{}").orEmpty())
+        buildMap {
+            val keys = root.keys()
+            while (keys.hasNext()) {
+                val key = keys.next()
+                val item = root.optJSONObject(key) ?: continue
+                put(key, RemoteFeatureFlag(item.optBoolean("enabled", false), item.optInt("rolloutPercent", 100).coerceIn(0, 100)))
+            }
+        }
+    }.getOrDefault(emptyMap())
 
     var activeProfileId: String
         get() = prefs.getString(KEY_ACTIVE_PROFILE_ID, DEFAULT_PROFILE_ID).orEmpty().ifBlank { DEFAULT_PROFILE_ID }
@@ -443,7 +545,13 @@ class AppPreferences(context: Context) {
     
     fun clear() {
         val deviceId = tvId
-        prefs.edit().clear().putString(KEY_TV_ID, deviceId).apply()
+        val controlPlaneEnrolled = isControlPlaneEnrolled
+        val lastControlPlaneStatus = controlPlaneStatus
+        prefs.edit().clear()
+            .putString(KEY_TV_ID, deviceId)
+            .putBoolean(KEY_CONTROL_PLANE_ENROLLED, controlPlaneEnrolled)
+            .putString(KEY_CONTROL_PLANE_STATUS, lastControlPlaneStatus)
+            .apply()
     }
     
     fun saveFavorites(favorites: Set<String>) {

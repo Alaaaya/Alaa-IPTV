@@ -24,6 +24,7 @@ class LoginActivity : AppCompatActivity() {
 
     companion object {
         private const val TAG = "LoginActivity"
+        const val EXTRA_DEVICE_BLOCKED = "device_blocked"
     }
 
     private lateinit var binding: ActivityLoginBinding
@@ -99,6 +100,7 @@ class LoginActivity : AppCompatActivity() {
                 notifyOwner = prefs.isFeatureEnabled(FeatureCatalog.OWNER_ALERTS)
             ).onSuccess { subscription ->
                 prefs.tvId = subscription.tvId
+                prefs.isControlPlaneEnrolled = true
                 binding.tvIdValue.text = subscription.tvId
                 binding.serverUrlInput.setText(subscription.serverUrl)
                 binding.usernameInput.setText(subscription.username)
@@ -166,6 +168,10 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun performLogin(serverUrl: String, username: String, password: String) {
+        if (prefs.isDeviceAccessBlocked()) {
+            showLoginError("هذا الجهاز موقوف من لوحة التحكم. تواصل مع المالك لإعادة التفعيل.")
+            return
+        }
         setLoading(true)
 
         lifecycleScope.launch {
@@ -221,4 +227,5 @@ class LoginActivity : AppCompatActivity() {
         startActivity(intent)
         finish()
     }
+
 }

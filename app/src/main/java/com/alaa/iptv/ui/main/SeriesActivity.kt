@@ -25,6 +25,7 @@ import com.alaa.iptv.ui.dashboard.SidebarItem
 import com.alaa.iptv.ui.categories.CategoryPickerActivity
 import com.alaa.iptv.ui.settings.SettingsActivity
 import com.alaa.iptv.ui.theme.DisplayTheme
+import com.alaa.iptv.ui.common.ControlPlaneActivityGuard
 import kotlinx.coroutines.launch
 
 class SeriesActivity : AppCompatActivity() {
@@ -56,7 +57,16 @@ class SeriesActivity : AppCompatActivity() {
         setupSidebar()
         setupSeriesGrid()
         binding.seriesCategorySelector.setOnClickListener { showCategorySelector() }
-        loadCategories()
+        lifecycleScope.launch {
+            if (ControlPlaneActivityGuard.refreshAndEnforce(this@SeriesActivity, prefs, force = true)) loadCategories()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        lifecycleScope.launch {
+            ControlPlaneActivityGuard.refreshAndEnforce(this@SeriesActivity, prefs)
+        }
     }
 
     private fun setupSidebar() {

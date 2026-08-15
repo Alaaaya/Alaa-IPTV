@@ -10,12 +10,17 @@ import android.widget.RadioGroup
 import android.widget.Switch
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.alaa.iptv.R
 import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.data.preferences.FeatureCatalog
 import com.alaa.iptv.databinding.ActivitySettingsBinding
 import com.alaa.iptv.ui.dashboard.DashboardActivity
 import com.alaa.iptv.ui.theme.ThemeCatalog
+import com.alaa.iptv.ui.common.ControlPlaneActivityGuard
+import kotlinx.coroutines.launch
+import java.text.DateFormat
+import java.util.Date
 
 class SettingsActivity : AppCompatActivity() {
     private lateinit var binding: ActivitySettingsBinding
@@ -29,6 +34,7 @@ class SettingsActivity : AppCompatActivity() {
 
         prefs = AppPreferences(this)
         binding.tvIdValue.text = prefs.getOrCreateTvId()
+        updateSyncState()
         buildThemeOptions()
         buildOptionalFeatureSettings()
 
@@ -51,7 +57,29 @@ class SettingsActivity : AppCompatActivity() {
         binding.manageAccountsButton.setOnClickListener {
             startActivity(Intent(this, AccountManagementActivity::class.java))
         }
+        binding.manualSyncButton.setOnClickListener {
+            lifecycleScope.launch {
+                binding.manualSyncButton.isEnabled = false
+                val allowed = ControlPlaneActivityGuard.refreshAndEnforce(this@SettingsActivity, prefs, force = true)
+                if (allowed) {
+                    updateSyncState()
+                    Toast.makeText(this@SettingsActivity, "تمت مزامنة حالة الجهاز والإعدادات.", Toast.LENGTH_SHORT).show()
+                }
+                binding.manualSyncButton.isEnabled = true
+            }
+        }
         binding.backButton.setOnClickListener { finish() }
+    }
+
+    private fun updateSyncState() {
+        val at = prefs.lastControlPlaneSyncAt()
+        binding.syncStateValue.text = if (!prefs.isControlPlaneEnrolled) {
+            "غير مربوط بلوحة الإدارة"
+        } else if (at <= 0L) {
+            "لم تتم أي مزامنة بعد"
+        } else {
+            "آخر مزامنة: ${DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(at))}"
+        }
     }
 
     private fun buildThemeOptions() {

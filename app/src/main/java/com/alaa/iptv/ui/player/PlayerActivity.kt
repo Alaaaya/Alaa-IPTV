@@ -10,6 +10,7 @@ import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
@@ -30,7 +31,9 @@ import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.data.preferences.FeatureCatalog
 import com.alaa.iptv.data.preferences.MediaLibraryEntry
 import com.alaa.iptv.databinding.ActivityPlayerBinding
+import com.alaa.iptv.ui.common.ControlPlaneActivityGuard
 import com.alaa.iptv.ui.theme.DisplayTheme
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 @SuppressLint("UnsafeOptInUsageError")
@@ -91,9 +94,19 @@ class PlayerActivity : AppCompatActivity() {
         Log.d(TAG, "▶️ onCreate - Channel: $channelName")
         Log.d(TAG, "▶️ onCreate - Type: $streamType")
 
-        streamUrl?.takeIf { it.isNotBlank() }?.let(::initializePlayer) ?: run {
-            Log.e(TAG, "❌ No stream URL provided")
-            showError(getString(R.string.player_error))
+        lifecycleScope.launch {
+            if (!ControlPlaneActivityGuard.refreshAndEnforce(this@PlayerActivity, prefs)) return@launch
+            streamUrl?.takeIf { it.isNotBlank() }?.let(::initializePlayer) ?: run {
+                Log.e(TAG, "❌ No stream URL provided")
+                showError(getString(R.string.player_error))
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        lifecycleScope.launch {
+            ControlPlaneActivityGuard.refreshAndEnforce(this@PlayerActivity, prefs)
         }
     }
 
