@@ -26,6 +26,8 @@ class ChannelAdapter(
     inner class ChannelViewHolder(private val binding: ItemChannelBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
+        private var boundChannel: Channel? = null
+
         init {
             binding.root.setOnClickListener {
                 val position = bindingAdapterPosition
@@ -67,6 +69,7 @@ class ChannelAdapter(
         }
 
         fun bind(channel: Channel, isSelected: Boolean, position: Int) {
+            boundChannel = channel
             binding.channelName.text = channel.name
             binding.channelNumber.text = (position + 1).toString()
             
@@ -75,7 +78,7 @@ class ChannelAdapter(
             
             // Favorite indicator
             binding.favoriteIndicator.visibility = View.VISIBLE
-            binding.favoriteIndicator.alpha = if (channel.isFavorite) 1.0f else 0.3f
+            renderFavorite(channel.isFavorite)
 
             if (DisplayTheme.hasCustomTheme(displayTheme)) {
                 binding.root.background = DisplayTheme.panelBackground(displayTheme)
@@ -98,6 +101,13 @@ class ChannelAdapter(
             updateUI(isSelected)
         }
 
+        private fun renderFavorite(isFavorite: Boolean) {
+            binding.favoriteIndicator.alpha = if (isFavorite) 1.0f else 0.3f
+            binding.favoriteIndicator.setColorFilter(
+                if (isFavorite) Color.parseColor("#FF4055") else Color.parseColor("#808080")
+            )
+        }
+
         private fun updateUI(hasFocus: Boolean) {
             if (hasFocus) {
                 if (DisplayTheme.hasCustomTheme(displayTheme)) {
@@ -105,13 +115,11 @@ class ChannelAdapter(
                     binding.channelName.setTextColor(DisplayTheme.focusTextColor(displayTheme))
                     binding.channelNumber.setTextColor(DisplayTheme.focusTextColor(displayTheme))
                     binding.qualityTag.setTextColor(DisplayTheme.focusTextColor(displayTheme))
-                    binding.favoriteIndicator.setColorFilter(DisplayTheme.focusTextColor(displayTheme))
                 } else {
                     binding.root.setBackgroundResource(R.drawable.bg_sidebar_selected)
                     binding.channelName.setTextColor(Color.WHITE)
                     binding.channelNumber.setTextColor(Color.WHITE)
                     binding.qualityTag.setTextColor(Color.WHITE)
-                    binding.favoriteIndicator.setColorFilter(Color.WHITE)
                 }
             } else {
                 if (DisplayTheme.hasCustomTheme(displayTheme)) {
@@ -126,8 +134,8 @@ class ChannelAdapter(
                     binding.channelNumber.setTextColor(Color.parseColor("#808080"))
                     binding.qualityTag.setTextColor(Color.parseColor("#808080"))
                 }
-                binding.favoriteIndicator.setColorFilter(Color.parseColor("#808080"))
             }
+            renderFavorite(boundChannel?.isFavorite == true)
         }
     }
 

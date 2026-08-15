@@ -44,6 +44,8 @@ class MainActivity : AppCompatActivity() {
     private var selectedLiveCategory: Category? = null
     private var currentLivePage = 0
     private var hasMoreLivePages = false
+    private var movingChannelKey: String? = null
+    private var moveSnapshot: List<Channel> = emptyList()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -241,7 +243,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun showChannelOptions(channel: Channel) {
         val isFavorite = channel.isFavorite
-        val channelPosition = allChannels.indexOfFirst { channelKey(it) == channelKey(channel) }
         val actions = mutableListOf<Pair<String, () -> Unit>>()
 
         actions += if (isFavorite) {
@@ -250,11 +251,8 @@ class MainActivity : AppCompatActivity() {
             "إضافة إلى المفضلة" to { toggleFavorite(channel) }
         }
 
-        if (currentMode != MODE_FAVORITES && channelPosition > 0) {
-            actions += "نقل للأعلى" to { moveChannel(channel, -1) }
-        }
-        if (currentMode != MODE_FAVORITES && channelPosition in 0 until allChannels.lastIndex) {
-            actions += "نقل للأسفل" to { moveChannel(channel, 1) }
+        if (currentMode != MODE_FAVORITES && allChannels.size > 1) {
+            actions += "نقل القناة" to { startChannelMove(channel) }
         }
 
         AlertDialog.Builder(this)
@@ -283,21 +281,48 @@ class MainActivity : AppCompatActivity() {
         ).show()
     }
 
-    private fun moveChannel(channel: Channel, offset: Int) {
-        val oldPosition = allChannels.indexOfFirst { channelKey(it) == channelKey(channel) }
-        val newPosition = oldPosition + offset
-        if (oldPosition !in allChannels.indices || newPosition !in allChannels.indices) return
-
-        val reordered = allChannels.toMutableList()
-        val moved = reordered.removeAt(oldPosition)
-        reordered.add(newPosition, moved)
-        allChannels = reordered.mapIndexed { position, item -> item.copy(position = position) }
-        prefs.saveChannelOrder(allChannels.map(::channelKey))
-        updateChannelList(moved)
-        Toast.makeText(this, "تم حفظ ترتيب القنوات", Toast.LENGTH_SHORT).show()
+    private fun startChannelMove(channel: Channel) {
+        movingChannelKey = channelKey(channel)
+        moveSnapshot = allChannels
+        binding.channelCounterFooter.text = "وضع النقل: ↑ ↓ تحريك  •  OK حفظ  •  رجوع إلغاء"
+        binding.previewSubtitle.text = "حرّك ${channel.name} بالأسهم ثم اضغط OK للحفظ"
+        focusChannelForMove(channelKey(channel))
     }
 
-    private fun channelKey(channel: Channel): String = "${channel.streamType.lowercase()}:${channel.streamId}"
+    private fun moveChannelStep(offset: Int) {
+        val key = movingChannelKey ?: return
+        val moved = ChannelOrderMover.move(allChannels, key, offset)
+        if (moved === allChannels || moved == allChannels) return
+        allChannels = moved
+        focusChannelForMove(key)
+    }
+
+    private fun focusChannelForMove(key: String) {
+        val position = allChannels.indexOfFirst { channelKey(it) == key }
+        if (position < 0) return
+        channelAdapter.updateChannels(allChannels)
+        binding.channelsRecyclerView.post {
+            binding.channelsRecyclerView.scrollToPosition(position)
+            binding.channelsRecyclerView.findViewHolderForAdapterPosition(position)
+                ?.itemView?.requestFocus()
+        }
+    }
+
+    private fun finishChannelMove(save: Boolean) {
+        val key = movingChannelKey ?: return
+        if (save) {
+            prefs.saveChannelOrder(allChannels.map(::channelKey))
+            Toast.makeText(this, "تم حفظ ترتيب القناة", Toast.LENGTH_SHORT).show()
+        } else {
+            allChannels = moveSnapshot
+            Toast.makeText(this, "تم إلغاء نقل القناة", Toast.LENGTH_SHORT).show()
+        }
+        movingChannelKey = null
+        moveSnapshot = emptyList()
+        updateChannelList(allChannels.firstOrNull { channelKey(it) == key })
+    }
+
+    private fun channelKey(channel: Channel): String = ChannelOrderMover.keyFor(channel)
 
     private fun playChannel(channel: Channel) {
         val url = channel.directSource ?: channel.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password)
@@ -336,6 +361,30 @@ class MainActivity : AppCompatActivity() {
                 ?.itemView?.requestFocus()
                 ?: binding.liveCategoriesRecyclerView.requestFocus()
         }
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (event.action == KeyEvent.ACTION_DOWN && movingChannelKey != null) {
+            when (event.keyCode) {
+                KeyEvent.KEYCODE_DPAD_UP -> {
+                    moveChannelStep(-1)
+                    return true
+                }
+                KeyEvent.KEYCODE_DPAD_DOWN -> {
+                    moveChannelStep(1)
+                    return true
+                }
+                KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
+                    finishChannelMove(save = true)
+                    return true
+                }
+                KeyEvent.KEYCODE_BACK, KeyEvent.KEYCODE_ESCAPE -> {
+                    finishChannelMove(save = false)
+                    return true
+                }
+            }
+        }
+        return super.dispatchKeyEvent(event)
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
