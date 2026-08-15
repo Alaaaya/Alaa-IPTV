@@ -61,6 +61,15 @@ object FeatureCatalog {
     const val LONG_NOTIFICATIONS = "long_notifications"
     const val NAVIGATION_SOUNDS = "navigation_sounds"
     const val IDLE_REMINDER = "idle_reminder"
+    const val AUTO_CACHE_CLEAN = "auto_cache_clean"
+    const val COMPATIBILITY_MODE = "compatibility_mode"
+    const val HIGH_PERFORMANCE_MODE = "high_performance_mode"
+    const val STORAGE_WARNING = "storage_warning"
+    const val REMOTE_TEST = "remote_test"
+    const val REMOTE_GUIDE = "remote_guide"
+    const val RESET_PREFERENCES = "reset_preferences"
+    const val SAFE_SUPPORT_REPORT = "safe_support_report"
+    const val WHATS_NEW = "whats_new"
 
     val options = listOf(
         OptionalFeature(GLOBAL_SEARCH, "البحث الشامل", "ابحث في القنوات والأفلام والمسلسلات.", "المكتبة"),
@@ -113,7 +122,16 @@ object FeatureCatalog {
         OptionalFeature(PERMISSIONS_INFO, "شرح الأذونات", "اعرض شرحاً محلياً لسبب استخدام أذونات التطبيق.", "الخصوصية", defaultEnabled = false),
         OptionalFeature(LONG_NOTIFICATIONS, "تنبيهات أطول", "أطِل مدة رسائل الحالة لتكون أوضح من مسافة بعيدة.", "المظهر", defaultEnabled = false),
         OptionalFeature(NAVIGATION_SOUNDS, "أصوات التنقل", "فعّل أصوات Android TV الخفيفة عند الضغط والتنقل.", "المظهر", defaultEnabled = false),
-        OptionalFeature(IDLE_REMINDER, "تذكير عدم النشاط", "نبّهك قبل إيقاف التشغيل المحلي بعد فترة طويلة بلا تفاعل.", "الخصوصية", defaultEnabled = false)
+        OptionalFeature(IDLE_REMINDER, "تذكير عدم النشاط", "نبّهك قبل إيقاف التشغيل المحلي بعد فترة طويلة بلا تفاعل.", "الخصوصية", defaultEnabled = false),
+        OptionalFeature(AUTO_CACHE_CLEAN, "تنظيف مؤقت تلقائي", "نظّف صور البوسترات القديمة دورياً في الخلفية.", "الأداء والبيانات", defaultEnabled = false),
+        OptionalFeature(COMPATIBILITY_MODE, "وضع توافق للأجهزة الضعيفة", "استخدم مخزناً مؤقتاً أكثر تحفظاً لتقليل التقطيع على الأجهزة الضعيفة.", "الأداء والبيانات", defaultEnabled = false),
+        OptionalFeature(HIGH_PERFORMANCE_MODE, "وضع أداء عالٍ", "استخدم مخزناً مؤقتاً أسرع على الأجهزة القوية؛ أوقف وضع التوافق أولاً.", "الأداء والبيانات", defaultEnabled = false),
+        OptionalFeature(STORAGE_WARNING, "تنبيه مساحة التخزين", "نبّهك عندما تقل المساحة المتاحة عن حد آمن.", "الأداء والبيانات", defaultEnabled = false),
+        OptionalFeature(REMOTE_TEST, "اختبار الريموت", "اعرض آخر زر يصل إلى التطبيق للتحقق من الريموت.", "التشغيل", defaultEnabled = false),
+        OptionalFeature(REMOTE_GUIDE, "دليل اختصارات الريموت", "اعرض ملخص اختصارات التنقل والتشغيل داخل التطبيق.", "التشغيل", defaultEnabled = false),
+        OptionalFeature(RESET_PREFERENCES, "استعادة إعدادات العرض", "أعد التصميم والخيارات المحلية إلى افتراضياتها دون حذف الاشتراك.", "الخصوصية", defaultEnabled = false),
+        OptionalFeature(SAFE_SUPPORT_REPORT, "تقرير دعم آمن", "انسخ تقريراً قصيراً بلا بيانات اشتراك للمشاركة مع الدعم.", "الاتصال", defaultEnabled = false),
+        OptionalFeature(WHATS_NEW, "ما الجديد", "اعرض ملخصاً محلياً للإضافات بعد تحديث التطبيق.", "الواجهة", defaultEnabled = false)
     )
 
     fun option(id: String): OptionalFeature = options.firstOrNull { it.id == id }

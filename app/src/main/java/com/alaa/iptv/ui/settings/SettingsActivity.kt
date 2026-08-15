@@ -1,8 +1,11 @@
 package com.alaa.iptv.ui.settings
 
 import android.content.Intent
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.graphics.Color
 import android.os.Bundle
+import android.os.StatFs
 import android.view.View
 import android.widget.EditText
 import android.widget.LinearLayout
@@ -44,7 +47,10 @@ class SettingsActivity : AppCompatActivity() {
         buildThemeOptions()
         buildOptionalFeatureSettings()
         addPermissionsInfoAction()
+        addAdvancedActions()
         updateDiagnosticsVisibility()
+        runAutoCacheCleanIfNeeded()
+        showStorageWarningIfNeeded()
         if (prefs.isFeatureEnabled(FeatureCatalog.SETTINGS_LOCK) && prefs.getActiveProfile().pinHash.isNotBlank()) {
             requestSettingsUnlock()
         }
@@ -220,6 +226,91 @@ class SettingsActivity : AppCompatActivity() {
         binding.manualSyncButton.visibility = visibility
         binding.connectionTestState.visibility = visibility
         binding.connectionTestButton.visibility = visibility
+    }
+
+    private fun addAdvancedActions() {
+        fun action(title: String, onClick: () -> Unit) {
+            binding.featureSettingsContainer.addView(android.widget.Button(this).apply {
+                text = title
+                isAllCaps = false
+                setOnClickListener { onClick() }
+            })
+        }
+        if (prefs.isFeatureEnabled(FeatureCatalog.REMOTE_TEST)) action("بدء اختبار الريموت") { showRemoteTest() }
+        if (prefs.isFeatureEnabled(FeatureCatalog.REMOTE_GUIDE)) action("عرض دليل اختصارات الريموت") { showRemoteGuide() }
+        if (prefs.isFeatureEnabled(FeatureCatalog.RESET_PREFERENCES)) action("استعادة إعدادات العرض الافتراضية") {
+            AlertDialog.Builder(this)
+                .setTitle("استعادة الإعدادات")
+                .setMessage("سيعاد التصميم والخيارات المحلية فقط. لن تُحذف بيانات الاشتراك أو TV ID أو المفضلة.")
+                .setPositiveButton("استعادة") { _, _ ->
+                    prefs.resetCustomization()
+                    Toast.makeText(this, "تمت استعادة إعدادات العرض والخيارات المحلية", Toast.LENGTH_SHORT).show()
+                    recreate()
+                }
+                .setNegativeButton("إلغاء", null)
+                .show()
+        }
+        if (prefs.isFeatureEnabled(FeatureCatalog.SAFE_SUPPORT_REPORT)) action("نسخ تقرير دعم آمن") {
+            val report = prefs.buildSafeSupportReport(packageManager.getPackageInfo(packageName, 0).versionName ?: "غير معروف")
+            (getSystemService(CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newPlainText("Alaa Player Support", report))
+            Toast.makeText(this, "تم نسخ تقرير الدعم الآمن دون بيانات الاشتراك", Toast.LENGTH_SHORT).show()
+        }
+        if (prefs.isFeatureEnabled(FeatureCatalog.WHATS_NEW)) action("ما الجديد في Alaa Player") {
+            AlertDialog.Builder(this)
+                .setTitle("ما الجديد")
+                .setMessage("يتضمن هذا الإصدار بدءاً سريعاً، بحثاً موحداً، تفاصيل محتوى أوضح، أدوات اتصال ودعم آمنة، وخيارات خصوصية وأداء اختيارية. لا يحتوي التطبيق على EPG.")
+                .setPositiveButton("حسناً", null)
+                .show()
+        }
+    }
+
+    private fun runAutoCacheCleanIfNeeded() {
+        if (!prefs.isFeatureEnabled(FeatureCatalog.AUTO_CACHE_CLEAN) || !prefs.shouldAutoCleanImageCache()) return
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) { Glide.get(applicationContext).clearDiskCache() }
+            Glide.get(applicationContext).clearMemory()
+            prefs.markImageCacheCleaned()
+            Toast.makeText(this@SettingsActivity, "تم تنظيف صور البوسترات القديمة تلقائياً", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun showStorageWarningIfNeeded() {
+        if (!prefs.isFeatureEnabled(FeatureCatalog.STORAGE_WARNING)) return
+        val freeBytes = StatFs(filesDir.absolutePath).availableBytes
+        if (freeBytes < 500L * 1024L * 1024L) {
+            binding.selectionState.text = "مساحة التخزين منخفضة. استخدم «مسح الصور المؤقتة» لتفريغ مساحة."
+        }
+    }
+
+    private fun showRemoteTest() {
+        val result = android.widget.TextView(this).apply {
+            text = "اضغط أزرار الريموت هنا؛ سيظهر آخر زر مستلم."
+            setTextColor(Color.WHITE)
+            textSize = 16f
+            isFocusableInTouchMode = true
+            requestFocus()
+            setOnKeyListener { _, code, event ->
+                if (event.action == android.view.KeyEvent.ACTION_DOWN) resultText(code, this)
+                true
+            }
+        }
+        AlertDialog.Builder(this)
+            .setTitle("اختبار الريموت")
+            .setView(result)
+            .setPositiveButton("إنهاء", null)
+            .show()
+    }
+
+    private fun resultText(code: Int, view: android.widget.TextView) {
+        view.text = "تم رصد: ${android.view.KeyEvent.keyCodeToString(code)}"
+    }
+
+    private fun showRemoteGuide() {
+        AlertDialog.Builder(this)
+            .setTitle("دليل اختصارات الريموت")
+            .setMessage("الأسهم: تنقل بين الفئات والمحتوى.\nOK: فتح أو تشغيل.\nضغطة مطولة على قناة/محتوى: تفاصيل وخيارات إضافية.\nMENU في المكتبة: فلاتر النوع عند تفعيلها.\nضغطة مطولة على زر المسارات داخل المشغل: مؤقت النوم عند تفعيله.")
+            .setPositiveButton("حسناً", null)
+            .show()
     }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()

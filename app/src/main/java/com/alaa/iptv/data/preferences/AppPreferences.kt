@@ -39,6 +39,7 @@ class AppPreferences(context: Context) {
         private const val KEY_LAST_SERIES_CATEGORY = "last_series_category"
         private const val KEY_LAST_VISITED_SECTION = "last_visited_section"
         private const val KEY_LAST_SEARCH_QUERY = "last_search_query"
+        private const val KEY_LAST_IMAGE_CACHE_CLEAN = "last_image_cache_clean"
         private const val KEY_DISPLAY_THEME = "display_theme"
         private const val KEY_CREDENTIAL_ENCRYPTION_COMPLETE = "credential_encryption_complete"
         private const val KEY_FEATURE_PREFIX = "feature_enabled_"
@@ -198,6 +199,36 @@ class AppPreferences(context: Context) {
     fun clearSafeDiagnostics() {
         prefs.edit().remove(KEY_SAFE_DIAGNOSTICS).apply()
     }
+
+    fun shouldAutoCleanImageCache(nowMs: Long = System.currentTimeMillis()): Boolean =
+        nowMs - prefs.getLong(KEY_LAST_IMAGE_CACHE_CLEAN, 0L) >= 7L * 24L * 60L * 60L * 1000L
+
+    fun markImageCacheCleaned(nowMs: Long = System.currentTimeMillis()) {
+        prefs.edit().putLong(KEY_LAST_IMAGE_CACHE_CLEAN, nowMs).apply()
+    }
+
+    /** يستعيد خيارات العرض والسلوك المحلي فقط، ولا يمس الاشتراك أو TV ID أو بيانات الدخول. */
+    fun resetCustomization() {
+        val editor = prefs.edit()
+        FeatureCatalog.options.forEach { editor.remove(featureKey(it.id)) }
+        editor.remove(KEY_DISPLAY_THEME)
+            .remove(KEY_LAST_LIVE_CATEGORY)
+            .remove(KEY_LAST_MOVIE_CATEGORY)
+            .remove(KEY_LAST_SERIES_CATEGORY)
+            .remove(KEY_LAST_VISITED_SECTION)
+            .remove(KEY_LAST_SEARCH_QUERY)
+            .apply()
+    }
+
+    fun buildSafeSupportReport(appVersion: String): String = buildString {
+        appendLine("Alaa Player — تقرير دعم آمن")
+        appendLine("الإصدار: $appVersion")
+        appendLine("TV ID: ${getOrCreateTvId()}")
+        appendLine("حالة الجهاز: $controlPlaneStatus")
+        appendLine("آخر مزامنة: ${lastControlPlaneSyncAt()}")
+        appendLine("عدد الميزات المحلية المفعلة: ${FeatureCatalog.options.count { isFeatureEnabled(it.id) }}")
+        getSafeDiagnostics().take(5).forEach { appendLine("تشخيص: $it") }
+    }.trim()
 
     fun isDeviceAccessBlocked(): Boolean = ControlPlanePolicy.isDeviceBlocked(isControlPlaneEnrolled, controlPlaneStatus)
 
