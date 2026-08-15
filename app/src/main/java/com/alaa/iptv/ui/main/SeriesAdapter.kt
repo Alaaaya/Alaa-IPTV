@@ -16,7 +16,9 @@ import com.bumptech.glide.Glide
 class SeriesAdapter(
     private val seriesList: List<Series>,
     private val displayTheme: String = AppPreferences.THEME_ALAA_CLASSIC,
-    private val onSeriesClick: (Series) -> Unit
+    private val onSeriesClick: (Series) -> Unit,
+    private val onSeriesLongClick: ((Series) -> Unit)? = null,
+    private val onSeriesFocused: ((Series) -> Unit)? = null
 ) : RecyclerView.Adapter<SeriesAdapter.SeriesViewHolder>() {
 
     inner class SeriesViewHolder(private val binding: ItemMovieCardBinding) :
@@ -27,8 +29,20 @@ class SeriesAdapter(
                 val position = bindingAdapterPosition
                 if (position != RecyclerView.NO_POSITION) onSeriesClick(seriesList[position])
             }
+            binding.root.setOnLongClickListener {
+                val position = bindingAdapterPosition
+                if (position == RecyclerView.NO_POSITION || onSeriesLongClick == null) false
+                else {
+                    onSeriesLongClick.invoke(seriesList[position])
+                    true
+                }
+            }
             binding.root.setOnFocusChangeListener { _, hasFocus ->
                 renderFocusState(hasFocus)
+                if (hasFocus) {
+                    val position = bindingAdapterPosition
+                    if (position != RecyclerView.NO_POSITION) onSeriesFocused?.invoke(seriesList[position])
+                }
             }
             binding.root.setOnKeyListener { _, keyCode, event ->
                 if (event.action != KeyEvent.ACTION_DOWN) return@setOnKeyListener false

@@ -10,7 +10,9 @@ import java.io.File
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.alaa.iptv.data.preferences.AppPreferences
+import com.alaa.iptv.data.preferences.FeatureCatalog
 import com.alaa.iptv.data.remote.TvProvisioningClient
+import com.alaa.iptv.data.remote.TvConnectionFailureReporter
 import com.alaa.iptv.data.repository.MediaRepository
 import com.alaa.iptv.databinding.ActivityLoginBinding
 import com.alaa.iptv.ui.dashboard.DashboardActivity
@@ -92,7 +94,10 @@ class LoginActivity : AppCompatActivity() {
 
         setLoading(true)
         lifecycleScope.launch {
-            TvProvisioningClient.fetchSubscription(tvId).onSuccess { subscription ->
+            TvProvisioningClient.fetchSubscription(
+                tvId,
+                notifyOwner = prefs.isFeatureEnabled(FeatureCatalog.OWNER_ALERTS)
+            ).onSuccess { subscription ->
                 prefs.tvId = subscription.tvId
                 binding.tvIdValue.text = subscription.tvId
                 binding.serverUrlInput.setText(subscription.serverUrl)
@@ -172,11 +177,19 @@ class LoginActivity : AppCompatActivity() {
                 prefs.useM3U = repository.isM3U(serverUrl)
                 prefs.m3uUrl = if (prefs.useM3U) serverUrl.trim() else ""
                 prefs.isLoggedIn = true
+                prefs.resetConnectionFailures()
                 repository.clearCache()
                 Log.d(TAG, "Login validated successfully")
                 navigateToDashboard()
             }.onFailure { error ->
                 prefs.isLoggedIn = false
+                if (prefs.isFeatureEnabled(FeatureCatalog.OWNER_ALERTS) && prefs.registerConnectionFailure() >= 3) {
+                    TvConnectionFailureReporter.report(
+                        prefs.getOrCreateTvId(),
+                        error.message ?: "فشل التحقق من الاشتراك"
+                    )
+                    prefs.resetConnectionFailures()
+                }
                 Log.w(TAG, "Login validation failed", error)
                 showLoginError(error.message ?: "تعذر تسجيل الدخول، تحقق من بيانات الاشتراك")
                 setLoading(false)

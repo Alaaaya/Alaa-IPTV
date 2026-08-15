@@ -24,13 +24,13 @@ object TvProvisioningClient {
         .readTimeout(20, TimeUnit.SECONDS)
         .build()
 
-    suspend fun fetchSubscription(tvId: String): Result<ProvisionedIptvSubscription> =
+    suspend fun fetchSubscription(tvId: String, notifyOwner: Boolean = false): Result<ProvisionedIptvSubscription> =
         withContext(Dispatchers.IO) {
             runCatching {
                 require(tvId.length >= 16) { "يرجى إدخال TV ID صحيح" }
 
                 val payload = JSONObject()
-                    .put("json", JSONObject().put("tvId", tvId))
+                    .put("json", JSONObject().put("tvId", tvId).put("notifyOwner", notifyOwner))
                     .toString()
                     .toRequestBody("application/json; charset=utf-8".toMediaType())
                 val endpoint = "${BuildConfig.PROVISIONING_API_URL.trimEnd('/')}/devices.provision"

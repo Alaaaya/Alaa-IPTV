@@ -54,6 +54,24 @@
             android:configChanges="orientation|keyboardHidden|screenSize" />
 
         <activity
+            android:name=".ui.settings.AccountManagementActivity"
+            android:exported="false"
+            android:screenOrientation="landscape"
+            android:configChanges="orientation|keyboardHidden|screenSize" />
+
+        <activity
+            android:name=".ui.library.LibraryActivity"
+            android:exported="false"
+            android:screenOrientation="landscape"
+            android:configChanges="orientation|keyboardHidden|screenSize" />
+
+        <activity
+            android:name=".ui.library.SearchActivity"
+            android:exported="false"
+            android:screenOrientation="landscape"
+            android:configChanges="orientation|keyboardHidden|screenSize" />
+
+        <activity
             android:name=".ui.categories.CategoryPickerActivity"
             android:exported="false"
             android:screenOrientation="landscape"

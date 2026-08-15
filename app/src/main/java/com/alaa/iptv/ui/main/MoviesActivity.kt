@@ -3,6 +3,8 @@ package com.alaa.iptv.ui.main
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.view.KeyEvent
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -14,6 +16,8 @@ import com.alaa.iptv.R
 import com.alaa.iptv.data.models.Movie
 import com.alaa.iptv.data.models.Category
 import com.alaa.iptv.data.preferences.AppPreferences
+import com.alaa.iptv.data.preferences.FeatureCatalog
+import com.alaa.iptv.data.preferences.MediaLibraryEntry
 import com.alaa.iptv.data.repository.MediaRepository
 import com.alaa.iptv.databinding.ActivityMoviesBinding
 import com.alaa.iptv.ui.dashboard.SidebarAdapter
@@ -136,7 +140,13 @@ class MoviesActivity : AppCompatActivity() {
                         } else {
                             "${movies.size} فيلم"
                         }
-                        binding.moviesRecyclerView.adapter = MovieAdapter(movies, prefs.displayTheme, ::playMovie)
+                        binding.moviesRecyclerView.adapter = MovieAdapter(
+                            movies,
+                            prefs.displayTheme,
+                            ::playMovie,
+                            ::toggleWatchlist,
+                            ::showPreview
+                        )
                     }.onFailure { error ->
                         Log.e(TAG, "Unable to load movies", error)
                         binding.moviesCount.text = "تعذر تحميل الأفلام. تحقق من الشبكة أو الفئة المختارة"
@@ -160,6 +170,51 @@ class MoviesActivity : AppCompatActivity() {
             .putExtra("STREAM_URL", url)
             .putExtra("CHANNEL_NAME", movie.name)
             .putExtra("STREAM_TYPE", "movie"))
+    }
+
+    private fun toggleWatchlist(movie: Movie) {
+        if (!prefs.isFeatureEnabled(FeatureCatalog.WATCHLIST)) {
+            Toast.makeText(this, "فعّل المشاهدة لاحقاً من الإعدادات أولاً", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val added = prefs.toggleWatchlist(
+            MediaLibraryEntry(
+                id = movie.streamId,
+                title = movie.name,
+                streamUrl = movie.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password),
+                streamType = "movie",
+                imageUrl = movie.streamIcon
+            )
+        )
+        Toast.makeText(this, if (added) "أُضيف إلى المشاهدة لاحقاً" else "أُزيل من المشاهدة لاحقاً", Toast.LENGTH_SHORT).show()
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_MENU && prefs.isFeatureEnabled(FeatureCatalog.LIBRARY_FILTERS)) {
+            showGenreFilter()
+            return true
+        }
+        return super.onKeyDown(keyCode, event)
+    }
+
+    private fun showGenreFilter() {
+        val genres = movies.flatMap { it.genre.orEmpty().split(",") }
+            .map { it.trim() }.filter { it.isNotBlank() }.distinct().sorted()
+        val options = listOf("الكل") + genres
+        AlertDialog.Builder(this)
+            .setTitle("فلترة الأفلام")
+            .setItems(options.toTypedArray()) { _, index ->
+                val filtered = if (index == 0) movies else movies.filter { it.genre.orEmpty().contains(options[index], true) }
+                binding.moviesRecyclerView.adapter = MovieAdapter(filtered, prefs.displayTheme, ::playMovie, ::toggleWatchlist, ::showPreview)
+                binding.moviesCount.text = "${filtered.size} فيلم"
+            }
+            .show()
+    }
+
+    private fun showPreview(movie: Movie) {
+        if (!prefs.isFeatureEnabled(FeatureCatalog.FOCUS_PREVIEW)) return
+        val meta = listOfNotNull(movie.year?.takeIf { it.isNotBlank() }, movie.rating?.takeIf { it.isNotBlank() }?.let { "★ $it" })
+        binding.moviesCount.text = listOf(movie.name, meta.joinToString(" • ")).filter { it.isNotBlank() }.joinToString(" — ")
     }
 
     private fun openMain(mode: String) {

@@ -14,11 +14,14 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.alaa.iptv.R
 import com.alaa.iptv.data.models.Channel
 import com.alaa.iptv.data.preferences.AppPreferences
+import com.alaa.iptv.data.preferences.FeatureCatalog
 import com.alaa.iptv.data.repository.MediaRepository
 import com.alaa.iptv.databinding.ActivityDashboardBinding
 import com.alaa.iptv.ui.main.MainActivity
 import com.alaa.iptv.ui.main.MoviesActivity
 import com.alaa.iptv.ui.main.SeriesActivity
+import com.alaa.iptv.ui.library.LibraryActivity
+import com.alaa.iptv.ui.library.SearchActivity
 import com.alaa.iptv.ui.player.PlayerActivity
 import com.alaa.iptv.ui.settings.SettingsActivity
 import com.alaa.iptv.ui.theme.DisplayTheme
@@ -86,17 +89,36 @@ class DashboardActivity : AppCompatActivity() {
     }
 
     private fun setupSidebar() {
-        val items = listOf(
+        val standardItems = listOf(
             SidebarItem(getString(R.string.menu_home), R.drawable.ic_logo, true) { /* Home */ },
             SidebarItem(getString(R.string.menu_live), R.drawable.ic_live_tv, false) { openMain(MainActivity.MODE_LIVE) },
             SidebarItem(getString(R.string.menu_movies), R.drawable.ic_movies, false) { openMain(MainActivity.MODE_MOVIES) },
             SidebarItem(getString(R.string.menu_series), R.drawable.ic_series, false) { openMain(MainActivity.MODE_SERIES) },
             SidebarItem(getString(R.string.menu_favorites), R.drawable.ic_favorite, false) { openMain(MainActivity.MODE_FAVORITES) },
-            SidebarItem(getString(R.string.menu_recent), R.drawable.ic_recent, false) { showToast("قريباً") },
-            SidebarItem(getString(R.string.menu_categories), R.drawable.ic_categories, false) { showToast("قريباً") },
+            SidebarItem(getString(R.string.menu_recent), R.drawable.ic_recent, false) {
+                if (prefs.isFeatureEnabled(FeatureCatalog.WATCHLIST) || prefs.isFeatureEnabled(FeatureCatalog.WATCH_HISTORY) || prefs.isFeatureEnabled(FeatureCatalog.RECENT_CHANNELS)) {
+                    startActivity(Intent(this, LibraryActivity::class.java))
+                } else showToast("فعّل ميزات المكتبة من الإعدادات أولاً")
+            },
+            SidebarItem(getString(R.string.menu_categories), R.drawable.ic_categories, false) {
+                if (prefs.isFeatureEnabled(FeatureCatalog.GLOBAL_SEARCH)) startActivity(Intent(this, SearchActivity::class.java))
+                else showToast("فعّل البحث الشامل من الإعدادات أولاً")
+            },
             SidebarItem(getString(R.string.menu_server), R.drawable.ic_server, false) { showToast("قريباً") },
             SidebarItem(getString(R.string.menu_settings), R.drawable.ic_settings, false) { startActivity(Intent(this, SettingsActivity::class.java)) }
         )
+        val items = if (prefs.isFeatureEnabled(FeatureCatalog.SIMPLE_MODE)) {
+            standardItems.filter { item ->
+                item.title in setOf(
+                    getString(R.string.menu_home),
+                    getString(R.string.menu_live),
+                    getString(R.string.menu_movies),
+                    getString(R.string.menu_series),
+                    getString(R.string.menu_favorites),
+                    getString(R.string.menu_settings)
+                )
+            }
+        } else standardItems
 
         val adapter = SidebarAdapter(items, prefs.displayTheme) { item ->
             item.action.invoke()
@@ -263,11 +285,43 @@ class DashboardActivity : AppCompatActivity() {
         categories.add(CategoryItem("الأطفال", allChannels.count { it.name.contains("kids", true) }, R.drawable.ic_kids, CategoryVisuals.backgroundFor("kids"), "#FF9800", "live"))
         categories.add(CategoryItem("الوثائقيات", allChannels.count { it.name.contains("doc", true) }, R.drawable.ic_documentary, CategoryVisuals.backgroundFor("documentary"), "#00BCD4", "live"))
         categories.add(CategoryItem("الموسيقى", allChannels.count { it.name.contains("music", true) }, R.drawable.ic_music, CategoryVisuals.backgroundFor("music"), "#EC4899", "live"))
-        updateCategories(categories)
+        val homeTypes = listOf("live", "sports", "news", "movie", "series", "kids", "documentary", "music")
+        val visibleTypes = if (prefs.isFeatureEnabled(FeatureCatalog.HOME_CUSTOMIZATION) || prefs.isFeatureEnabled(FeatureCatalog.CATEGORY_ORDER)) {
+            prefs.getHomeCategoryTypes(homeTypes)
+        } else homeTypes
+        val categoryType = mapOf(
+            "كل القنوات" to "live", "الرياضة" to "sports", "الأخبار" to "news", "الأفلام" to "movie",
+            "المسلسلات" to "series", "الأطفال" to "kids", "الوثائقيات" to "documentary", "الموسيقى" to "music"
+        )
+        updateCategories(categories.filter { categoryType[it.name] in visibleTypes }.sortedBy { visibleTypes.indexOf(categoryType[it.name]) })
         updateHeroBanner()
 
-        // لا نعرض محتوى في "متابعة المشاهدة" إلا عندما يتوفر سجل مشاهدة حقيقي.
-        updateContinueWatching(emptyList())
+        val history = if (prefs.isFeatureEnabled(FeatureCatalog.WATCH_HISTORY)) prefs.getPlaybackHistory() else emptyList()
+        updateContinueWatching(history.map { entry ->
+            ContinueWatchingItem(
+                id = entry.id,
+                title = entry.title,
+                subtitle = if (entry.positionMs > 0) "استئناف المشاهدة" else "شاهد مجدداً",
+                imageUrl = entry.imageUrl,
+                progress = if (entry.durationMs > 0) ((entry.positionMs * 100) / entry.durationMs).toInt().coerceIn(0, 100) else 0,
+                channel = Channel(
+                    streamId = entry.id,
+                    num = "",
+                    name = entry.title,
+                    streamType = entry.streamType,
+                    streamIcon = entry.imageUrl,
+                    epgChannelId = null,
+                    added = null,
+                    categoryId = null,
+                    categoryName = null,
+                    customSid = null,
+                    tvArchive = 0,
+                    directSource = entry.streamUrl,
+                    tvArchiveDuration = 0
+                ),
+                resumePositionMs = entry.positionMs
+            )
+        })
     }
 
     private fun openMain(mode: String) {
@@ -283,7 +337,10 @@ class DashboardActivity : AppCompatActivity() {
         val url = item.channel.directSource ?: item.channel.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password)
         if (url.isNullOrBlank()) return
         startActivity(Intent(this, PlayerActivity::class.java)
-            .putExtra("STREAM_URL", url).putExtra("CHANNEL_NAME", item.channel.name).putExtra("STREAM_TYPE", item.channel.streamType))
+            .putExtra("STREAM_URL", url)
+            .putExtra("CHANNEL_NAME", item.channel.name)
+            .putExtra("STREAM_TYPE", item.channel.streamType)
+            .putExtra(PlayerActivity.EXTRA_RESUME_POSITION_MS, item.resumePositionMs))
     }
 
     private fun showToast(message: String) {
@@ -318,4 +375,12 @@ data class CategoryItem(
     val colorHex: String,
     val type: String
 )
-data class ContinueWatchingItem(val id: String, val title: String, val subtitle: String, val imageUrl: String?, val progress: Int, val channel: Channel)
+data class ContinueWatchingItem(
+    val id: String,
+    val title: String,
+    val subtitle: String,
+    val imageUrl: String?,
+    val progress: Int,
+    val channel: Channel,
+    val resumePositionMs: Long = 0L
+)

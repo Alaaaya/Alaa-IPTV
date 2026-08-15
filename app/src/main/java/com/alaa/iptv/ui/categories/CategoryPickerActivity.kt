@@ -4,27 +4,34 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.doAfterTextChanged
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.alaa.iptv.data.models.Category
+import com.alaa.iptv.data.preferences.AppPreferences
+import com.alaa.iptv.data.preferences.FeatureCatalog
 import com.alaa.iptv.databinding.ActivityCategoryPickerBinding
 
 class CategoryPickerActivity : AppCompatActivity() {
     private lateinit var binding: ActivityCategoryPickerBinding
     private lateinit var adapter: CategoryPickerAdapter
     private var categories: List<Category> = emptyList()
+    private lateinit var prefs: AppPreferences
+    private lateinit var pickerTitle: String
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityCategoryPickerBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        prefs = AppPreferences(this)
         categories = intent.parcelableCategories()
-        binding.titleText.text = intent.getStringExtra(EXTRA_TITLE) ?: "الفئات"
+        pickerTitle = intent.getStringExtra(EXTRA_TITLE) ?: "الفئات"
+        binding.titleText.text = pickerTitle
         binding.backButton.setOnClickListener { finish() }
 
-        adapter = CategoryPickerAdapter(::returnSelection)
+        adapter = CategoryPickerAdapter(::returnSelection, ::hideCategory)
         binding.categoriesRecyclerView.layoutManager = LinearLayoutManager(this)
         binding.categoriesRecyclerView.adapter = adapter
         binding.searchInput.doAfterTextChanged { showFiltered(it?.toString().orEmpty()) }
@@ -32,7 +39,10 @@ class CategoryPickerActivity : AppCompatActivity() {
     }
 
     private fun showFiltered(query: String) {
-        val filtered = CategorySearch.filter(categories, query)
+        val visible = if (prefs.isFeatureEnabled(FeatureCatalog.HIDE_CONTENT)) {
+            categories.filterNot { prefs.isContentHidden(categoryKey(it)) }
+        } else categories
+        val filtered = CategorySearch.filter(visible, query)
         binding.categoryCount.text = if (query.isBlank()) {
             "${filtered.size} فئة متاحة"
         } else {
@@ -51,6 +61,18 @@ class CategoryPickerActivity : AppCompatActivity() {
         )
         finish()
     }
+
+    private fun hideCategory(category: Category) {
+        if (!prefs.isFeatureEnabled(FeatureCatalog.HIDE_CONTENT)) {
+            Toast.makeText(this, "فعّل إخفاء المحتوى من الإعدادات أولاً", Toast.LENGTH_SHORT).show()
+            return
+        }
+        prefs.setContentHidden(categoryKey(category), true)
+        Toast.makeText(this, "أُخفيت ${category.categoryName}. يمكنك استعادة كل الفئات من إدارة الحسابات.", Toast.LENGTH_LONG).show()
+        showFiltered(binding.searchInput.text?.toString().orEmpty())
+    }
+
+    private fun categoryKey(category: Category): String = "$pickerTitle:${category.categoryId}"
 
     @Suppress("DEPRECATION")
     private fun Intent.parcelableCategories(): List<Category> =
