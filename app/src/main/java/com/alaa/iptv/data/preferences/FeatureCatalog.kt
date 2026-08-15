@@ -47,6 +47,7 @@ object FeatureCatalog {
     const val SYNC_STATUS = "sync_status"
     const val MANUAL_SYNC = "manual_sync"
     const val REMOTE_CONFIG_CONFIRMATION = "remote_config_confirmation"
+    const val IMAGE_CACHE_CLEAR = "image_cache_clear"
 
     val options = listOf(
         OptionalFeature(GLOBAL_SEARCH, "البحث الشامل", "ابحث في القنوات والأفلام والمسلسلات.", "المكتبة"),
@@ -86,6 +87,7 @@ object FeatureCatalog {
         OptionalFeature(SYNC_STATUS, "حالة المزامنة", "أظهر وقت آخر مزامنة مع لوحة الإدارة.", "الاتصال", defaultEnabled = false),
         OptionalFeature(MANUAL_SYNC, "مزامنة فورية", "اسمح بطلب مزامنة يدوية مع لوحة الإدارة.", "الاتصال", defaultEnabled = false),
         OptionalFeature(REMOTE_CONFIG_CONFIRMATION, "تأكيد الإعدادات البعيدة", "أظهر إشعاراً عند تطبيق إعدادات مركزية جديدة.", "الاتصال", defaultEnabled = false)
+        ,OptionalFeature(IMAGE_CACHE_CLEAR, "تنظيف الصور المؤقتة", "اسمح بمسح صور البوسترات المؤقتة عند الحاجة.", "الاتصال", defaultEnabled = false)
     )
 
     fun option(id: String): OptionalFeature = options.firstOrNull { it.id == id }
