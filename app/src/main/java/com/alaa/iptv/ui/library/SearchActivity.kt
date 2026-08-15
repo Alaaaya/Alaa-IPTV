@@ -3,7 +3,9 @@ package com.alaa.iptv.ui.library
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
+import android.text.InputType
 import android.view.Gravity
+import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.Button
 import android.widget.EditText
@@ -14,11 +16,15 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.alaa.iptv.data.models.Channel
+import com.alaa.iptv.data.models.Movie
+import com.alaa.iptv.data.models.Series
 import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.data.repository.MediaRepository
+import com.alaa.iptv.ui.main.SeriesDetailsActivity
 import com.alaa.iptv.ui.player.PlayerActivity
 import kotlinx.coroutines.launch
 
+/** بحث محلي فوق الفهارس المتاحة: لا يبدأ تحميل كل فئات الكتالوج أو صفحاته. */
 class SearchActivity : AppCompatActivity() {
     private lateinit var prefs: AppPreferences
     private lateinit var repository: MediaRepository
@@ -26,7 +32,9 @@ class SearchActivity : AppCompatActivity() {
     private lateinit var results: LinearLayout
     private lateinit var status: TextView
     private lateinit var progress: ProgressBar
-    private var searchable: List<Channel> = emptyList()
+    private lateinit var tabsContainer: LinearLayout
+    private var searchable: List<SearchEntry> = emptyList()
+    private var selectedType: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,14 +51,30 @@ class SearchActivity : AppCompatActivity() {
             setTextColor(Color.WHITE)
             setHintTextColor(Color.LTGRAY)
             setSingleLine(true)
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
             imeOptions = EditorInfo.IME_ACTION_SEARCH
-            setOnEditorActionListener { _, _, _ -> search(); true }
+            setSelectAllOnFocus(false)
+            setOnEditorActionListener { _, actionId, _ ->
+                if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                    search()
+                    true
+                } else false
+            }
         }
         root.addView(queryInput)
         root.addView(Button(this).apply { text = "بحث"; setOnClickListener { search() } })
+
+        tabsContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dp(6), 0, dp(4))
+        }
+        root.addView(tabsContainer)
+        createSearchTabs()
+
         status = TextView(this).apply { setTextColor(Color.LTGRAY); textSize = 14f; setPadding(0, dp(8), 0, dp(8)) }
         root.addView(status)
-        progress = ProgressBar(this).apply { visibility = android.view.View.GONE }
+        progress = ProgressBar(this).apply { visibility = View.GONE }
         root.addView(progress)
         results = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         root.addView(ScrollView(this).apply {
@@ -62,20 +86,56 @@ class SearchActivity : AppCompatActivity() {
         loadSearchIndex()
     }
 
+    private fun createSearchTabs() {
+        listOf(null to "الكل", "live" to "القنوات", "movie" to "الأفلام", "series" to "المسلسلات").forEach { (type, title) ->
+            tabsContainer.addView(Button(this).apply {
+                text = title
+                isAllCaps = false
+                setOnClickListener {
+                    selectedType = type
+                    updateTabState()
+                    if (queryInput.text.length >= 2) search()
+                }
+            })
+        }
+        updateTabState()
+    }
+
+    private fun updateTabState() {
+        for (index in 0 until tabsContainer.childCount) {
+            val button = tabsContainer.getChildAt(index) as? Button ?: continue
+            val type = listOf<String?>(null, "live", "movie", "series")[index]
+            button.alpha = if (selectedType == type) 1f else 0.55f
+            button.isSelected = selectedType == type
+        }
+    }
+
     private fun loadSearchIndex() {
-        progress.visibility = android.view.View.VISIBLE
-        status.text = "تجهيز البحث دون تحميل الكتالوج كاملاً…"
+        progress.visibility = View.VISIBLE
+        status.text = "تجهيز البحث في المحتوى المتاح…"
         lifecycleScope.launch {
-            val channels = repository.getLiveStreams(null).getOrDefault(emptyList())
+            val channels = repository.getLiveStreams(null).getOrDefault(emptyList()).map { SearchEntry(it) }
             val movies = repository.getMovies(null).getOrDefault(emptyList()).map { movie ->
-                Channel(movie.streamId, movie.streamId, movie.name, "movie", movie.streamIcon, null, null, movie.categoryId, null, null, 0, null, 0)
+                SearchEntry(
+                    channel = Channel(movie.streamId, movie.streamId, movie.name, "movie", movie.streamIcon, null, null, movie.categoryId, null, null, 0, movie.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password), 0),
+                    movie = movie
+                )
             }
-            val series = repository.getSeries(null).getOrDefault(emptyList()).map { series ->
-                Channel(series.seriesId, series.seriesId, series.name, "series", series.cover, null, null, series.categoryId, null, null, 0, null, 0)
+            val series = repository.getSeries(null).getOrDefault(emptyList()).map { item ->
+                SearchEntry(
+                    channel = Channel(item.seriesId, item.seriesId, item.name, "series", item.cover, null, null, item.categoryId, null, null, 0, null, 0),
+                    series = item
+                )
             }
-            searchable = channels + movies + series
-            progress.visibility = android.view.View.GONE
-            status.text = "جاهز للبحث في المحتوى المحمّل حالياً."
+            searchable = (channels + movies + series)
+                .distinctBy { "${it.channel.streamType}:${it.channel.streamId}" }
+            progress.visibility = View.GONE
+            status.text = "جاهز للبحث في ${searchable.size} عنصر متاح حالياً."
+            prefs.lastSearchQuery.takeIf { it.length >= 2 }?.let { previous ->
+                queryInput.setText(previous)
+                queryInput.setSelection(previous.length)
+                search()
+            }
         }
     }
 
@@ -83,33 +143,53 @@ class SearchActivity : AppCompatActivity() {
         val query = queryInput.text.toString().trim()
         if (query.length < 2) {
             status.text = "اكتب حرفين على الأقل للبحث."
+            results.removeAllViews()
             return
         }
-        val found = searchable.filter { it.name.contains(query, ignoreCase = true) }.take(80)
+        prefs.lastSearchQuery = query
+        val found = searchable.asSequence()
+            .filter { selectedType == null || it.channel.streamType == selectedType }
+            .filter { it.channel.name.contains(query, ignoreCase = true) }
+            .sortedWith(compareBy<SearchEntry> { typeRank(it.channel.streamType) }.thenBy { it.channel.name.lowercase() })
+            .take(MAX_RESULTS)
+            .toList()
         results.removeAllViews()
-        status.text = "${found.size} نتيجة"
-        found.forEach { channel ->
+        status.text = if (found.isEmpty()) "لا توجد نتائج مطابقة ضمن تبويب ${selectedTabLabel()}." else "${found.size} نتيجة ضمن تبويب ${selectedTabLabel()}."
+        found.forEach { entry ->
             results.addView(Button(this).apply {
-                text = "${typeLabel(channel.streamType)} — ${channel.name}"
+                text = "${typeLabel(entry.channel.streamType)} — ${entry.channel.name}"
                 gravity = Gravity.START or Gravity.CENTER_VERTICAL
                 isAllCaps = false
-                setOnClickListener { open(channel) }
+                contentDescription = "${typeLabel(entry.channel.streamType)} ${entry.channel.name}"
+                setOnClickListener { open(entry) }
             })
         }
     }
 
-    private fun open(channel: Channel) {
-        if (channel.streamType == "series") {
-            status.text = "اختر المسلسل من قسم المسلسلات لعرض الحلقات."
+    private fun open(entry: SearchEntry) {
+        entry.series?.let { series ->
+            startActivity(Intent(this, SeriesDetailsActivity::class.java).putExtra(SeriesDetailsActivity.EXTRA_SERIES, series))
             return
         }
-        val url = channel.directSource ?: channel.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password)
+        val url = entry.channel.directSource ?: entry.channel.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password)
+        if (url.isBlank()) {
+            status.text = "تعذر إنشاء رابط التشغيل لهذا المحتوى."
+            return
+        }
         startActivity(Intent(this, PlayerActivity::class.java)
             .putExtra("STREAM_URL", url)
-            .putExtra("CHANNEL_NAME", channel.name)
-            .putExtra("STREAM_TYPE", channel.streamType))
+            .putExtra("CHANNEL_NAME", entry.channel.name)
+            .putExtra("STREAM_TYPE", entry.channel.streamType))
     }
 
+    private fun selectedTabLabel() = when (selectedType) { "live" -> "القنوات"; "movie" -> "الأفلام"; "series" -> "المسلسلات"; else -> "الكل" }
     private fun typeLabel(type: String) = when (type) { "movie" -> "فيلم"; "series" -> "مسلسل"; else -> "قناة" }
+    private fun typeRank(type: String) = when (type) { "live" -> 0; "movie" -> 1; "series" -> 2; else -> 3 }
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+
+    private data class SearchEntry(val channel: Channel, val movie: Movie? = null, val series: Series? = null)
+
+    private companion object {
+        const val MAX_RESULTS = 80
+    }
 }
