@@ -57,6 +57,7 @@ class MainActivity : AppCompatActivity() {
         repository = MediaRepository(prefs, this)
         DisplayTheme.applyLive(binding, prefs)
         currentMode = intent.getStringExtra(EXTRA_MODE) ?: MODE_LIVE
+        prefs.lastVisitedSection = currentMode
 
         when (currentMode) {
             MODE_MOVIES -> {
