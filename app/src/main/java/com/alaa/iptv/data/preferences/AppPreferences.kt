@@ -2,13 +2,19 @@ package com.alaa.iptv.data.preferences
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.os.Build
 import com.alaa.iptv.data.models.Channel
 import com.alaa.iptv.data.models.FavoriteChannelCodec
 import java.util.UUID
 
 class AppPreferences(context: Context) {
-    
-    private val prefs: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    private val appContext = context.applicationContext
+    private val prefs: SharedPreferences = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    private val credentialCrypto = CredentialCrypto()
+
+    init {
+        migrateCredentialsIfNeeded()
+    }
     
     companion object {
         private const val PREFS_NAME = "alaa_iptv_prefs"
@@ -26,6 +32,7 @@ class AppPreferences(context: Context) {
         private const val KEY_LAST_MOVIE_CATEGORY = "last_movie_category"
         private const val KEY_LAST_SERIES_CATEGORY = "last_series_category"
         private const val KEY_DISPLAY_THEME = "display_theme"
+        private const val KEY_CREDENTIAL_ENCRYPTION_COMPLETE = "credential_encryption_complete"
 
         const val THEME_ALAA_CLASSIC = "alaa_classic"
         const val THEME_MIDNIGHT_GOLD = "midnight_gold"
@@ -45,18 +52,32 @@ class AppPreferences(context: Context) {
         const val THEME_OCEAN_WAVE = "ocean_wave"
         const val THEME_ROYAL_VELVET = "royal_velvet"
     }
+
+    private fun migrateCredentialsIfNeeded() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M ||
+            prefs.getBoolean(KEY_CREDENTIAL_ENCRYPTION_COMPLETE, false)
+        ) return
+
+        val editor = prefs.edit()
+        listOf(KEY_SERVER_URL, KEY_USERNAME, KEY_PASSWORD, KEY_M3U_URL).forEach { key ->
+            prefs.getString(key, null)
+                ?.takeIf { it.isNotBlank() && !credentialCrypto.isEncrypted(it) }
+                ?.let { editor.putString(key, credentialCrypto.encrypt(it)) }
+        }
+        editor.putBoolean(KEY_CREDENTIAL_ENCRYPTION_COMPLETE, true).apply()
+    }
     
     var serverUrl: String
-        get() = prefs.getString(KEY_SERVER_URL, "") ?: ""
-        set(value) = prefs.edit().putString(KEY_SERVER_URL, value).apply()
+        get() = credentialCrypto.decrypt(prefs.getString(KEY_SERVER_URL, "") ?: "")
+        set(value) = prefs.edit().putString(KEY_SERVER_URL, credentialCrypto.encrypt(value)).apply()
     
     var username: String
-        get() = prefs.getString(KEY_USERNAME, "") ?: ""
-        set(value) = prefs.edit().putString(KEY_USERNAME, value).apply()
+        get() = credentialCrypto.decrypt(prefs.getString(KEY_USERNAME, "") ?: "")
+        set(value) = prefs.edit().putString(KEY_USERNAME, credentialCrypto.encrypt(value)).apply()
     
     var password: String
-        get() = prefs.getString(KEY_PASSWORD, "") ?: ""
-        set(value) = prefs.edit().putString(KEY_PASSWORD, value).apply()
+        get() = credentialCrypto.decrypt(prefs.getString(KEY_PASSWORD, "") ?: "")
+        set(value) = prefs.edit().putString(KEY_PASSWORD, credentialCrypto.encrypt(value)).apply()
     
     var isLoggedIn: Boolean
         get() = prefs.getBoolean(KEY_IS_LOGGED_IN, false)
@@ -67,8 +88,8 @@ class AppPreferences(context: Context) {
         set(value) = prefs.edit().putBoolean(KEY_USE_M3U, value).apply()
     
     var m3uUrl: String
-        get() = prefs.getString(KEY_M3U_URL, "") ?: ""
-        set(value) = prefs.edit().putString(KEY_M3U_URL, value).apply()
+        get() = credentialCrypto.decrypt(prefs.getString(KEY_M3U_URL, "") ?: "")
+        set(value) = prefs.edit().putString(KEY_M3U_URL, credentialCrypto.encrypt(value)).apply()
 
     var tvId: String
         get() = prefs.getString(KEY_TV_ID, "") ?: ""

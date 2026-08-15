@@ -25,6 +25,7 @@ import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import com.alaa.iptv.R
+import com.alaa.iptv.data.models.LiveUrlFallbackPolicy
 import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.databinding.ActivityPlayerBinding
 import com.alaa.iptv.ui.theme.DisplayTheme
@@ -45,7 +46,7 @@ class PlayerActivity : AppCompatActivity() {
     private var channelName: String? = null
     private var streamType: String? = null
     private var channelIndex = -1
-    private var alternateLiveUrlAttempted: String? = null
+    private val attemptedLiveUrls = linkedSetOf<String>()
     private var playerOpenedAtMs = 0L
 
     private data class TrackOption(
@@ -72,8 +73,10 @@ class PlayerActivity : AppCompatActivity() {
         binding.channelNameText.text = channelName ?: ""
         binding.trackSelectionButton.setOnClickListener { showTrackSelection() }
         binding.errorText.setOnClickListener {
-            alternateLiveUrlAttempted = null
-            streamUrl?.takeIf { it.isNotBlank() }?.let(::initializePlayer)
+            streamUrl?.takeIf { it.isNotBlank() }?.let {
+                attemptedLiveUrls.clear()
+                initializePlayer(it)
+            }
         }
 
         Log.d(TAG, "▶️ onCreate - Channel: $channelName")
@@ -88,6 +91,7 @@ class PlayerActivity : AppCompatActivity() {
     private fun initializePlayer(url: String) {
         showLoading(true)
         showError(null)
+        attemptedLiveUrls += url
 
         Log.d(TAG, "▶️ Initializing player with URL type: ${streamType}")
         Log.d(TAG, "▶️ URL protocol: ${Uri.parse(url).scheme}")
@@ -211,19 +215,8 @@ class PlayerActivity : AppCompatActivity() {
     private fun tryAlternativeLiveUrl(): Boolean {
         if (!streamType.equals("live", ignoreCase = true)) return false
         val currentUrl = streamUrl ?: return false
-        val pathWithoutQuery = currentUrl.substringBefore('?')
-        val replacement = when {
-            pathWithoutQuery.endsWith(".ts", ignoreCase = true) -> ".m3u8"
-            pathWithoutQuery.endsWith(".m3u8", ignoreCase = true) -> ".ts"
-            else -> return false
-        }
-        val alternativeUrl = currentUrl.replace(
-            Regex("\\.(ts|m3u8)(?=\\?|$)", RegexOption.IGNORE_CASE),
-            replacement
-        )
-        if (alternativeUrl == currentUrl || alternativeUrl == alternateLiveUrlAttempted) return false
+        val alternativeUrl = LiveUrlFallbackPolicy.nextAlternative(currentUrl, attemptedLiveUrls) ?: return false
 
-        alternateLiveUrlAttempted = alternativeUrl
         streamUrl = alternativeUrl
         Log.w(TAG, "↻ Retrying live stream with alternate container")
         initializePlayer(alternativeUrl)
@@ -339,7 +332,7 @@ class PlayerActivity : AppCompatActivity() {
 
         channelIndex = nextIndex
         streamUrl = nextChannel.streamUrl
-        alternateLiveUrlAttempted = null
+        attemptedLiveUrls.clear()
         channelName = nextChannel.name
         streamType = nextChannel.streamType
         binding.channelNameText.text = nextChannel.name
@@ -349,6 +342,11 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if ((binding.trackSelectionButton.hasFocus() || binding.errorText.hasFocus()) &&
+            keyCode in setOf(KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER)
+        ) {
+            return super.onKeyDown(keyCode, event)
+        }
         return when (keyCode) {
             KeyEvent.KEYCODE_BACK, KeyEvent.KEYCODE_ESCAPE -> {
                 if (SystemClock.elapsedRealtime() - playerOpenedAtMs < 1_500L) return true

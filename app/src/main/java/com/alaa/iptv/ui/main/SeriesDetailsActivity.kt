@@ -14,6 +14,7 @@ import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.data.repository.MediaRepository
 import com.alaa.iptv.databinding.ActivitySeriesDetailsBinding
 import com.alaa.iptv.ui.player.PlayerActivity
+import com.alaa.iptv.ui.theme.DisplayTheme
 import com.bumptech.glide.Glide
 import kotlinx.coroutines.launch
 
@@ -36,10 +37,11 @@ class SeriesDetailsActivity : AppCompatActivity() {
             }
         prefs = AppPreferences(this)
         repository = MediaRepository(prefs, this)
+        DisplayTheme.applySeriesDetails(binding, prefs)
 
         bindSeries()
         binding.backButton.setOnClickListener { finish() }
-        binding.episodesRecyclerView.layoutManager = GridLayoutManager(this, 4)
+        binding.episodesRecyclerView.layoutManager = GridLayoutManager(this, EpisodeAdapter.EPISODE_GRID_COLUMNS)
         loadEpisodes()
     }
 
@@ -68,6 +70,7 @@ class SeriesDetailsActivity : AppCompatActivity() {
                         if (episodes.isEmpty()) {
                             showError(getString(R.string.no_episodes))
                         } else {
+                            binding.errorText.visibility = View.GONE
                             binding.episodesRecyclerView.adapter = EpisodeAdapter(episodes, ::playEpisode)
                         }
                     }

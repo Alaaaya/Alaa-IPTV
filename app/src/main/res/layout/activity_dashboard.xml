@@ -130,6 +130,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentStart="true"
+                    android:layout_toStartOf="@id/topStatusGroup"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
@@ -149,6 +150,7 @@
                 </LinearLayout>
 
                 <LinearLayout
+                    android:id="@+id/topStatusGroup"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
@@ -269,6 +271,7 @@
                     android:id="@+id/categoriesHeaderTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_toStartOf="@id/categoriesViewAll"
                     android:text="@string/browse_categories"
                     android:textColor="@color/white"
                     android:textSize="18sp"
@@ -302,6 +305,7 @@
                     android:id="@+id/continueWatchingHeaderTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_toStartOf="@id/continueWatchingViewAll"
                     android:text="@string/continue_watching"
                     android:textColor="@color/white"
                     android:textSize="18sp"

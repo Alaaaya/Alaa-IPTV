@@ -205,8 +205,9 @@ class MediaRepository(
                 val startIndex = pageIndex * LIVE_PAGE_SIZE
                 val endIndex = minOf(array.length(), startIndex + LIVE_PAGE_SIZE)
                 for (i in startIndex until endIndex) {
-                    val obj = array.getJSONObject(i)
+                    val obj = array.optJSONObject(i) ?: continue
                     val id = obj.optString("stream_id")
+                    if (id.isBlank()) continue
                     val providerSource = obj.optString("direct_source")
                         .trim()
                         .takeIf { it.startsWith("http://", true) || it.startsWith("https://", true) }
@@ -394,10 +395,13 @@ class MediaRepository(
         val array = JSONArray(request(buildApiUrl("get_vod_streams", extra)))
         val startIndex = (page.coerceAtLeast(0) * CONTENT_PAGE_SIZE).coerceAtMost(array.length())
         val endIndex = minOf(array.length(), startIndex + CONTENT_PAGE_SIZE)
-        return List(endIndex - startIndex) { offset ->
-            val obj = array.getJSONObject(startIndex + offset)
-            Movie(
-                streamId = obj.optString("stream_id"), name = obj.optString("name"), streamIcon = obj.optString("stream_icon"),
+        val movies = mutableListOf<Movie>()
+        for (index in startIndex until endIndex) {
+            val obj = array.optJSONObject(index) ?: continue
+            val streamId = obj.optString("stream_id")
+            if (streamId.isBlank()) continue
+            movies += Movie(
+                streamId = streamId, name = obj.optString("name"), streamIcon = obj.optString("stream_icon"),
                 rating = obj.optString("rating"), year = obj.optString("year", ""), plot = obj.optString("plot", ""),
                 cast = obj.optString("cast", ""), director = obj.optString("director", ""), genre = obj.optString("genre", ""),
                 releaseDate = obj.optString("release_date", ""), durationSecs = obj.optString("duration_secs", ""),
@@ -405,6 +409,7 @@ class MediaRepository(
                 containerExtension = obj.optString("container_extension", "mp4"), isFavorite = false
             )
         }
+        return movies
     }
 
     private suspend fun fetchFeaturedMovies(): List<Movie> {
@@ -464,15 +469,19 @@ class MediaRepository(
         val array = JSONArray(request(buildApiUrl("get_series", "&category_id=${encodeQueryParameter(categoryId)}")))
         val startIndex = (page.coerceAtLeast(0) * CONTENT_PAGE_SIZE).coerceAtMost(array.length())
         val endIndex = minOf(array.length(), startIndex + CONTENT_PAGE_SIZE)
-        return List(endIndex - startIndex) { offset ->
-            val obj = array.getJSONObject(startIndex + offset)
-            Series(
-                seriesId = obj.optString("series_id"), name = obj.optString("name"), cover = obj.optString("cover"),
+        val series = mutableListOf<Series>()
+        for (index in startIndex until endIndex) {
+            val obj = array.optJSONObject(index) ?: continue
+            val seriesId = obj.optString("series_id")
+            if (seriesId.isBlank()) continue
+            series += Series(
+                seriesId = seriesId, name = obj.optString("name"), cover = obj.optString("cover"),
                 plot = obj.optString("plot"), cast = obj.optString("cast", ""), director = obj.optString("director", ""),
                 genre = obj.optString("genre"), releaseDate = obj.optString("release_date", ""),
                 categoryId = obj.optString("category_id"), rating = obj.optString("rating"), isFavorite = false
             )
         }
+        return series
     }
 
     private suspend fun fetchFeaturedSeries(): List<Series> {
