@@ -107,18 +107,14 @@ class SeriesActivity : AppCompatActivity() {
     private fun loadCategories() {
         lifecycleScope.launch {
             val result = repository.getSeriesCategories()
-            result.onSuccess { loadedCategories ->
-                categories = loadedCategories
-                val selected = categories.firstOrNull { it.categoryId == prefs.lastSeriesCategoryId }
-                    ?: categories.firstOrNull()
-                if (selected == null) {
-                    binding.seriesCount.text = "لا توجد فئات مسلسلات"
-                } else {
-                    selectCategory(selected)
-                }
-            }.onFailure { error ->
-                Log.e("SeriesActivity", "Unable to load series categories", error)
-                binding.seriesCount.text = "تعذر تحميل فئات المسلسلات"
+            val loadedCategories = result.getOrDefault(emptyList())
+            categories = listOf(Category("all", "جميع المسلسلات (الكل)", loadedCategories.size)) + loadedCategories
+            val selected = categories.firstOrNull { it.categoryId == prefs.lastSeriesCategoryId }
+                ?: categories.firstOrNull()
+            if (selected == null) {
+                selectCategory(Category("all", "جميع المسلسلات", 0))
+            } else {
+                selectCategory(selected)
             }
         }
     }

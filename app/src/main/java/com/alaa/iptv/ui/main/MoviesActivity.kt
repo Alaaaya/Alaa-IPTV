@@ -108,18 +108,14 @@ class MoviesActivity : AppCompatActivity() {
     private fun loadCategories() {
         lifecycleScope.launch {
             val result = repository.getMovieCategories()
-            result.onSuccess { loadedCategories ->
-                categories = loadedCategories
-                val selected = categories.firstOrNull { it.categoryId == prefs.lastMovieCategoryId }
-                    ?: categories.firstOrNull()
-                if (selected == null) {
-                    binding.moviesCount.text = "لا توجد فئات أفلام"
-                } else {
-                    selectCategory(selected)
-                }
-            }.onFailure { error ->
-                Log.e(TAG, "Unable to load movie categories", error)
-                binding.moviesCount.text = "تعذر تحميل فئات الأفلام"
+            val loadedCategories = result.getOrDefault(emptyList())
+            categories = listOf(Category("all", "جميع الأفلام (الكل)", loadedCategories.size)) + loadedCategories
+            val selected = categories.firstOrNull { it.categoryId == prefs.lastMovieCategoryId }
+                ?: categories.firstOrNull()
+            if (selected == null) {
+                selectCategory(Category("all", "جميع الأفلام", 0))
+            } else {
+                selectCategory(selected)
             }
         }
     }
