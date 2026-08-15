@@ -6,7 +6,7 @@ import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.GridLayoutManager
 import com.alaa.iptv.R
 import com.alaa.iptv.data.models.Episode
 import com.alaa.iptv.data.models.Series
@@ -39,7 +39,7 @@ class SeriesDetailsActivity : AppCompatActivity() {
 
         bindSeries()
         binding.backButton.setOnClickListener { finish() }
-        binding.episodesRecyclerView.layoutManager = LinearLayoutManager(this)
+        binding.episodesRecyclerView.layoutManager = GridLayoutManager(this, 4)
         loadEpisodes()
     }
 
