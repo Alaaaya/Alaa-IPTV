@@ -11,6 +11,7 @@ import com.alaa.iptv.R
 import com.alaa.iptv.data.models.Episode
 import com.alaa.iptv.data.models.Series
 import com.alaa.iptv.data.preferences.AppPreferences
+import com.alaa.iptv.data.preferences.FeatureCatalog
 import com.alaa.iptv.data.repository.MediaRepository
 import com.alaa.iptv.databinding.ActivitySeriesDetailsBinding
 import com.alaa.iptv.ui.player.PlayerActivity
@@ -40,6 +41,8 @@ class SeriesDetailsActivity : AppCompatActivity() {
         prefs = AppPreferences(this)
         repository = MediaRepository(prefs, this)
         DisplayTheme.applySeriesDetails(binding, prefs)
+        DisplayTheme.applyViewingPreferences(binding.root, prefs)
+        if (prefs.isFeatureEnabled(FeatureCatalog.EYE_COMFORT)) window.attributes = window.attributes.apply { screenBrightness = 0.82f }
 
         bindSeries()
         binding.backButton.setOnClickListener { finish() }

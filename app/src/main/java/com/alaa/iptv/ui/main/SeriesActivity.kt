@@ -53,6 +53,8 @@ class SeriesActivity : AppCompatActivity() {
         prefs = AppPreferences(this)
         repository = MediaRepository(prefs, this)
         DisplayTheme.applySeries(binding, prefs)
+        DisplayTheme.applyViewingPreferences(binding.root, prefs)
+        if (prefs.isFeatureEnabled(FeatureCatalog.EYE_COMFORT)) window.attributes = window.attributes.apply { screenBrightness = 0.82f }
         prefs.lastVisitedSection = MainActivity.MODE_SERIES
 
         setupSidebar()
@@ -88,7 +90,7 @@ class SeriesActivity : AppCompatActivity() {
 
     private fun setupSeriesGrid() {
         binding.seriesRecyclerView.apply {
-            layoutManager = GridLayoutManager(this@SeriesActivity, DisplayTheme.mediaGridSpan(prefs.displayTheme))
+            layoutManager = GridLayoutManager(this@SeriesActivity, posterGridSpan())
             addOnScrollListener(object : RecyclerView.OnScrollListener() {
                 override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                     if (dy <= 0 || isLoadingSeries || !hasMoreSeriesPages) return
@@ -157,7 +159,8 @@ class SeriesActivity : AppCompatActivity() {
                         ::openSeriesDetails,
                         ::showSeriesSummary,
                         ::showPreview,
-                        isPosterDataSaver = usePosterDataSaver()
+                        isPosterDataSaver = usePosterDataSaver(),
+                        gridSpan = posterGridSpan()
                     )
                 } else {
                     binding.seriesCount.text = "تعذر تحميل المسلسلات. تحقق من الشبكة أو الفئة المختارة"
@@ -234,7 +237,8 @@ class SeriesActivity : AppCompatActivity() {
                     ::openSeriesDetails,
                     ::showSeriesSummary,
                     ::showPreview,
-                    isPosterDataSaver = usePosterDataSaver()
+                    isPosterDataSaver = usePosterDataSaver(),
+                    gridSpan = posterGridSpan()
                 )
                 binding.seriesCount.text = "${filtered.size} مسلسل"
             }
@@ -259,5 +263,10 @@ class SeriesActivity : AppCompatActivity() {
 
     private fun usePosterDataSaver(): Boolean =
         prefs.isFeatureEnabled(FeatureCatalog.DATA_SAVER) || prefs.isFeatureEnabled(FeatureCatalog.LOW_BANDWIDTH_POSTERS)
+
+    private fun posterGridSpan(): Int = DisplayTheme.mediaGridSpan(
+        prefs.displayTheme,
+        prefs.isFeatureEnabled(FeatureCatalog.ROOMY_POSTERS)
+    )
 
 }

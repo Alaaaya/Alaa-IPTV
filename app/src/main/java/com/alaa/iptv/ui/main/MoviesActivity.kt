@@ -54,6 +54,8 @@ class MoviesActivity : AppCompatActivity() {
         prefs = AppPreferences(this)
         repository = MediaRepository(prefs, this)
         DisplayTheme.applyMovies(binding, prefs)
+        DisplayTheme.applyViewingPreferences(binding.root, prefs)
+        if (prefs.isFeatureEnabled(FeatureCatalog.EYE_COMFORT)) window.attributes = window.attributes.apply { screenBrightness = 0.82f }
         prefs.lastVisitedSection = MainActivity.MODE_MOVIES
 
         setupSidebar()
@@ -89,7 +91,7 @@ class MoviesActivity : AppCompatActivity() {
 
     private fun setupMoviesGrid() {
         binding.moviesRecyclerView.apply {
-            layoutManager = GridLayoutManager(this@MoviesActivity, DisplayTheme.mediaGridSpan(prefs.displayTheme))
+            layoutManager = GridLayoutManager(this@MoviesActivity, posterGridSpan())
             addOnScrollListener(object : RecyclerView.OnScrollListener() {
                 override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                     if (dy <= 0 || isLoadingMovies || !hasMoreMoviePages) return
@@ -157,7 +159,8 @@ class MoviesActivity : AppCompatActivity() {
                             ::playMovie,
                             ::showMovieDetails,
                             ::showPreview,
-                            isPosterDataSaver = usePosterDataSaver()
+                            isPosterDataSaver = usePosterDataSaver(),
+                            gridSpan = posterGridSpan()
                         )
                     }.onFailure { error ->
                         Log.e(TAG, "Unable to load movies", error)
@@ -242,7 +245,8 @@ class MoviesActivity : AppCompatActivity() {
                     ::playMovie,
                     ::showMovieDetails,
                     ::showPreview,
-                    isPosterDataSaver = usePosterDataSaver()
+                    isPosterDataSaver = usePosterDataSaver(),
+                    gridSpan = posterGridSpan()
                 )
                 binding.moviesCount.text = "${filtered.size} فيلم"
             }
@@ -269,6 +273,11 @@ class MoviesActivity : AppCompatActivity() {
 
     private fun usePosterDataSaver(): Boolean =
         prefs.isFeatureEnabled(FeatureCatalog.DATA_SAVER) || prefs.isFeatureEnabled(FeatureCatalog.LOW_BANDWIDTH_POSTERS)
+
+    private fun posterGridSpan(): Int = DisplayTheme.mediaGridSpan(
+        prefs.displayTheme,
+        prefs.isFeatureEnabled(FeatureCatalog.ROOMY_POSTERS)
+    )
 
     companion object {
         private const val TAG = "MoviesActivity"

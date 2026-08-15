@@ -76,6 +76,8 @@ class PlayerActivity : AppCompatActivity() {
         setContentView(binding.root)
         prefs = AppPreferences(this)
         DisplayTheme.applyPlayer(binding, prefs)
+        DisplayTheme.applyViewingPreferences(binding.root, prefs)
+        if (prefs.isFeatureEnabled(FeatureCatalog.EYE_COMFORT)) window.attributes = window.attributes.apply { screenBrightness = 0.82f }
         binding.playerView.post { DisplayTheme.applyPlayerControls(binding.playerView, prefs) }
 
         streamUrl = intent.getStringExtra("STREAM_URL")

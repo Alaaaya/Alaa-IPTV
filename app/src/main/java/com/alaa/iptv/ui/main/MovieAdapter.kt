@@ -19,7 +19,8 @@ class MovieAdapter(
     private val onMovieClick: (Movie) -> Unit,
     private val onMovieLongClick: ((Movie) -> Unit)? = null,
     private val onMovieFocused: ((Movie) -> Unit)? = null,
-    private val isPosterDataSaver: Boolean = false
+    private val isPosterDataSaver: Boolean = false,
+    private val gridSpan: Int = DisplayTheme.mediaGridSpan(displayTheme)
 ) : RecyclerView.Adapter<MovieAdapter.MovieViewHolder>() {
 
     inner class MovieViewHolder(private val binding: ItemMovieCardBinding) :
@@ -51,7 +52,7 @@ class MovieAdapter(
                     keyCode = keyCode,
                     position = bindingAdapterPosition,
                     itemCount = movies.size,
-                    spanCount = DisplayTheme.mediaGridSpan(displayTheme),
+                    spanCount = gridSpan,
                     orientation = RecyclerView.VERTICAL
                 )
             }

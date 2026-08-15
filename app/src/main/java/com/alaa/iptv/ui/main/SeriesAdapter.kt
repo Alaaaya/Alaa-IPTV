@@ -19,7 +19,8 @@ class SeriesAdapter(
     private val onSeriesClick: (Series) -> Unit,
     private val onSeriesLongClick: ((Series) -> Unit)? = null,
     private val onSeriesFocused: ((Series) -> Unit)? = null,
-    private val isPosterDataSaver: Boolean = false
+    private val isPosterDataSaver: Boolean = false,
+    private val gridSpan: Int = DisplayTheme.mediaGridSpan(displayTheme)
 ) : RecyclerView.Adapter<SeriesAdapter.SeriesViewHolder>() {
 
     inner class SeriesViewHolder(private val binding: ItemMovieCardBinding) :
@@ -51,7 +52,7 @@ class SeriesAdapter(
                     keyCode = keyCode,
                     position = bindingAdapterPosition,
                     itemCount = seriesList.size,
-                    spanCount = DisplayTheme.mediaGridSpan(displayTheme),
+                    spanCount = gridSpan,
                     orientation = RecyclerView.VERTICAL
                 )
             }
