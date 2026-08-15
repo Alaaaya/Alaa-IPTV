@@ -46,12 +46,12 @@ abstract class AppDatabase : RoomDatabase() {
         
         // تعريف عمليات الترحيل الآمنة (Migrations) للحفاظ على بيانات المستخدم
         private val MIGRATION_1_2 = object : Migration(1, 2) {
-            override fun migrate(database: SupportSQLiteDatabase) {
+            override fun migrate(db: SupportSQLiteDatabase) {
                 // ترحيل آمن لجداول EPG أو تحديث الهيكل دون حذف البيانات القديمة
-                database.execSQL("CREATE TABLE IF NOT EXISTS `epg_programs` (`id` TEXT NOT NULL, `channelId` TEXT NOT NULL, `title` TEXT NOT NULL, `description` TEXT, `startTime` INTEGER NOT NULL, `endTime` INTEGER NOT NULL, `category` TEXT, `icon` TEXT, `lastUpdated` INTEGER NOT NULL, PRIMARY KEY(`id`))")
-                database.execSQL("CREATE INDEX IF NOT EXISTS `index_epg_programs_channelId` ON `epg_programs` (`channelId`)")
-                database.execSQL("CREATE INDEX IF NOT EXISTS `index_epg_programs_startTime` ON `epg_programs` (`startTime`)")
-                database.execSQL("CREATE INDEX IF NOT EXISTS `index_epg_programs_endTime` ON `epg_programs` (`endTime`)")
+                db.execSQL("CREATE TABLE IF NOT EXISTS `epg_programs` (`id` TEXT NOT NULL, `channelId` TEXT NOT NULL, `title` TEXT NOT NULL, `description` TEXT, `startTime` INTEGER NOT NULL, `endTime` INTEGER NOT NULL, `category` TEXT, `icon` TEXT, `lastUpdated` INTEGER NOT NULL, PRIMARY KEY(`id`))")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_epg_programs_channelId` ON `epg_programs` (`channelId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_epg_programs_startTime` ON `epg_programs` (`startTime`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_epg_programs_endTime` ON `epg_programs` (`endTime`)")
             }
         }
 
