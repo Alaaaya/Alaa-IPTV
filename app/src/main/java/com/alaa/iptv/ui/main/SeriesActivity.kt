@@ -53,6 +53,7 @@ class SeriesActivity : AppCompatActivity() {
         prefs = AppPreferences(this)
         repository = MediaRepository(prefs, this)
         DisplayTheme.applySeries(binding, prefs)
+        prefs.lastVisitedSection = MainActivity.MODE_SERIES
 
         setupSidebar()
         setupSeriesGrid()
@@ -154,7 +155,7 @@ class SeriesActivity : AppCompatActivity() {
                         seriesList,
                         prefs.displayTheme,
                         ::openSeriesDetails,
-                        ::toggleWatchlist,
+                        ::showSeriesSummary,
                         ::showPreview
                     )
                 } else {
@@ -192,6 +193,24 @@ class SeriesActivity : AppCompatActivity() {
         Toast.makeText(this, if (added) "أُضيف إلى المشاهدة لاحقاً" else "أُزيل من المشاهدة لاحقاً", Toast.LENGTH_SHORT).show()
     }
 
+    private fun showSeriesSummary(series: Series) {
+        val details = listOfNotNull(
+            series.releaseDate?.takeIf { it.isNotBlank() }?.let { "تاريخ الإصدار: $it" },
+            series.rating?.takeIf { it.isNotBlank() }?.let { "التقييم: ★ $it" },
+            series.genre?.takeIf { it.isNotBlank() }?.let { "النوع: $it" },
+            series.director?.takeIf { it.isNotBlank() }?.let { "الإخراج: $it" },
+            series.cast?.takeIf { it.isNotBlank() }?.let { "الطاقم: $it" },
+            series.plot?.takeIf { it.isNotBlank() }
+        ).joinToString("\n\n")
+        AlertDialog.Builder(this)
+            .setTitle(series.name)
+            .setMessage(details.ifBlank { "لا تتوفر تفاصيل إضافية لهذا المسلسل من المصدر." })
+            .setPositiveButton("الحلقات والتفاصيل") { _, _ -> openSeriesDetails(series) }
+            .setNeutralButton("المشاهدة لاحقاً") { _, _ -> toggleWatchlist(series) }
+            .setNegativeButton("إغلاق", null)
+            .show()
+    }
+
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         if (keyCode == KeyEvent.KEYCODE_MENU && prefs.isFeatureEnabled(FeatureCatalog.LIBRARY_FILTERS)) {
             showGenreFilter()
@@ -208,7 +227,7 @@ class SeriesActivity : AppCompatActivity() {
             .setTitle("فلترة المسلسلات")
             .setItems(options.toTypedArray()) { _, index ->
                 val filtered = if (index == 0) seriesList else seriesList.filter { it.genre.orEmpty().contains(options[index], true) }
-                binding.seriesRecyclerView.adapter = SeriesAdapter(filtered, prefs.displayTheme, ::openSeriesDetails, ::toggleWatchlist, ::showPreview)
+                binding.seriesRecyclerView.adapter = SeriesAdapter(filtered, prefs.displayTheme, ::openSeriesDetails, ::showSeriesSummary, ::showPreview)
                 binding.seriesCount.text = "${filtered.size} مسلسل"
             }
             .show()
