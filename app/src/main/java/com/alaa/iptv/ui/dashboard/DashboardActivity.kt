@@ -68,6 +68,8 @@ class DashboardActivity : AppCompatActivity() {
         prefs = AppPreferences(this)
         repository = MediaRepository(prefs, this)
         DisplayTheme.applyDashboard(binding, prefs)
+        DisplayTheme.applyViewingPreferences(binding.root, prefs)
+        if (prefs.isFeatureEnabled(FeatureCatalog.EYE_COMFORT)) window.attributes = window.attributes.apply { screenBrightness = 0.82f }
 
         setupSidebar()
         setupHeroBanner()

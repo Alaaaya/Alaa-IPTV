@@ -14,6 +14,7 @@ import com.alaa.iptv.R
 import com.alaa.iptv.data.models.Channel
 import com.alaa.iptv.data.models.Category
 import com.alaa.iptv.data.preferences.AppPreferences
+import com.alaa.iptv.data.preferences.FeatureCatalog
 import com.alaa.iptv.data.repository.MediaRepository
 import com.alaa.iptv.databinding.ActivityMainBinding
 import com.alaa.iptv.ui.player.PlayerActivity
@@ -56,6 +57,8 @@ class MainActivity : AppCompatActivity() {
         prefs = AppPreferences(this)
         repository = MediaRepository(prefs, this)
         DisplayTheme.applyLive(binding, prefs)
+        DisplayTheme.applyViewingPreferences(binding.root, prefs)
+        if (prefs.isFeatureEnabled(FeatureCatalog.EYE_COMFORT)) window.attributes = window.attributes.apply { screenBrightness = 0.82f }
         currentMode = intent.getStringExtra(EXTRA_MODE) ?: MODE_LIVE
         prefs.lastVisitedSection = currentMode
 

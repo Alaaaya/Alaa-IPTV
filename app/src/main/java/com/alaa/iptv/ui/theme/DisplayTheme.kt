@@ -2,13 +2,17 @@ package com.alaa.iptv.ui.theme
 
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
+import android.util.TypedValue
 import android.view.View
+import android.view.ViewGroup
 import android.widget.SeekBar
+import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
 import androidx.recyclerview.widget.RecyclerView
 import com.alaa.iptv.R
 import com.alaa.iptv.data.preferences.AppPreferences
+import com.alaa.iptv.data.preferences.FeatureCatalog
 import com.alaa.iptv.databinding.ActivityDashboardBinding
 import com.alaa.iptv.databinding.ActivityMainBinding
 import com.alaa.iptv.databinding.ActivityMoviesBinding
@@ -115,6 +119,21 @@ object DisplayTheme {
         binding.categoriesHeaderTitle.letterSpacing = when (prefs.displayTheme) {
             AppPreferences.THEME_AMBER_CONSOLE, AppPreferences.THEME_MONO_STUDIO -> 0.08f
             else -> 0f
+        }
+    }
+
+    /** تفضيلات عرض محلية خفيفة لا تحتاج إعادة تحميل أو طلبات شبكة. */
+    fun applyViewingPreferences(root: View, prefs: AppPreferences) {
+        if (!prefs.isFeatureEnabled(FeatureCatalog.LARGE_TEXT)) return
+        scaleTextRecursively(root, 1.12f)
+    }
+
+    private fun scaleTextRecursively(view: View, multiplier: Float) {
+        if (view is TextView) {
+            view.setTextSize(TypedValue.COMPLEX_UNIT_PX, view.textSize * multiplier)
+        }
+        if (view is ViewGroup) {
+            for (index in 0 until view.childCount) scaleTextRecursively(view.getChildAt(index), multiplier)
         }
     }
 
@@ -324,6 +343,11 @@ object DisplayTheme {
     }
 
     /** يغير كثافة مكتبة الأفلام والمسلسلات لكل هوية بصرية. */
+    fun mediaGridSpan(theme: String, useRoomyPosters: Boolean): Int {
+        val base = mediaGridSpan(theme)
+        return if (useRoomyPosters) (base - 1).coerceAtLeast(2) else base
+    }
+
     fun mediaGridSpan(theme: String): Int = when (theme) {
         AppPreferences.THEME_NEON_ARCADE -> 6
         AppPreferences.THEME_CINEMA_SPOTLIGHT -> 3
