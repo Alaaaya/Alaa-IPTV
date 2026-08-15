@@ -139,8 +139,12 @@ class PlayerActivity : AppCompatActivity() {
                 trackSelector = selector
                 val fastLiveLoadControl = DefaultLoadControl.Builder()
                     .setBufferDurationsMs(
-                        1_500,
-                        6_000,
+                        if (prefs.isFeatureEnabled(FeatureCatalog.COMPATIBILITY_MODE)) 2_500 else 1_500,
+                        when {
+                            prefs.isFeatureEnabled(FeatureCatalog.COMPATIBILITY_MODE) -> 12_000
+                            prefs.isFeatureEnabled(FeatureCatalog.HIGH_PERFORMANCE_MODE) -> 16_000
+                            else -> 6_000
+                        },
                         300,
                         800
                     )
