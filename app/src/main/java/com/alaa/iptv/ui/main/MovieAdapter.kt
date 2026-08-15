@@ -18,7 +18,8 @@ class MovieAdapter(
     private val displayTheme: String = AppPreferences.THEME_ALAA_CLASSIC,
     private val onMovieClick: (Movie) -> Unit,
     private val onMovieLongClick: ((Movie) -> Unit)? = null,
-    private val onMovieFocused: ((Movie) -> Unit)? = null
+    private val onMovieFocused: ((Movie) -> Unit)? = null,
+    private val isPosterDataSaver: Boolean = false
 ) : RecyclerView.Adapter<MovieAdapter.MovieViewHolder>() {
 
     inner class MovieViewHolder(private val binding: ItemMovieCardBinding) :
@@ -63,11 +64,16 @@ class MovieAdapter(
             setOptionalText(binding.yearText, movie.year ?: movie.releaseDate)
             setOptionalText(binding.contentBadge, qualityOrNewBadge(movie.name, movie.year ?: movie.releaseDate))
 
-            Glide.with(binding.root.context)
-                .load(movie.streamIcon)
-                .placeholder(R.drawable.bg_dark_pattern)
-                .error(R.drawable.bg_dark_pattern)
-                .into(binding.moviePoster)
+            if (isPosterDataSaver) {
+                Glide.with(binding.root.context).clear(binding.moviePoster)
+                binding.moviePoster.setImageResource(R.drawable.bg_dark_pattern)
+            } else {
+                Glide.with(binding.root.context)
+                    .load(movie.streamIcon)
+                    .placeholder(R.drawable.bg_dark_pattern)
+                    .error(R.drawable.bg_dark_pattern)
+                    .into(binding.moviePoster)
+            }
             renderFocusState(binding.root.hasFocus())
         }
 

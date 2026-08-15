@@ -190,12 +190,16 @@ class DashboardActivity : AppCompatActivity() {
             )
         }
 
-        Glide.with(this)
-            .load(featured.streamIcon)
-            .placeholder(R.drawable.bg_hero_sports)
-            .error(R.drawable.bg_hero_sports)
-            .centerCrop()
-            .into(binding.heroImage)
+        if (prefs.isFeatureEnabled(FeatureCatalog.DATA_SAVER) || prefs.isFeatureEnabled(FeatureCatalog.LOW_BANDWIDTH_POSTERS)) {
+            binding.heroImage.setImageResource(R.drawable.bg_hero_sports)
+        } else {
+            Glide.with(this)
+                .load(featured.streamIcon)
+                .placeholder(R.drawable.bg_hero_sports)
+                .error(R.drawable.bg_hero_sports)
+                .centerCrop()
+                .into(binding.heroImage)
+        }
     }
 
     private fun setupCategories() {

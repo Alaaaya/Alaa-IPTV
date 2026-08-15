@@ -18,7 +18,8 @@ class SeriesAdapter(
     private val displayTheme: String = AppPreferences.THEME_ALAA_CLASSIC,
     private val onSeriesClick: (Series) -> Unit,
     private val onSeriesLongClick: ((Series) -> Unit)? = null,
-    private val onSeriesFocused: ((Series) -> Unit)? = null
+    private val onSeriesFocused: ((Series) -> Unit)? = null,
+    private val isPosterDataSaver: Boolean = false
 ) : RecyclerView.Adapter<SeriesAdapter.SeriesViewHolder>() {
 
     inner class SeriesViewHolder(private val binding: ItemMovieCardBinding) :
@@ -63,11 +64,16 @@ class SeriesAdapter(
             setOptionalText(binding.yearText, series.releaseDate)
             setOptionalText(binding.contentBadge, if (series.releaseDate?.startsWith("2026") == true) "جديد" else null)
 
-            Glide.with(binding.root.context)
-                .load(series.cover)
-                .placeholder(R.drawable.bg_dark_pattern)
-                .error(R.drawable.bg_dark_pattern)
-                .into(binding.moviePoster)
+            if (isPosterDataSaver) {
+                Glide.with(binding.root.context).clear(binding.moviePoster)
+                binding.moviePoster.setImageResource(R.drawable.bg_dark_pattern)
+            } else {
+                Glide.with(binding.root.context)
+                    .load(series.cover)
+                    .placeholder(R.drawable.bg_dark_pattern)
+                    .error(R.drawable.bg_dark_pattern)
+                    .into(binding.moviePoster)
+            }
             renderFocusState(binding.root.hasFocus())
         }
 
