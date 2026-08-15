@@ -284,6 +284,7 @@ class DashboardActivity : AppCompatActivity() {
     private fun loadContent(showFeedback: Boolean = false) {
         lifecycleScope.launch {
             try {
+                setContentLoadState("جاري تحديث المحتوى…", visible = true)
                 var lastFailure: Throwable? = null
                 val channelsResult = repository.getLiveStreams(null)
                 if (channelsResult.isSuccess) {
@@ -315,13 +316,27 @@ class DashboardActivity : AppCompatActivity() {
                 } else if (showFeedback) {
                     showToast("تم تحديث المحتوى.")
                 }
+                val isEmpty = allChannels.isEmpty() && allMovies.isEmpty() && allSeries.isEmpty()
+                setContentLoadState(
+                    if (isEmpty && prefs.isFeatureEnabled(FeatureCatalog.SMART_EMPTY_STATES)) {
+                        "لا يوجد محتوى معروض حالياً. تحقق من اتصال الخادم ثم استخدم إعادة التحميل من القائمة."
+                    } else "",
+                    visible = isEmpty && prefs.isFeatureEnabled(FeatureCatalog.SMART_EMPTY_STATES)
+                )
             } catch (e: Exception) {
                 Log.e(TAG, "Content loading failed", e)
                 val reference = if (prefs.isFeatureEnabled(FeatureCatalog.SAFE_ERROR_LOG)) prefs.addSafeDiagnostic("dashboard-content", e) else ""
                 val referenceText = if (reference.isBlank() || !prefs.isFeatureEnabled(FeatureCatalog.CONNECTION_REFERENCE)) "" else " ($reference)"
                 showToast("تعذر تحديث المحتوى. حاول لاحقاً$referenceText")
+                setContentLoadState("تعذر جلب المحتوى. استخدم إعادة التحميل بعد التحقق من الاتصال.", visible = true)
             }
         }
+    }
+
+    private fun setContentLoadState(message: String, visible: Boolean) {
+        if (_binding == null) return
+        binding.dashboardLoadState.text = message
+        binding.dashboardLoadState.visibility = if (visible) View.VISIBLE else View.GONE
     }
 
     private fun updateUI() {
