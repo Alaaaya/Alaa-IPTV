@@ -81,6 +81,7 @@ class MediaRepository(
 
     private suspend fun ensureContentAccess(): Result<Unit> = runCatching {
         if (prefs.isControlPlaneEnrolled && prefs.shouldRefreshControlPlane()) {
+            prefs.markControlPlaneRefreshAttempt()
             TvProvisioningClient.syncControlPlane(prefs.getOrCreateTvId(), BuildConfig.VERSION_NAME)
                 .onSuccess { prefs.applyControlPlaneSnapshot(it) }
         }
