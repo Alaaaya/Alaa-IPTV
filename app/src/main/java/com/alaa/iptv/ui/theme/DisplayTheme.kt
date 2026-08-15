@@ -14,6 +14,7 @@ import com.alaa.iptv.databinding.ActivityMainBinding
 import com.alaa.iptv.databinding.ActivityMoviesBinding
 import com.alaa.iptv.databinding.ActivityPlayerBinding
 import com.alaa.iptv.databinding.ActivitySeriesBinding
+import com.alaa.iptv.databinding.ActivitySeriesDetailsBinding
 import com.alaa.iptv.databinding.ItemMovieCardBinding
 
 /**
@@ -209,6 +210,16 @@ object DisplayTheme {
         binding.sidebarContainer.setBackgroundColor(Color.parseColor(palette.sidebar))
         binding.seriesCategorySelector.background = rounded(palette.accent, palette.radius)
         binding.seriesCategorySelector.setTextColor(Color.parseColor(palette.accentText))
+    }
+
+    fun applySeriesDetails(binding: ActivitySeriesDetailsBinding, prefs: AppPreferences) {
+        val palette = palette(prefs.displayTheme) ?: return
+        binding.root.setBackgroundColor(Color.parseColor(palette.background))
+        binding.backButton.background = rounded(palette.sidebar, palette.radius, palette.panelStroke, 1)
+        binding.backButton.setTextColor(Color.parseColor(palette.accent))
+        binding.seriesMeta.setTextColor(Color.parseColor(palette.metadata))
+        binding.seriesDescription.setTextColor(Color.parseColor(palette.metadata))
+        binding.episodesTitle.setTextColor(Color.parseColor(palette.accent))
     }
 
     fun applyPlayer(binding: ActivityPlayerBinding, prefs: AppPreferences) {

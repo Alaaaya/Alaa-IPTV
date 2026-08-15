@@ -139,9 +139,12 @@ class SeriesActivity : AppCompatActivity() {
                     binding.seriesRecyclerView.adapter = SeriesAdapter(seriesList, prefs.displayTheme) { series ->
                         openSeriesDetails(series)
                     }
+                } else {
+                    binding.seriesCount.text = "تعذر تحميل المسلسلات. تحقق من الشبكة أو الفئة المختارة"
                 }
             } catch (e: Exception) {
                 Log.e("SeriesActivity", "Error loading series", e)
+                binding.seriesCount.text = "تعذر تحميل المسلسلات. حاول مرة أخرى"
             } finally {
                 isLoadingSeries = false
             }

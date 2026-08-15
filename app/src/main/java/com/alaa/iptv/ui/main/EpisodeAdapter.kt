@@ -1,11 +1,13 @@
 package com.alaa.iptv.ui.main
 
 import android.graphics.Color
+import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.alaa.iptv.data.models.Episode
 import com.alaa.iptv.databinding.ItemEpisodeBinding
+import com.alaa.iptv.ui.navigation.FocusBoundaryPolicy
 
 class EpisodeAdapter(
     private val episodes: List<Episode>,
@@ -26,6 +28,16 @@ class EpisodeAdapter(
                 )
                 binding.root.scaleX = if (hasFocus) 1.02f else 1f
                 binding.root.scaleY = if (hasFocus) 1.02f else 1f
+            }
+            binding.root.setOnKeyListener { _, keyCode, event ->
+                if (event.action != KeyEvent.ACTION_DOWN) return@setOnKeyListener false
+                FocusBoundaryPolicy.blocksVerticalExit(
+                    keyCode = keyCode,
+                    position = bindingAdapterPosition,
+                    itemCount = episodes.size,
+                    spanCount = EPISODE_GRID_COLUMNS,
+                    orientation = RecyclerView.VERTICAL
+                )
             }
         }
 
@@ -50,4 +62,8 @@ class EpisodeAdapter(
     }
 
     override fun getItemCount(): Int = episodes.size
+
+    companion object {
+        const val EPISODE_GRID_COLUMNS = 4
+    }
 }

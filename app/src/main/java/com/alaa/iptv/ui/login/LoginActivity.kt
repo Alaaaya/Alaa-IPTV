@@ -14,7 +14,9 @@ import com.alaa.iptv.data.remote.TvProvisioningClient
 import com.alaa.iptv.data.repository.MediaRepository
 import com.alaa.iptv.databinding.ActivityLoginBinding
 import com.alaa.iptv.ui.dashboard.DashboardActivity
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class LoginActivity : AppCompatActivity() {
 
@@ -115,21 +117,27 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun importPlaylist(uriString: String) {
-        runCatching {
-            val uri = android.net.Uri.parse(uriString)
-            val targetDirectory = File(filesDir, "playlists").apply { mkdirs() }
-            val targetFile = File(targetDirectory, "imported_playlist.m3u")
-            contentResolver.openInputStream(uri)?.use { input ->
-                targetFile.outputStream().use { output -> input.copyTo(output) }
-            } ?: error("تعذر قراءة الملف المختار")
-            targetFile.toURI().toString()
-        }.onSuccess { localUrl ->
-            binding.serverUrlInput.setText(localUrl)
-            binding.usernameInput.text?.clear()
-            binding.passwordInput.text?.clear()
-            submitLogin()
-        }.onFailure { error ->
-            showLoginError(error.message ?: "تعذر استيراد القائمة. اختر ملف M3U صالحاً.")
+        setLoading(true)
+        lifecycleScope.launch {
+            runCatching {
+                withContext(Dispatchers.IO) {
+                    val uri = android.net.Uri.parse(uriString)
+                    val targetDirectory = File(filesDir, "playlists").apply { mkdirs() }
+                    val targetFile = File(targetDirectory, "imported_playlist.m3u")
+                    contentResolver.openInputStream(uri)?.use { input ->
+                        targetFile.outputStream().use { output -> input.copyTo(output) }
+                    } ?: error("تعذر قراءة الملف المختار")
+                    targetFile.toURI().toString()
+                }
+            }.onSuccess { localUrl ->
+                binding.serverUrlInput.setText(localUrl)
+                binding.usernameInput.text?.clear()
+                binding.passwordInput.text?.clear()
+                submitLogin()
+            }.onFailure { error ->
+                showLoginError(error.message ?: "تعذر استيراد القائمة. اختر ملف M3U صالحاً.")
+                setLoading(false)
+            }
         }
     }
 

@@ -139,10 +139,12 @@ class MoviesActivity : AppCompatActivity() {
                         binding.moviesRecyclerView.adapter = MovieAdapter(movies, prefs.displayTheme, ::playMovie)
                     }.onFailure { error ->
                         Log.e(TAG, "Unable to load movies", error)
+                        binding.moviesCount.text = "تعذر تحميل الأفلام. تحقق من الشبكة أو الفئة المختارة"
                     }
                 }
                 .onFailure { error ->
                     Log.e(TAG, "Unable to request movies", error)
+                    binding.moviesCount.text = "تعذر تحميل الأفلام. حاول مرة أخرى"
                 }
             isLoadingMovies = false
         }
@@ -150,6 +152,10 @@ class MoviesActivity : AppCompatActivity() {
 
     private fun playMovie(movie: Movie) {
         val url = movie.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password)
+        if (url.isBlank()) {
+            binding.moviesCount.text = "تعذر فتح هذا الفيلم لأن رابط التشغيل غير متاح"
+            return
+        }
         startActivity(Intent(this, PlayerActivity::class.java)
             .putExtra("STREAM_URL", url)
             .putExtra("CHANNEL_NAME", movie.name)

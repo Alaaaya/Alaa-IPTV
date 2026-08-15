@@ -7,18 +7,15 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.Uri
-import android.os.Build
 import android.os.Environment
 import android.util.Log
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import com.alaa.iptv.BuildConfig
-import androidx.core.content.FileProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.net.URL
-import java.io.File
 
 class UpdateChecker(private val context: Context) {
 
@@ -42,10 +39,13 @@ class UpdateChecker(private val context: Context) {
                 val json = JSONObject(response)
 
                 val tagName = json.getString("tag_name").removePrefix("v")
-                val downloadUrl = json.getJSONArray("assets")
-                    .optJSONObject(0)
+                val assets = json.optJSONArray("assets")
+                val downloadUrl = (0 until (assets?.length() ?: 0))
+                    .asSequence()
+                    .mapNotNull { assets?.optJSONObject(it) }
+                    .firstOrNull { it.optString("name").endsWith(".apk", ignoreCase = true) }
                     ?.optString("browser_download_url", "")
-                    ?: ""
+                    .orEmpty()
                 val releaseUrl = json.getString("html_url")
                 val releaseNotes = json.optString("body", "")
 
@@ -149,7 +149,12 @@ class UpdateChecker(private val context: Context) {
                 val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
                 if (id == downloadId) {
                     context.unregisterReceiver(this)
-                    installApk(fileName)
+                    val apkUri = downloadManager.getUriForDownloadedFile(downloadId)
+                    if (apkUri == null) {
+                        Toast.makeText(context, "تعذر تنزيل التحديث", Toast.LENGTH_SHORT).show()
+                    } else {
+                        installApk(apkUri)
+                    }
                 }
             }
         }
@@ -162,31 +167,10 @@ class UpdateChecker(private val context: Context) {
         )
     }
 
-    private fun installApk(fileName: String) {
-        val file = File(
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-            fileName
-        )
-
-        if (!file.exists()) {
-            Toast.makeText(context, "Download failed", Toast.LENGTH_SHORT).show()
-            return
-        }
-
+    private fun installApk(apkUri: Uri) {
         val intent = Intent(Intent.ACTION_VIEW).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
-
-            val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                FileProvider.getUriForFile(
-                    context,
-                    "${context.packageName}.fileprovider",
-                    file
-                )
-            } else {
-                Uri.fromFile(file)
-            }
-
-            setDataAndType(uri, "application/vnd.android.package-archive")
+            setDataAndType(apkUri, "application/vnd.android.package-archive")
         }
 
         context.startActivity(intent)
