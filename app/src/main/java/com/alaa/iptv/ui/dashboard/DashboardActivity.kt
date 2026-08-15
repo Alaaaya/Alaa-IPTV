@@ -125,6 +125,35 @@ class DashboardActivity : AppCompatActivity() {
             .into(binding.heroImage)
     }
 
+    private fun updateHeroBanner() {
+        if (_binding == null) return
+        val featured = allMovies.firstOrNull { !it.streamIcon.isNullOrBlank() }
+            ?: allSeries.firstOrNull { !it.streamIcon.isNullOrBlank() }
+            ?: return
+
+        val typeLabel = if (featured.streamType.equals("series", ignoreCase = true)) "مسلسل" else "فيلم"
+        binding.heroTitle.text = featured.name
+        binding.heroSubtitle.text = "$typeLabel متاح الآن في مكتبتك"
+        binding.heroWatchNow.text = "عرض $typeLabel"
+        binding.heroImage.contentDescription = "صورة $typeLabel ${featured.name}"
+        binding.heroWatchNow.setOnClickListener {
+            openMain(
+                if (featured.streamType.equals("series", ignoreCase = true)) {
+                    MainActivity.MODE_SERIES
+                } else {
+                    MainActivity.MODE_MOVIES
+                }
+            )
+        }
+
+        Glide.with(this)
+            .load(featured.streamIcon)
+            .placeholder(R.drawable.bg_hero_sports)
+            .error(R.drawable.bg_hero_sports)
+            .centerCrop()
+            .into(binding.heroImage)
+    }
+
     private fun setupCategories() {
         binding.categoriesHeaderTitle.text = getString(R.string.browse_categories)
         binding.categoriesViewAll.text = getString(R.string.view_all)
@@ -234,6 +263,7 @@ class DashboardActivity : AppCompatActivity() {
         categories.add(CategoryItem("الوثائقيات", allChannels.count { it.name.contains("doc", true) }, R.drawable.ic_documentary, CategoryVisuals.backgroundFor("documentary"), "#00BCD4", "live"))
         categories.add(CategoryItem("الموسيقى", allChannels.count { it.name.contains("music", true) }, R.drawable.ic_music, CategoryVisuals.backgroundFor("music"), "#EC4899", "live"))
         updateCategories(categories)
+        updateHeroBanner()
 
         // لا نعرض محتوى في "متابعة المشاهدة" إلا عندما يتوفر سجل مشاهدة حقيقي.
         updateContinueWatching(emptyList())
