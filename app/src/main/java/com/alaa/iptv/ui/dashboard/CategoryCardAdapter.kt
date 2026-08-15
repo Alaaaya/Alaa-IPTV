@@ -2,11 +2,13 @@ package com.alaa.iptv.ui.dashboard
 
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
+import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.alaa.iptv.R
 import com.alaa.iptv.ui.theme.DisplayTheme
+import com.alaa.iptv.ui.navigation.FocusBoundaryPolicy
 import com.alaa.iptv.databinding.ItemCategoryCardBinding
 
 class CategoryCardAdapter(
@@ -46,6 +48,19 @@ class CategoryCardAdapter(
                 if (pos != RecyclerView.NO_POSITION) {
                     onItemClick(items[pos])
                 }
+            }
+
+            binding.root.setOnKeyListener { _, keyCode, event ->
+                if (event.action != KeyEvent.ACTION_DOWN) return@setOnKeyListener false
+                val position = bindingAdapterPosition
+                val grid = DisplayTheme.dashboardCategoryGrid(theme)
+                FocusBoundaryPolicy.blocksVerticalExit(
+                    keyCode = keyCode,
+                    position = position,
+                    itemCount = items.size,
+                    spanCount = grid.spanCount,
+                    orientation = grid.orientation
+                )
             }
         }
 

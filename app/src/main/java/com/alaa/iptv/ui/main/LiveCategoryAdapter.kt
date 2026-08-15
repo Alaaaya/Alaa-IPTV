@@ -1,6 +1,7 @@
 package com.alaa.iptv.ui.main
 
 import android.graphics.Color
+import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -9,6 +10,7 @@ import com.alaa.iptv.R
 import com.alaa.iptv.data.models.Category
 import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.databinding.ItemLiveCategoryBinding
+import com.alaa.iptv.ui.navigation.FocusBoundaryPolicy
 import com.alaa.iptv.ui.theme.DisplayTheme
 
 class LiveCategoryAdapter(
@@ -46,6 +48,18 @@ class LiveCategoryAdapter(
             binding.root.setOnFocusChangeListener { _, _ ->
                 val position = bindingAdapterPosition
                 if (position != RecyclerView.NO_POSITION) render(categories[position])
+            }
+            binding.root.setOnKeyListener { _, keyCode, event ->
+                if (event.action != KeyEvent.ACTION_DOWN) return@setOnKeyListener false
+                val spec = DisplayTheme.liveCategorySpec(displayTheme)
+                if (spec.placement == DisplayTheme.LiveCategoryPlacement.TOP_RAIL) return@setOnKeyListener false
+                FocusBoundaryPolicy.blocksVerticalExit(
+                    keyCode = keyCode,
+                    position = bindingAdapterPosition,
+                    itemCount = categories.size,
+                    spanCount = spec.spanCount,
+                    orientation = RecyclerView.VERTICAL
+                )
             }
         }
 
