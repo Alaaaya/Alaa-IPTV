@@ -1,6 +1,7 @@
 package com.alaa.iptv.ui.main
 
 import android.graphics.Color
+import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
@@ -8,6 +9,7 @@ import com.alaa.iptv.R
 import com.alaa.iptv.data.models.Series
 import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.databinding.ItemMovieCardBinding
+import com.alaa.iptv.ui.navigation.FocusBoundaryPolicy
 import com.alaa.iptv.ui.theme.DisplayTheme
 import com.bumptech.glide.Glide
 
@@ -27,6 +29,16 @@ class SeriesAdapter(
             }
             binding.root.setOnFocusChangeListener { _, hasFocus ->
                 renderFocusState(hasFocus)
+            }
+            binding.root.setOnKeyListener { _, keyCode, event ->
+                if (event.action != KeyEvent.ACTION_DOWN) return@setOnKeyListener false
+                FocusBoundaryPolicy.blocksVerticalExit(
+                    keyCode = keyCode,
+                    position = bindingAdapterPosition,
+                    itemCount = seriesList.size,
+                    spanCount = DisplayTheme.mediaGridSpan(displayTheme),
+                    orientation = RecyclerView.VERTICAL
+                )
             }
         }
 
