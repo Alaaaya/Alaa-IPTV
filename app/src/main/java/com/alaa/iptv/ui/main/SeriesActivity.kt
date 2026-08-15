@@ -156,7 +156,8 @@ class SeriesActivity : AppCompatActivity() {
                         prefs.displayTheme,
                         ::openSeriesDetails,
                         ::showSeriesSummary,
-                        ::showPreview
+                        ::showPreview,
+                        isPosterDataSaver = usePosterDataSaver()
                     )
                 } else {
                     binding.seriesCount.text = "تعذر تحميل المسلسلات. تحقق من الشبكة أو الفئة المختارة"
@@ -227,7 +228,14 @@ class SeriesActivity : AppCompatActivity() {
             .setTitle("فلترة المسلسلات")
             .setItems(options.toTypedArray()) { _, index ->
                 val filtered = if (index == 0) seriesList else seriesList.filter { it.genre.orEmpty().contains(options[index], true) }
-                binding.seriesRecyclerView.adapter = SeriesAdapter(filtered, prefs.displayTheme, ::openSeriesDetails, ::showSeriesSummary, ::showPreview)
+                binding.seriesRecyclerView.adapter = SeriesAdapter(
+                    filtered,
+                    prefs.displayTheme,
+                    ::openSeriesDetails,
+                    ::showSeriesSummary,
+                    ::showPreview,
+                    isPosterDataSaver = usePosterDataSaver()
+                )
                 binding.seriesCount.text = "${filtered.size} مسلسل"
             }
             .show()
@@ -248,5 +256,8 @@ class SeriesActivity : AppCompatActivity() {
         startActivity(intent)
         finish()
     }
+
+    private fun usePosterDataSaver(): Boolean =
+        prefs.isFeatureEnabled(FeatureCatalog.DATA_SAVER) || prefs.isFeatureEnabled(FeatureCatalog.LOW_BANDWIDTH_POSTERS)
 
 }

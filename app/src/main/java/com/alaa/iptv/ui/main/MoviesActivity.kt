@@ -156,7 +156,8 @@ class MoviesActivity : AppCompatActivity() {
                             prefs.displayTheme,
                             ::playMovie,
                             ::showMovieDetails,
-                            ::showPreview
+                            ::showPreview,
+                            isPosterDataSaver = usePosterDataSaver()
                         )
                     }.onFailure { error ->
                         Log.e(TAG, "Unable to load movies", error)
@@ -235,7 +236,14 @@ class MoviesActivity : AppCompatActivity() {
             .setTitle("فلترة الأفلام")
             .setItems(options.toTypedArray()) { _, index ->
                 val filtered = if (index == 0) movies else movies.filter { it.genre.orEmpty().contains(options[index], true) }
-                binding.moviesRecyclerView.adapter = MovieAdapter(filtered, prefs.displayTheme, ::playMovie, ::showMovieDetails, ::showPreview)
+                binding.moviesRecyclerView.adapter = MovieAdapter(
+                    filtered,
+                    prefs.displayTheme,
+                    ::playMovie,
+                    ::showMovieDetails,
+                    ::showPreview,
+                    isPosterDataSaver = usePosterDataSaver()
+                )
                 binding.moviesCount.text = "${filtered.size} فيلم"
             }
             .show()
@@ -258,6 +266,9 @@ class MoviesActivity : AppCompatActivity() {
         startActivity(intent)
         finish()
     }
+
+    private fun usePosterDataSaver(): Boolean =
+        prefs.isFeatureEnabled(FeatureCatalog.DATA_SAVER) || prefs.isFeatureEnabled(FeatureCatalog.LOW_BANDWIDTH_POSTERS)
 
     companion object {
         private const val TAG = "MoviesActivity"
