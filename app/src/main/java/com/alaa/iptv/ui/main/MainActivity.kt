@@ -301,11 +301,31 @@ class MainActivity : AppCompatActivity() {
         if (currentMode != MODE_FAVORITES && allChannels.size > 1) {
             actions += "نقل القناة" to { startChannelMove(channel) }
         }
+        actions += "تفاصيل القناة" to { showChannelDetails(channel) }
 
         AlertDialog.Builder(this)
             .setTitle(channel.name)
             .setItems(actions.map { it.first }.toTypedArray()) { _, which -> actions[which].second.invoke() }
             .setNegativeButton("إلغاء", null)
+            .show()
+    }
+
+    private fun showChannelDetails(channel: Channel) {
+        val quality = when {
+            channel.name.contains("4k", ignoreCase = true) || channel.name.contains("uhd", ignoreCase = true) -> "4K / UHD"
+            channel.name.contains("fhd", ignoreCase = true) || channel.name.contains("1080", ignoreCase = true) -> "FHD"
+            channel.name.contains("hd", ignoreCase = true) -> "HD"
+            else -> "SD أو غير محددة"
+        }
+        AlertDialog.Builder(this)
+            .setTitle(channel.name)
+            .setMessage(listOf(
+                channel.categoryName?.let { "الفئة: $it" },
+                "الجودة: $quality",
+                channel.num.takeIf { it.isNotBlank() }?.let { "رقم القناة: $it" }
+            ).filterNotNull().joinToString("\n"))
+            .setPositiveButton("تشغيل") { _, _ -> playChannel(channel) }
+            .setNegativeButton("إغلاق", null)
             .show()
     }
 
