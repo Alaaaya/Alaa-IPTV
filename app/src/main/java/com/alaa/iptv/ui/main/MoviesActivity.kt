@@ -54,6 +54,7 @@ class MoviesActivity : AppCompatActivity() {
         prefs = AppPreferences(this)
         repository = MediaRepository(prefs, this)
         DisplayTheme.applyMovies(binding, prefs)
+        prefs.lastVisitedSection = MainActivity.MODE_MOVIES
 
         setupSidebar()
         setupMoviesGrid()
@@ -154,7 +155,7 @@ class MoviesActivity : AppCompatActivity() {
                             movies,
                             prefs.displayTheme,
                             ::playMovie,
-                            ::toggleWatchlist,
+                            ::showMovieDetails,
                             ::showPreview
                         )
                     }.onFailure { error ->
@@ -199,6 +200,25 @@ class MoviesActivity : AppCompatActivity() {
         Toast.makeText(this, if (added) "أُضيف إلى المشاهدة لاحقاً" else "أُزيل من المشاهدة لاحقاً", Toast.LENGTH_SHORT).show()
     }
 
+    private fun showMovieDetails(movie: Movie) {
+        val details = listOfNotNull(
+            movie.year?.takeIf { it.isNotBlank() }?.let { "السنة: $it" },
+            movie.rating?.takeIf { it.isNotBlank() }?.let { "التقييم: ★ $it" },
+            movie.genre?.takeIf { it.isNotBlank() }?.let { "النوع: $it" },
+            movie.duration?.takeIf { it.isNotBlank() }?.let { "المدة: $it" },
+            movie.director?.takeIf { it.isNotBlank() }?.let { "الإخراج: $it" },
+            movie.cast?.takeIf { it.isNotBlank() }?.let { "الطاقم: $it" },
+            movie.plot?.takeIf { it.isNotBlank() }
+        ).joinToString("\n\n")
+        AlertDialog.Builder(this)
+            .setTitle(movie.name)
+            .setMessage(details.ifBlank { "لا تتوفر تفاصيل إضافية لهذا الفيلم من المصدر." })
+            .setPositiveButton("تشغيل") { _, _ -> playMovie(movie) }
+            .setNeutralButton("المشاهدة لاحقاً") { _, _ -> toggleWatchlist(movie) }
+            .setNegativeButton("إغلاق", null)
+            .show()
+    }
+
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         if (keyCode == KeyEvent.KEYCODE_MENU && prefs.isFeatureEnabled(FeatureCatalog.LIBRARY_FILTERS)) {
             showGenreFilter()
@@ -215,7 +235,7 @@ class MoviesActivity : AppCompatActivity() {
             .setTitle("فلترة الأفلام")
             .setItems(options.toTypedArray()) { _, index ->
                 val filtered = if (index == 0) movies else movies.filter { it.genre.orEmpty().contains(options[index], true) }
-                binding.moviesRecyclerView.adapter = MovieAdapter(filtered, prefs.displayTheme, ::playMovie, ::toggleWatchlist, ::showPreview)
+                binding.moviesRecyclerView.adapter = MovieAdapter(filtered, prefs.displayTheme, ::playMovie, ::showMovieDetails, ::showPreview)
                 binding.moviesCount.text = "${filtered.size} فيلم"
             }
             .show()
