@@ -217,11 +217,24 @@ class SeriesActivity : AppCompatActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_DPAD_UP && binding.seriesRecyclerView.hasFocus()) {
+            binding.seriesCategorySelector.requestFocus()
+            return true
+        }
+        if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN && binding.seriesCategorySelector.hasFocus()) {
+            focusFirstSeries()
+            return true
+        }
         if (keyCode == KeyEvent.KEYCODE_MENU && prefs.isFeatureEnabled(FeatureCatalog.LIBRARY_FILTERS)) {
             showGenreFilter()
             return true
         }
         return super.onKeyDown(keyCode, event)
+    }
+
+    private fun focusFirstSeries() {
+        binding.seriesRecyclerView.findViewHolderForAdapterPosition(0)?.itemView?.requestFocus()
+            ?: binding.seriesRecyclerView.requestFocus()
     }
 
     private fun showGenreFilter() {

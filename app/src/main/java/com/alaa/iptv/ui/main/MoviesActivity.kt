@@ -225,11 +225,24 @@ class MoviesActivity : AppCompatActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_DPAD_UP && binding.moviesRecyclerView.hasFocus()) {
+            binding.movieCategorySelector.requestFocus()
+            return true
+        }
+        if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN && binding.movieCategorySelector.hasFocus()) {
+            focusFirstMovie()
+            return true
+        }
         if (keyCode == KeyEvent.KEYCODE_MENU && prefs.isFeatureEnabled(FeatureCatalog.LIBRARY_FILTERS)) {
             showGenreFilter()
             return true
         }
         return super.onKeyDown(keyCode, event)
+    }
+
+    private fun focusFirstMovie() {
+        binding.moviesRecyclerView.findViewHolderForAdapterPosition(0)?.itemView?.requestFocus()
+            ?: binding.moviesRecyclerView.requestFocus()
     }
 
     private fun showGenreFilter() {
