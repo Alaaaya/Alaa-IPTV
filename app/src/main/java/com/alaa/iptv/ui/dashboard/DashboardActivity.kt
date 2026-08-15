@@ -16,6 +16,7 @@ import com.alaa.iptv.data.models.Channel
 import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.data.preferences.FeatureCatalog
 import com.alaa.iptv.data.repository.MediaRepository
+import com.alaa.iptv.data.repository.SubscriptionSessionExpiredException
 import com.alaa.iptv.databinding.ActivityDashboardBinding
 import com.alaa.iptv.ui.main.MainActivity
 import com.alaa.iptv.ui.main.MoviesActivity
@@ -24,6 +25,7 @@ import com.alaa.iptv.ui.library.LibraryActivity
 import com.alaa.iptv.ui.library.SearchActivity
 import com.alaa.iptv.ui.player.PlayerActivity
 import com.alaa.iptv.ui.settings.SettingsActivity
+import com.alaa.iptv.ui.login.LoginActivity
 import com.alaa.iptv.ui.theme.DisplayTheme
 import com.alaa.iptv.ui.common.ControlPlaneActivityGuard
 import com.alaa.iptv.utils.UpdateChecker
@@ -298,7 +300,13 @@ class DashboardActivity : AppCompatActivity() {
                     allSeries = seriesResult.getOrDefault(emptyList()).map { it.toChannel() }
                 } else lastFailure = seriesResult.exceptionOrNull()
                 updateUI()
-                if (lastFailure != null && prefs.isFeatureEnabled(FeatureCatalog.RECOVERY_ACTIONS)) {
+                if (lastFailure is SubscriptionSessionExpiredException && prefs.isFeatureEnabled(FeatureCatalog.SESSION_RECOVERY)) {
+                    showToast("انتهت جلسة الاشتراك. أدخل بياناتك من جديد.")
+                    startActivity(Intent(this@DashboardActivity, LoginActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    })
+                    finish()
+                } else if (lastFailure != null && prefs.isFeatureEnabled(FeatureCatalog.RECOVERY_ACTIONS)) {
                     val reference = if (prefs.isFeatureEnabled(FeatureCatalog.SAFE_ERROR_LOG)) {
                         prefs.addSafeDiagnostic("dashboard-content", lastFailure)
                     } else ""
