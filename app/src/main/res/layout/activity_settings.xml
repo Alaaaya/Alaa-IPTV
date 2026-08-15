@@ -192,6 +192,36 @@
                 android:textAllCaps="false"
                 android:textColor="@color/white"
                 android:textSize="15sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:text="حالة الخدمة"
+                android:textColor="@color/text_gray_light"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/connectionTestState"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="افحص الإنترنت والخادم يدوياً عند الحاجة."
+                android:textColor="@color/white"
+                android:textSize="14sp" />
+
+            <Button
+                android:id="@+id/connectionTestButton"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_login_secondary_button"
+                android:focusable="true"
+                android:paddingHorizontal="22dp"
+                android:text="فحص الاتصال"
+                android:textAllCaps="false"
+                android:textColor="@color/white"
+                android:textSize="15sp" />
         </LinearLayout>
     </ScrollView>
 </androidx.constraintlayout.widget.ConstraintLayout>
