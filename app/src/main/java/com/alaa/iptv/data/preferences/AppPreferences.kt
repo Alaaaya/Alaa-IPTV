@@ -2,6 +2,8 @@ package com.alaa.iptv.data.preferences
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.alaa.iptv.data.models.Channel
+import com.alaa.iptv.data.models.FavoriteChannelCodec
 import java.util.UUID
 
 class AppPreferences(context: Context) {
@@ -18,6 +20,7 @@ class AppPreferences(context: Context) {
         private const val KEY_M3U_URL = "m3u_url"
         private const val KEY_TV_ID = "tv_id"
         private const val KEY_FAVORITES = "favorites"
+        private const val KEY_FAVORITE_CHANNEL_DATA = "favorite_channel_data"
         private const val KEY_CHANNEL_ORDER = "channel_order"
         private const val KEY_LAST_LIVE_CATEGORY = "last_live_category"
         private const val KEY_LAST_MOVIE_CATEGORY = "last_movie_category"
@@ -101,6 +104,23 @@ class AppPreferences(context: Context) {
     fun getFavorites(): Set<String> {
         return prefs.getStringSet(KEY_FAVORITES, emptySet())?.toSet() ?: emptySet()
     }
+
+    fun saveFavoriteChannel(channel: Channel) {
+        val key = favoriteKey(channel)
+        val saved = getFavoriteChannels().filterNot { favoriteKey(it) == key } + channel.copy(isFavorite = true)
+        prefs.edit().putString(KEY_FAVORITE_CHANNEL_DATA, FavoriteChannelCodec.encode(saved)).apply()
+    }
+
+    fun removeFavoriteChannel(channel: Channel) {
+        val key = favoriteKey(channel)
+        val saved = getFavoriteChannels().filterNot { favoriteKey(it) == key }
+        prefs.edit().putString(KEY_FAVORITE_CHANNEL_DATA, FavoriteChannelCodec.encode(saved)).apply()
+    }
+
+    fun getFavoriteChannels(): List<Channel> =
+        FavoriteChannelCodec.decode(prefs.getString(KEY_FAVORITE_CHANNEL_DATA, "[]"))
+
+    private fun favoriteKey(channel: Channel): String = "${channel.streamType.lowercase()}:${channel.streamId}"
 
     fun saveChannelOrder(channelKeys: List<String>) {
         prefs.edit().putString(KEY_CHANNEL_ORDER, channelKeys.joinToString(separator = "|")) .apply()
