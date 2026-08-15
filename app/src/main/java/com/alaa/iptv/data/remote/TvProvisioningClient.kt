@@ -91,15 +91,7 @@ object TvProvisioningClient {
                     val data = JSONObject(body).optJSONObject("result")
                         ?.optJSONObject("data")?.optJSONObject("json")
                         ?: throw IOException("استجابة لوحة التحكم غير صالحة")
-                    val device = data.optJSONObject("device")
-                        ?: throw IOException("حالة الجهاز غير متاحة")
-                    DeviceControlPlaneSnapshot(
-                        tvId = device.optString("tvId", tvId),
-                        deviceStatus = device.optString("status", "unknown"),
-                        remoteLogoutRequested = device.optBoolean("remoteLogoutRequested", false),
-                        remoteConfig = parseRemoteConfig(data.optJSONObject("remoteConfig")),
-                        featureFlags = parseFeatureFlags(data.optJSONObject("featureFlags"))
-                    )
+                    parseControlPlaneSnapshot(data, tvId)
                 }
             }
         }
@@ -119,7 +111,32 @@ object TvProvisioningClient {
         }
     }
 
-    private fun parseRemoteConfig(source: JSONObject?): Map<String, RemoteConfigValue> {
+    internal fun parseControlPlaneSnapshot(data: JSONObject, fallbackTvId: String): DeviceControlPlaneSnapshot {
+        val device = data.optJSONObject("device") ?: throw IOException("حالة الجهاز غير متاحة")
+        return buildControlPlaneSnapshot(
+            tvId = device.optString("tvId", fallbackTvId),
+            deviceStatus = device.optString("status", "unknown"),
+            remoteLogoutRequested = device.optBoolean("remoteLogoutRequested", false),
+            remoteConfig = parseRemoteConfig(data.optJSONObject("remoteConfig")),
+            featureFlags = parseFeatureFlags(data.optJSONObject("featureFlags"))
+        )
+    }
+
+    internal fun buildControlPlaneSnapshot(
+        tvId: String,
+        deviceStatus: String,
+        remoteLogoutRequested: Boolean,
+        remoteConfig: Map<String, RemoteConfigValue>,
+        featureFlags: Map<String, RemoteFeatureFlag>
+    ): DeviceControlPlaneSnapshot = DeviceControlPlaneSnapshot(
+        tvId = tvId,
+        deviceStatus = deviceStatus,
+        remoteLogoutRequested = remoteLogoutRequested,
+        remoteConfig = remoteConfig,
+        featureFlags = featureFlags
+    )
+
+    internal fun parseRemoteConfig(source: JSONObject?): Map<String, RemoteConfigValue> {
         if (source == null) return emptyMap()
         return buildMap {
             val keys = source.keys()
@@ -131,7 +148,7 @@ object TvProvisioningClient {
         }
     }
 
-    private fun parseFeatureFlags(source: JSONObject?): Map<String, RemoteFeatureFlag> {
+    internal fun parseFeatureFlags(source: JSONObject?): Map<String, RemoteFeatureFlag> {
         if (source == null) return emptyMap()
         return buildMap {
             val keys = source.keys()
