@@ -8,8 +8,11 @@ import org.junit.Test
 class FeatureCatalogTest {
     @Test
     fun `contains every selected optional feature exactly once`() {
-        assertEquals(22, FeatureCatalog.options.size)
+        assertEquals(37, FeatureCatalog.options.size)
         assertEquals(FeatureCatalog.options.size, FeatureCatalog.options.map { it.id }.toSet().size)
+        assertTrue(FeatureCatalog.options.any { it.id == FeatureCatalog.CONTENT_RELOAD })
+        assertTrue(FeatureCatalog.options.any { it.id == FeatureCatalog.MANUAL_SYNC })
+        assertTrue(FeatureCatalog.options.any { it.id == FeatureCatalog.SAFE_ERROR_LOG })
     }
 
     @Test

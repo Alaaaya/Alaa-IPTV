@@ -25,6 +25,7 @@ import com.alaa.iptv.ui.library.SearchActivity
 import com.alaa.iptv.ui.player.PlayerActivity
 import com.alaa.iptv.ui.settings.SettingsActivity
 import com.alaa.iptv.ui.theme.DisplayTheme
+import com.alaa.iptv.ui.common.ControlPlaneActivityGuard
 import com.alaa.iptv.utils.UpdateChecker
 import com.bumptech.glide.Glide
 import kotlinx.coroutines.launch
@@ -72,9 +73,8 @@ class DashboardActivity : AppCompatActivity() {
         setupBottomInfo()
         checkUpdates()
         startClock()
-
-        binding.root.post {
-            loadContent()
+        refreshControlPlane(force = true) {
+            binding.root.post { loadContent() }
         }
     }
 
@@ -84,6 +84,22 @@ class DashboardActivity : AppCompatActivity() {
                 UpdateChecker(this@DashboardActivity).checkForUpdate(showToast = false)
             } catch (e: Exception) {
                 Log.e(TAG, "Update check failed", e)
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        refreshControlPlane()
+    }
+
+    private fun refreshControlPlane(force: Boolean = false, onAccessGranted: (() -> Unit)? = null) {
+        lifecycleScope.launch {
+            val accessGranted = ControlPlaneActivityGuard.refreshAndEnforce(this@DashboardActivity, prefs, force)
+            if (accessGranted && _binding != null) {
+                setupSidebar()
+                updateUI()
+                onAccessGranted?.invoke()
             }
         }
     }
@@ -104,7 +120,10 @@ class DashboardActivity : AppCompatActivity() {
                 if (prefs.isFeatureEnabled(FeatureCatalog.GLOBAL_SEARCH)) startActivity(Intent(this, SearchActivity::class.java))
                 else showToast("فعّل البحث الشامل من الإعدادات أولاً")
             },
-            SidebarItem(getString(R.string.menu_server), R.drawable.ic_server, false) { showToast("قريباً") },
+            SidebarItem(getString(R.string.menu_server), R.drawable.ic_server, false) {
+                if (prefs.isFeatureEnabled(FeatureCatalog.CONTENT_RELOAD)) reloadContent()
+                else startActivity(Intent(this, SettingsActivity::class.java))
+            },
             SidebarItem(getString(R.string.menu_settings), R.drawable.ic_settings, false) { startActivity(Intent(this, SettingsActivity::class.java)) }
         )
         val items = if (prefs.isFeatureEnabled(FeatureCatalog.SIMPLE_MODE)) {
@@ -250,26 +269,49 @@ class DashboardActivity : AppCompatActivity() {
         }
     }
 
-    private fun loadContent() {
+    private fun reloadContent() {
+        refreshControlPlane(force = true) {
+            allChannels = emptyList()
+            allMovies = emptyList()
+            allSeries = emptyList()
+            updateUI()
+            loadContent(showFeedback = true)
+        }
+    }
+
+    private fun loadContent(showFeedback: Boolean = false) {
         lifecycleScope.launch {
             try {
+                var lastFailure: Throwable? = null
                 val channelsResult = repository.getLiveStreams(null)
                 if (channelsResult.isSuccess) {
                     allChannels = channelsResult.getOrDefault(emptyList())
-                }
+                } else lastFailure = channelsResult.exceptionOrNull()
                 updateUI()
                 val moviesResult = repository.getMovies(null)
                 if (moviesResult.isSuccess) {
                     allMovies = moviesResult.getOrDefault(emptyList()).map { it.toChannel() }
-                }
+                } else lastFailure = moviesResult.exceptionOrNull()
                 updateUI()
                 val seriesResult = repository.getSeries(null)
                 if (seriesResult.isSuccess) {
                     allSeries = seriesResult.getOrDefault(emptyList()).map { it.toChannel() }
-                }
+                } else lastFailure = seriesResult.exceptionOrNull()
                 updateUI()
+                if (lastFailure != null && prefs.isFeatureEnabled(FeatureCatalog.RECOVERY_ACTIONS)) {
+                    val reference = if (prefs.isFeatureEnabled(FeatureCatalog.SAFE_ERROR_LOG)) {
+                        prefs.addSafeDiagnostic("dashboard-content", lastFailure)
+                    } else ""
+                    val referenceText = if (reference.isBlank() || !prefs.isFeatureEnabled(FeatureCatalog.CONNECTION_REFERENCE)) "" else " ($reference)"
+                    showToast("تعذر تحديث بعض المحتوى. تحقق من الاتصال وحاول مجدداً$referenceText")
+                } else if (showFeedback) {
+                    showToast("تم تحديث المحتوى.")
+                }
             } catch (e: Exception) {
                 Log.e(TAG, "Content loading failed", e)
+                val reference = if (prefs.isFeatureEnabled(FeatureCatalog.SAFE_ERROR_LOG)) prefs.addSafeDiagnostic("dashboard-content", e) else ""
+                val referenceText = if (reference.isBlank() || !prefs.isFeatureEnabled(FeatureCatalog.CONNECTION_REFERENCE)) "" else " ($reference)"
+                showToast("تعذر تحديث المحتوى. حاول لاحقاً$referenceText")
             }
         }
     }
@@ -293,7 +335,8 @@ class DashboardActivity : AppCompatActivity() {
             "كل القنوات" to "live", "الرياضة" to "sports", "الأخبار" to "news", "الأفلام" to "movie",
             "المسلسلات" to "series", "الأطفال" to "kids", "الوثائقيات" to "documentary", "الموسيقى" to "music"
         )
-        updateCategories(categories.filter { categoryType[it.name] in visibleTypes }.sortedBy { visibleTypes.indexOf(categoryType[it.name]) })
+        val remotelyVisibleTypes = visibleTypes.filterNot { prefs.isHomeCategoryRemotelyHidden(it) }
+        updateCategories(categories.filter { categoryType[it.name] in remotelyVisibleTypes }.sortedBy { remotelyVisibleTypes.indexOf(categoryType[it.name]) })
         updateHeroBanner()
 
         val history = if (prefs.isFeatureEnabled(FeatureCatalog.WATCH_HISTORY)) prefs.getPlaybackHistory() else emptyList()
@@ -325,6 +368,10 @@ class DashboardActivity : AppCompatActivity() {
     }
 
     private fun openMain(mode: String) {
+        if (prefs.isDeviceAccessBlocked()) {
+            refreshControlPlane()
+            return
+        }
         val intent = when (mode) {
             MainActivity.MODE_MOVIES -> Intent(this, MoviesActivity::class.java)
             MainActivity.MODE_SERIES -> Intent(this, SeriesActivity::class.java)

@@ -20,6 +20,7 @@ import com.alaa.iptv.ui.player.PlayerActivity
 import com.alaa.iptv.ui.player.PlayableChannel
 import com.alaa.iptv.ui.player.PlayerChannelNavigator
 import com.alaa.iptv.ui.theme.DisplayTheme
+import com.alaa.iptv.ui.common.ControlPlaneActivityGuard
 import com.bumptech.glide.Glide
 import kotlinx.coroutines.launch
 
@@ -74,7 +75,18 @@ class MainActivity : AppCompatActivity() {
         setupLiveCategoriesList()
         binding.filterAll.setOnClickListener { focusSelectedCategory() }
         binding.channelCounterFooter.setOnClickListener { loadMoreChannels() }
-        if (currentMode == MODE_FAVORITES) loadFavoriteChannels() else loadLiveCategories()
+        lifecycleScope.launch {
+            if (ControlPlaneActivityGuard.refreshAndEnforce(this@MainActivity, prefs, force = true)) {
+                if (currentMode == MODE_FAVORITES) loadFavoriteChannels() else loadLiveCategories()
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        lifecycleScope.launch {
+            ControlPlaneActivityGuard.refreshAndEnforce(this@MainActivity, prefs)
+        }
     }
 
     private fun setupChannelsList() {

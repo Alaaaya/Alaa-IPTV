@@ -2,8 +2,10 @@ package com.alaa.iptv.data.repository
 
 import android.content.Context
 import android.util.Log
+import com.alaa.iptv.BuildConfig
 import com.alaa.iptv.data.models.*
 import com.alaa.iptv.data.preferences.AppPreferences
+import com.alaa.iptv.data.remote.TvProvisioningClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.*
@@ -75,8 +77,19 @@ class MediaRepository(
 
     // ================= HELPERS =================
 
+    private suspend fun ensureContentAccess(): Result<Unit> = runCatching {
+        if (prefs.isControlPlaneEnrolled && prefs.shouldRefreshControlPlane()) {
+            TvProvisioningClient.syncControlPlane(prefs.getOrCreateTvId(), BuildConfig.VERSION_NAME)
+                .onSuccess { prefs.applyControlPlaneSnapshot(it) }
+        }
+        if (prefs.isDeviceAccessBlocked()) {
+            throw IOException("هذا الجهاز موقوف من لوحة التحكم")
+        }
+    }
+
     private suspend fun request(url: String): String =
         withContext(Dispatchers.IO) {
+            ensureContentAccess().getOrThrow()
             Log.d(TAG, "Requesting IPTV endpoint")
             val request = Request.Builder()
                 .url(url)
@@ -168,6 +181,7 @@ class MediaRepository(
 
     suspend fun getLiveStreams(categoryId: String?, page: Int = 0): Result<List<Channel>> =
         withContext(Dispatchers.IO) {
+            ensureContentAccess().exceptionOrNull()?.let { return@withContext Result.failure(it) }
 
             val requestedCategory = categoryId?.takeIf { it != "all" }
             val effectiveCategory = requestedCategory ?: getLiveCategories()
@@ -257,6 +271,7 @@ class MediaRepository(
 
     suspend fun getLiveCategories(): Result<List<Category>> =
         withContext(Dispatchers.IO) {
+            ensureContentAccess().exceptionOrNull()?.let { return@withContext Result.failure(it) }
 
             if (isM3U()) {
                 return@withContext loadM3U(prefs.serverUrl).map(M3UCategoryMapper::categories)
@@ -301,6 +316,7 @@ class MediaRepository(
 
     suspend fun getMovieCategories(): Result<List<Category>> =
         withContext(Dispatchers.IO) {
+            ensureContentAccess().exceptionOrNull()?.let { return@withContext Result.failure(it) }
             try {
                 val url = buildApiUrl("get_vod_categories")
                 val body = request(url)
@@ -328,6 +344,7 @@ class MediaRepository(
 
     suspend fun getSeriesCategories(): Result<List<Category>> =
         withContext(Dispatchers.IO) {
+            ensureContentAccess().exceptionOrNull()?.let { return@withContext Result.failure(it) }
             try {
                 val url = buildApiUrl("get_series_categories")
                 val body = request(url)
@@ -355,6 +372,7 @@ class MediaRepository(
 
     suspend fun getMovies(categoryId: String?, page: Int = 0): Result<List<Movie>> =
         withContext(Dispatchers.IO) {
+            ensureContentAccess().exceptionOrNull()?.let { return@withContext Result.failure(it) }
             val requestedCategory = categoryId?.takeIf { it != "all" }
             val effectiveCategory = requestedCategory ?: getMovieCategories()
                 .getOrDefault(emptyList())
@@ -430,6 +448,7 @@ class MediaRepository(
 
     suspend fun getSeries(categoryId: String?, page: Int = 0): Result<List<Series>> =
         withContext(Dispatchers.IO) {
+            ensureContentAccess().exceptionOrNull()?.let { return@withContext Result.failure(it) }
             val requestedCategory = categoryId?.takeIf { it != "all" }
             val effectiveCategory = requestedCategory ?: getSeriesCategories()
                 .getOrDefault(emptyList())
@@ -502,6 +521,7 @@ class MediaRepository(
 
     suspend fun getSeriesEpisodes(seriesId: String): Result<List<Episode>> =
         withContext(Dispatchers.IO) {
+            ensureContentAccess().exceptionOrNull()?.let { return@withContext Result.failure(it) }
             try {
                 if (isM3U()) {
                     return@withContext Result.failure(IOException("قوائم M3U لا تحتوي على بيانات حلقات المسلسلات"))
@@ -545,6 +565,7 @@ class MediaRepository(
 
     suspend fun loadM3U(url: String): Result<List<Channel>> =
         withContext(Dispatchers.IO) {
+            ensureContentAccess().exceptionOrNull()?.let { return@withContext Result.failure(it) }
 
             cachedChannels?.let { cached ->
                 if (System.currentTimeMillis() - cachedChannelsTime < CACHE_DURATION) {
