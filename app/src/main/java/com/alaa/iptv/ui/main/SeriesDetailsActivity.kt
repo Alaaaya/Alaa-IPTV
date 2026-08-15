@@ -42,6 +42,7 @@ class SeriesDetailsActivity : AppCompatActivity() {
         repository = MediaRepository(prefs, this)
         DisplayTheme.applySeriesDetails(binding, prefs)
         DisplayTheme.applyViewingPreferences(binding.root, prefs)
+        binding.root.isSoundEffectsEnabled = prefs.isFeatureEnabled(FeatureCatalog.NAVIGATION_SOUNDS)
         if (prefs.isFeatureEnabled(FeatureCatalog.EYE_COMFORT)) window.attributes = window.attributes.apply { screenBrightness = 0.82f }
 
         bindSeries()

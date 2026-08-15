@@ -58,6 +58,7 @@ class MainActivity : AppCompatActivity() {
         repository = MediaRepository(prefs, this)
         DisplayTheme.applyLive(binding, prefs)
         DisplayTheme.applyViewingPreferences(binding.root, prefs)
+        binding.root.isSoundEffectsEnabled = prefs.isFeatureEnabled(FeatureCatalog.NAVIGATION_SOUNDS)
         if (prefs.isFeatureEnabled(FeatureCatalog.EYE_COMFORT)) window.attributes = window.attributes.apply { screenBrightness = 0.82f }
         currentMode = intent.getStringExtra(EXTRA_MODE) ?: MODE_LIVE
         prefs.lastVisitedSection = currentMode
