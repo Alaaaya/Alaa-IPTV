@@ -195,8 +195,15 @@ class DashboardActivity : AppCompatActivity() {
 
         if (prefs.isFeatureEnabled(FeatureCatalog.DATA_SAVER) || prefs.isFeatureEnabled(FeatureCatalog.LOW_BANDWIDTH_POSTERS)) {
             binding.heroPosterCard.visibility = View.GONE
+            binding.heroImage.setImageResource(R.drawable.bg_hero_sports)
         } else {
             binding.heroPosterCard.visibility = View.VISIBLE
+            Glide.with(this)
+                .load(featured.streamIcon)
+                .placeholder(R.drawable.bg_hero_sports)
+                .error(R.drawable.bg_hero_sports)
+                .centerCrop()
+                .into(binding.heroImage)
             Glide.with(this)
                 .load(featured.streamIcon)
                 .placeholder(R.drawable.bg_hero_sports)
@@ -223,6 +230,9 @@ class DashboardActivity : AppCompatActivity() {
             }
         }
         binding.categoriesRecyclerView.apply {
+            val density = resources.displayMetrics.density
+            val rowHeightDp = maxOf(224, DisplayTheme.dashboardCardSpec(prefs.displayTheme).heightDp + 32)
+            layoutParams = layoutParams.apply { height = (rowHeightDp * density).toInt() }
             layoutManager = LinearLayoutManager(this@DashboardActivity, LinearLayoutManager.HORIZONTAL, false)
             isNestedScrollingEnabled = false
             setHasFixedSize(true)
@@ -458,6 +468,44 @@ class DashboardActivity : AppCompatActivity() {
             .putExtra("CHANNEL_NAME", item.channel.name)
             .putExtra("STREAM_TYPE", item.channel.streamType)
             .putExtra(PlayerActivity.EXTRA_RESUME_POSITION_MS, item.resumePositionMs))
+    }
+
+    override fun onKeyDown(keyCode: Int, event: android.view.KeyEvent?): Boolean {
+        if (keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN && binding.heroWatchNow.hasFocus()) {
+            focusFirstCategory()
+            return true
+        }
+        if (keyCode == android.view.KeyEvent.KEYCODE_DPAD_UP && binding.categoriesRecyclerView.hasFocus()) {
+            binding.heroWatchNow.requestFocus()
+            binding.dashboardScrollView.smoothScrollTo(0, 0)
+            return true
+        }
+        if (keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN && binding.categoriesRecyclerView.hasFocus()) {
+            focusFirstContinueWatching()
+            return true
+        }
+        if (keyCode == android.view.KeyEvent.KEYCODE_DPAD_UP && binding.continueWatchingRecyclerView.hasFocus()) {
+            focusFirstCategory()
+            return true
+        }
+        return super.onKeyDown(keyCode, event)
+    }
+
+    private fun focusFirstCategory() {
+        binding.categoriesRecyclerView.post {
+            binding.categoriesRecyclerView.findViewHolderForAdapterPosition(0)?.itemView?.requestFocus()
+                ?: binding.categoriesRecyclerView.requestFocus()
+            binding.dashboardScrollView.smoothScrollTo(0, binding.categoriesRecyclerView.top)
+        }
+    }
+
+    private fun focusFirstContinueWatching() {
+        if ((binding.continueWatchingRecyclerView.adapter?.itemCount ?: 0) <= 0) return
+        binding.continueWatchingRecyclerView.post {
+            binding.continueWatchingRecyclerView.findViewHolderForAdapterPosition(0)?.itemView?.requestFocus()
+                ?: binding.continueWatchingRecyclerView.requestFocus()
+            binding.dashboardScrollView.smoothScrollTo(0, binding.continueWatchingRecyclerView.top)
+        }
     }
 
     private fun showToast(message: String) {
