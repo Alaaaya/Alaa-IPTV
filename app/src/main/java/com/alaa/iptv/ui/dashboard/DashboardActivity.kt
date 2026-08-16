@@ -534,7 +534,8 @@ class DashboardActivity : AppCompatActivity() {
     private fun com.alaa.iptv.data.models.Movie.toChannel() = Channel(
         streamId = streamId, num = streamId, name = name, streamType = "movie",
         streamIcon = streamIcon, epgChannelId = null, added = null, categoryId = categoryId,
-        categoryName = null, customSid = null, tvArchive = 0, directSource = null, isFavorite = isFavorite
+        categoryName = null, customSid = null, tvArchive = 0, directSource = null,
+        containerExtension = containerExtension, isFavorite = isFavorite
     )
     
     private fun com.alaa.iptv.data.models.Series.toChannel() = Channel(

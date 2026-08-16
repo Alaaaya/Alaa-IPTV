@@ -21,7 +21,8 @@ data class Channel(
     val directSource: String?,
     val tvArchiveDuration: Int = 0,
     var isFavorite: Boolean = false,
-    var position: Int = 0
+    var position: Int = 0,
+    val containerExtension: String? = null
 ) : Parcelable {
 
     fun getStreamUrl(
@@ -38,8 +39,8 @@ data class Channel(
 
         return when (type) {
             "live" -> StreamUrlFactory.live(serverUrl, username, password, streamId)
-            "movie", "vod" -> StreamUrlFactory.movie(serverUrl, username, password, streamId, "mp4")
-            "series" -> StreamUrlFactory.episode(serverUrl, username, password, streamId, "mp4")
+            "movie", "vod" -> StreamUrlFactory.movie(serverUrl, username, password, streamId, containerExtension)
+            "series" -> StreamUrlFactory.episode(serverUrl, username, password, streamId, containerExtension)
             else -> StreamUrlFactory.live(serverUrl, username, password, streamId)
         }
     }
