@@ -231,7 +231,7 @@ class DashboardActivity : AppCompatActivity() {
         }
         binding.categoriesRecyclerView.apply {
             val density = resources.displayMetrics.density
-            val rowHeightDp = maxOf(224, DisplayTheme.dashboardCardSpec(prefs.displayTheme).heightDp + 32)
+            val rowHeightDp = DisplayTheme.dashboardCategoryRailHeightDp()
             layoutParams = layoutParams.apply { height = (rowHeightDp * density).toInt() }
             layoutManager = LinearLayoutManager(this@DashboardActivity, LinearLayoutManager.HORIZONTAL, false)
             isNestedScrollingEnabled = false
