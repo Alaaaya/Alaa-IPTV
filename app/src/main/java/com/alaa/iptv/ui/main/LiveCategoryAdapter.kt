@@ -67,13 +67,17 @@ class LiveCategoryAdapter(
             val spec = DisplayTheme.liveCategorySpec(displayTheme)
             val suffix = if (spec.labelPrefix == "[ ") " ]" else ""
             binding.categoryName.text = "${spec.labelPrefix}${category.categoryName}$suffix"
-            binding.categoryName.textSize = spec.textSizeSp
+            binding.categoryName.textSize = maxOf(18f, spec.textSizeSp)
+            binding.categoryNumber.text = (bindingAdapterPosition + 1).toString()
+            binding.categoryCount.text = if (category.channelCount > 0) {
+                "${category.channelCount} عنصر في هذه الفئة"
+            } else {
+                "اضغط لعرض محتوى الفئة"
+            }
             val density = binding.root.resources.displayMetrics.density
             binding.root.layoutParams = binding.root.layoutParams.apply {
-                height = (spec.itemHeightDp * density).toInt()
+                height = (maxOf(66, spec.itemHeightDp) * density).toInt()
             }
-            val horizontalPadding = if (spec.spanCount > 1) 8 else 14
-            binding.categoryName.setPadding((horizontalPadding * density).toInt(), (6 * density).toInt(), (horizontalPadding * density).toInt(), (6 * density).toInt())
             render(category)
         }
 
@@ -88,6 +92,12 @@ class LiveCategoryAdapter(
                 binding.categoryName.setTextColor(
                     if (highlighted) DisplayTheme.focusTextColor(displayTheme) else DisplayTheme.metadataColor(displayTheme)
                 )
+                binding.categoryCount.setTextColor(
+                    if (highlighted) DisplayTheme.focusTextColor(displayTheme) else DisplayTheme.metadataColor(displayTheme)
+                )
+                binding.categoryNumber.setBackgroundResource(
+                    if (highlighted) R.drawable.bg_category_number_selected else R.drawable.bg_category_number_default
+                )
                 binding.root.scaleX = if (binding.root.hasFocus()) 1.025f else 1f
                 binding.root.scaleY = if (binding.root.hasFocus()) 1.025f else 1f
             } else {
@@ -95,6 +105,10 @@ class LiveCategoryAdapter(
                     if (highlighted) R.drawable.bg_live_category_selected else R.drawable.bg_live_category_default
                 )
                 binding.categoryName.setTextColor(if (highlighted) Color.WHITE else Color.parseColor("#D8E1EF"))
+                binding.categoryCount.setTextColor(if (highlighted) Color.WHITE else Color.parseColor("#B7C9DE"))
+                binding.categoryNumber.setBackgroundResource(
+                    if (highlighted) R.drawable.bg_category_number_selected else R.drawable.bg_category_number_default
+                )
             }
         }
     }
