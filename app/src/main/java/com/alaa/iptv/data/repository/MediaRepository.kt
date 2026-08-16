@@ -130,11 +130,7 @@ class MediaRepository(
     }
 
     fun isM3U(url: String = prefs.serverUrl): Boolean {
-        val lower = url.lowercase()
-        return lower.contains("get.php") ||
-               lower.contains(".m3u") ||
-               lower.contains("m3u_plus") ||
-               lower.contains("type=m3u")
+        return IptvSourceClassifier.isM3U(url)
     }
 
     private fun buildApiUrl(action: String, extra: String = ""): String {
