@@ -309,20 +309,38 @@ class DashboardActivity : AppCompatActivity() {
             try {
                 setContentLoadState("جاري تحديث المحتوى…", visible = true)
                 var lastFailure: Throwable? = null
-                val channelsResult = repository.getLiveStreams(null)
-                if (channelsResult.isSuccess) {
-                    allChannels = channelsResult.getOrDefault(emptyList())
-                } else lastFailure = channelsResult.exceptionOrNull()
-                updateUI()
-                val moviesResult = repository.getMovies(null)
-                if (moviesResult.isSuccess) {
-                    allMovies = moviesResult.getOrDefault(emptyList()).map { it.toChannel() }
-                } else lastFailure = moviesResult.exceptionOrNull()
-                updateUI()
-                val seriesResult = repository.getSeries(null)
-                if (seriesResult.isSuccess) {
-                    allSeries = seriesResult.getOrDefault(emptyList()).map { it.toChannel() }
-                } else lastFailure = seriesResult.exceptionOrNull()
+                var hasCatalogCategories = false
+
+                // الصفحة الرئيسية لا تحمل عشرات الآلاف من العناصر. نجلب الفئات فقط،
+                // ثم عينة محدودة من فئة أفلام ومسلسلات لاختيار بانر حقيقي.
+                val liveCategoriesResult = repository.getLiveCategories()
+                if (liveCategoriesResult.isSuccess) {
+                    hasCatalogCategories = hasCatalogCategories || liveCategoriesResult.getOrDefault(emptyList()).isNotEmpty()
+                } else lastFailure = liveCategoriesResult.exceptionOrNull()
+
+                val movieCategoriesResult = repository.getMovieCategories()
+                val movieCategories = movieCategoriesResult.getOrDefault(emptyList())
+                if (movieCategoriesResult.isSuccess) {
+                    hasCatalogCategories = hasCatalogCategories || movieCategories.isNotEmpty()
+                    movieCategories.firstOrNull()?.let { category ->
+                        val moviesResult = repository.getMovies(category.categoryId, page = 0)
+                        if (moviesResult.isSuccess) {
+                            allMovies = moviesResult.getOrDefault(emptyList()).map { it.toChannel() }
+                        } else lastFailure = moviesResult.exceptionOrNull()
+                    }
+                } else lastFailure = movieCategoriesResult.exceptionOrNull()
+
+                val seriesCategoriesResult = repository.getSeriesCategories()
+                val seriesCategories = seriesCategoriesResult.getOrDefault(emptyList())
+                if (seriesCategoriesResult.isSuccess) {
+                    hasCatalogCategories = hasCatalogCategories || seriesCategories.isNotEmpty()
+                    seriesCategories.firstOrNull()?.let { category ->
+                        val seriesResult = repository.getSeries(category.categoryId, page = 0)
+                        if (seriesResult.isSuccess) {
+                            allSeries = seriesResult.getOrDefault(emptyList()).map { it.toChannel() }
+                        } else lastFailure = seriesResult.exceptionOrNull()
+                    }
+                } else lastFailure = seriesCategoriesResult.exceptionOrNull()
                 updateUI()
                 if (lastFailure is SubscriptionSessionExpiredException && prefs.isFeatureEnabled(FeatureCatalog.SESSION_RECOVERY)) {
                     showToast("انتهت جلسة الاشتراك. أدخل بياناتك من جديد.")
@@ -339,7 +357,7 @@ class DashboardActivity : AppCompatActivity() {
                 } else if (showFeedback) {
                     showToast("تم تحديث المحتوى.")
                 }
-                val isEmpty = allChannels.isEmpty() && allMovies.isEmpty() && allSeries.isEmpty()
+                val isEmpty = !hasCatalogCategories
                 setContentLoadState(
                     if (isEmpty && prefs.isFeatureEnabled(FeatureCatalog.SMART_EMPTY_STATES)) {
                         "لا يوجد محتوى معروض حالياً. تحقق من اتصال الخادم ثم استخدم إعادة التحميل من القائمة."
@@ -365,14 +383,15 @@ class DashboardActivity : AppCompatActivity() {
     private fun updateUI() {
         if (_binding == null) return
         val categories = mutableListOf<CategoryItem>()
-        categories.add(CategoryItem("كل القنوات", allChannels.size, R.drawable.ic_live_tv, CategoryVisuals.backgroundFor("live"), "#E53935", "live"))
-        categories.add(CategoryItem("الرياضة", allChannels.count { it.name.contains("sport", true) }, R.drawable.ic_sports, CategoryVisuals.backgroundFor("sports"), "#2196F3", "live"))
-        categories.add(CategoryItem("الأخبار", allChannels.count { it.name.contains("news", true) }, R.drawable.ic_news, CategoryVisuals.backgroundFor("news"), "#4CAF50", "live"))
-        categories.add(CategoryItem("الأفلام", allMovies.size, R.drawable.ic_movies, CategoryVisuals.backgroundFor("movies"), "#E53935", "movie"))
-        categories.add(CategoryItem("المسلسلات", allSeries.size, R.drawable.ic_series, CategoryVisuals.backgroundFor("series"), "#8B5CF6", "series"))
-        categories.add(CategoryItem("الأطفال", allChannels.count { it.name.contains("kids", true) }, R.drawable.ic_kids, CategoryVisuals.backgroundFor("kids"), "#FF9800", "live"))
-        categories.add(CategoryItem("الوثائقيات", allChannels.count { it.name.contains("doc", true) }, R.drawable.ic_documentary, CategoryVisuals.backgroundFor("documentary"), "#00BCD4", "live"))
-        categories.add(CategoryItem("الموسيقى", allChannels.count { it.name.contains("music", true) }, R.drawable.ic_music, CategoryVisuals.backgroundFor("music"), "#EC4899", "live"))
+        // لا نعرض أرقاماً مضللة من عينة الصفحة الرئيسية؛ الأعداد الحقيقية تظهر بعد اختيار الفئة.
+        categories.add(CategoryItem("كل القنوات", 0, R.drawable.ic_live_tv, CategoryVisuals.backgroundFor("live"), "#E53935", "live"))
+        categories.add(CategoryItem("الرياضة", 0, R.drawable.ic_sports, CategoryVisuals.backgroundFor("sports"), "#2196F3", "live"))
+        categories.add(CategoryItem("الأخبار", 0, R.drawable.ic_news, CategoryVisuals.backgroundFor("news"), "#4CAF50", "live"))
+        categories.add(CategoryItem("الأفلام", 0, R.drawable.ic_movies, CategoryVisuals.backgroundFor("movies"), "#E53935", "movie"))
+        categories.add(CategoryItem("المسلسلات", 0, R.drawable.ic_series, CategoryVisuals.backgroundFor("series"), "#8B5CF6", "series"))
+        categories.add(CategoryItem("الأطفال", 0, R.drawable.ic_kids, CategoryVisuals.backgroundFor("kids"), "#FF9800", "live"))
+        categories.add(CategoryItem("الوثائقيات", 0, R.drawable.ic_documentary, CategoryVisuals.backgroundFor("documentary"), "#00BCD4", "live"))
+        categories.add(CategoryItem("الموسيقى", 0, R.drawable.ic_music, CategoryVisuals.backgroundFor("music"), "#EC4899", "live"))
         val homeTypes = listOf("live", "sports", "news", "movie", "series", "kids", "documentary", "music")
         val visibleTypes = if (prefs.isFeatureEnabled(FeatureCatalog.HOME_CUSTOMIZATION) || prefs.isFeatureEnabled(FeatureCatalog.CATEGORY_ORDER)) {
             prefs.getHomeCategoryTypes(homeTypes)
