@@ -31,4 +31,20 @@ class StreamUrlFactoryTest {
             StreamUrlFactory.episode("http://provider.example", "user", "pass", "11", null)
         )
     }
+
+    @Test
+    fun `paths encode credential segments and trim redundant base slashes`() {
+        assertEquals(
+            "http://provider.example/live/user%20name/pass%40word/42.ts",
+            StreamUrlFactory.live(" http://provider.example/// ", "user name", "pass@word", "42")
+        )
+    }
+
+    @Test
+    fun `container extension removes accidental query suffix`() {
+        assertEquals(
+            "http://provider.example/movie/user/pass/99.mkv",
+            StreamUrlFactory.movie("http://provider.example", "user", "pass", "99", "mkv?token=value")
+        )
+    }
 }
