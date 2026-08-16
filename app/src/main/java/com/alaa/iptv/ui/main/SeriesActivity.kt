@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.util.Log
 import android.view.KeyEvent
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -22,7 +21,6 @@ import com.alaa.iptv.data.repository.MediaRepository
 import com.alaa.iptv.databinding.ActivitySeriesBinding
 import com.alaa.iptv.ui.dashboard.SidebarAdapter
 import com.alaa.iptv.ui.dashboard.SidebarItem
-import com.alaa.iptv.ui.categories.CategoryPickerActivity
 import com.alaa.iptv.ui.settings.SettingsActivity
 import com.alaa.iptv.ui.theme.DisplayTheme
 import com.alaa.iptv.ui.common.ControlPlaneActivityGuard
@@ -38,12 +36,7 @@ class SeriesActivity : AppCompatActivity() {
     private var currentSeriesPage = 0
     private var hasMoreSeriesPages = false
     private var isLoadingSeries = false
-    private val seriesCategoryPicker = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        val categoryId = result.data?.getStringExtra(CategoryPickerActivity.EXTRA_CATEGORY_ID) ?: return@registerForActivityResult
-        categories.firstOrNull { it.categoryId == categoryId }?.let(::selectCategory)
-    }
+    private lateinit var seriesCategoryAdapter: LiveCategoryAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,7 +53,7 @@ class SeriesActivity : AppCompatActivity() {
 
         setupSidebar()
         setupSeriesGrid()
-        binding.seriesCategorySelector.setOnClickListener { showCategorySelector() }
+        setupSeriesCategoriesList()
         lifecycleScope.launch {
             if (ControlPlaneActivityGuard.refreshAndEnforce(this@SeriesActivity, prefs, force = true)) loadCategories()
         }
@@ -104,31 +97,34 @@ class SeriesActivity : AppCompatActivity() {
         }
     }
 
+    private fun setupSeriesCategoriesList() {
+        seriesCategoryAdapter = LiveCategoryAdapter(prefs.displayTheme, ::selectCategory)
+        binding.seriesCategoriesRecyclerView.apply {
+            layoutManager = LinearLayoutManager(this@SeriesActivity)
+            adapter = seriesCategoryAdapter
+        }
+    }
+
     private fun loadCategories() {
         lifecycleScope.launch {
             val result = repository.getSeriesCategories()
             val loadedCategories = result.getOrDefault(emptyList())
-            categories = listOf(Category("all", "جميع المسلسلات (الكل)", loadedCategories.size)) + loadedCategories
+            categories = loadedCategories
+            seriesCategoryAdapter.submit(categories, prefs.lastSeriesCategoryId)
             val selected = categories.firstOrNull { it.categoryId == prefs.lastSeriesCategoryId }
                 ?: categories.firstOrNull()
             if (selected == null) {
-                selectCategory(Category("all", "جميع المسلسلات", 0))
+                binding.seriesCount.text = "لا توجد فئات مسلسلات متاحة من الاشتراك"
             } else {
                 selectCategory(selected)
             }
         }
     }
 
-    private fun showCategorySelector() {
-        if (categories.isEmpty()) return
-        seriesCategoryPicker.launch(
-            CategoryPickerActivity.createIntent(this, "فئات المسلسلات", categories)
-        )
-    }
-
     private fun selectCategory(category: Category) {
         prefs.lastSeriesCategoryId = category.categoryId
-        binding.seriesCategorySelector.text = category.categoryName
+        binding.seriesTitle.text = "المسلسلات / ${category.categoryName}"
+        seriesCategoryAdapter.submit(categories, category.categoryId)
         currentSeriesPage = 0
         hasMoreSeriesPages = false
         loadSeries(category.categoryId, page = 0, append = false)
@@ -213,11 +209,11 @@ class SeriesActivity : AppCompatActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        if (keyCode == KeyEvent.KEYCODE_DPAD_UP && binding.seriesRecyclerView.hasFocus()) {
-            binding.seriesCategorySelector.requestFocus()
+        if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT && binding.seriesRecyclerView.hasFocus() && isAtLeadingSeriesColumn()) {
+            focusSelectedSeriesCategory()
             return true
         }
-        if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN && binding.seriesCategorySelector.hasFocus()) {
+        if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && binding.seriesCategoriesRecyclerView.hasFocus()) {
             focusFirstSeries()
             return true
         }
@@ -231,6 +227,23 @@ class SeriesActivity : AppCompatActivity() {
     private fun focusFirstSeries() {
         binding.seriesRecyclerView.findViewHolderForAdapterPosition(0)?.itemView?.requestFocus()
             ?: binding.seriesRecyclerView.requestFocus()
+    }
+
+    private fun focusSelectedSeriesCategory() {
+        val position = categories.indexOfFirst { it.categoryId == prefs.lastSeriesCategoryId }
+            .takeIf { it >= 0 } ?: 0
+        binding.seriesCategoriesRecyclerView.scrollToPosition(position)
+        binding.seriesCategoriesRecyclerView.post {
+            binding.seriesCategoriesRecyclerView.findViewHolderForAdapterPosition(position)
+                ?.itemView?.requestFocus()
+                ?: binding.seriesCategoriesRecyclerView.requestFocus()
+        }
+    }
+
+    private fun isAtLeadingSeriesColumn(): Boolean {
+        val focusedChild = binding.seriesRecyclerView.focusedChild ?: return false
+        val position = binding.seriesRecyclerView.getChildAdapterPosition(focusedChild)
+        return position != RecyclerView.NO_POSITION && position % posterGridSpan() == 0
     }
 
     private fun showGenreFilter() {

@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.util.Log
 import android.view.KeyEvent
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -22,7 +21,6 @@ import com.alaa.iptv.data.repository.MediaRepository
 import com.alaa.iptv.databinding.ActivityMoviesBinding
 import com.alaa.iptv.ui.dashboard.SidebarAdapter
 import com.alaa.iptv.ui.dashboard.SidebarItem
-import com.alaa.iptv.ui.categories.CategoryPickerActivity
 import com.alaa.iptv.ui.player.PlayerActivity
 import com.alaa.iptv.ui.settings.SettingsActivity
 import com.alaa.iptv.ui.theme.DisplayTheme
@@ -39,12 +37,7 @@ class MoviesActivity : AppCompatActivity() {
     private var currentMoviePage = 0
     private var hasMoreMoviePages = false
     private var isLoadingMovies = false
-    private val movieCategoryPicker = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        val categoryId = result.data?.getStringExtra(CategoryPickerActivity.EXTRA_CATEGORY_ID) ?: return@registerForActivityResult
-        categories.firstOrNull { it.categoryId == categoryId }?.let(::selectCategory)
-    }
+    private lateinit var movieCategoryAdapter: LiveCategoryAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,7 +54,7 @@ class MoviesActivity : AppCompatActivity() {
 
         setupSidebar()
         setupMoviesGrid()
-        binding.movieCategorySelector.setOnClickListener { showCategorySelector() }
+        setupMovieCategoriesList()
         lifecycleScope.launch {
             if (ControlPlaneActivityGuard.refreshAndEnforce(this@MoviesActivity, prefs, force = true)) loadCategories()
         }
@@ -105,31 +98,34 @@ class MoviesActivity : AppCompatActivity() {
         }
     }
 
+    private fun setupMovieCategoriesList() {
+        movieCategoryAdapter = LiveCategoryAdapter(prefs.displayTheme, ::selectCategory)
+        binding.movieCategoriesRecyclerView.apply {
+            layoutManager = LinearLayoutManager(this@MoviesActivity)
+            adapter = movieCategoryAdapter
+        }
+    }
+
     private fun loadCategories() {
         lifecycleScope.launch {
             val result = repository.getMovieCategories()
             val loadedCategories = result.getOrDefault(emptyList())
-            categories = listOf(Category("all", "جميع الأفلام (الكل)", loadedCategories.size)) + loadedCategories
+            categories = loadedCategories
+            movieCategoryAdapter.submit(categories, prefs.lastMovieCategoryId)
             val selected = categories.firstOrNull { it.categoryId == prefs.lastMovieCategoryId }
                 ?: categories.firstOrNull()
             if (selected == null) {
-                selectCategory(Category("all", "جميع الأفلام", 0))
+                binding.moviesCount.text = "لا توجد فئات أفلام متاحة من الاشتراك"
             } else {
                 selectCategory(selected)
             }
         }
     }
 
-    private fun showCategorySelector() {
-        if (categories.isEmpty()) return
-        movieCategoryPicker.launch(
-            CategoryPickerActivity.createIntent(this, "فئات الأفلام", categories)
-        )
-    }
-
     private fun selectCategory(category: Category) {
         prefs.lastMovieCategoryId = category.categoryId
-        binding.movieCategorySelector.text = category.categoryName
+        binding.moviesTitle.text = "الأفلام / ${category.categoryName}"
+        movieCategoryAdapter.submit(categories, category.categoryId)
         currentMoviePage = 0
         hasMoreMoviePages = false
         loadMovies(category.categoryId, page = 0, append = false)
@@ -221,11 +217,11 @@ class MoviesActivity : AppCompatActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        if (keyCode == KeyEvent.KEYCODE_DPAD_UP && binding.moviesRecyclerView.hasFocus()) {
-            binding.movieCategorySelector.requestFocus()
+        if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT && binding.moviesRecyclerView.hasFocus() && isAtLeadingMovieColumn()) {
+            focusSelectedMovieCategory()
             return true
         }
-        if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN && binding.movieCategorySelector.hasFocus()) {
+        if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && binding.movieCategoriesRecyclerView.hasFocus()) {
             focusFirstMovie()
             return true
         }
@@ -239,6 +235,23 @@ class MoviesActivity : AppCompatActivity() {
     private fun focusFirstMovie() {
         binding.moviesRecyclerView.findViewHolderForAdapterPosition(0)?.itemView?.requestFocus()
             ?: binding.moviesRecyclerView.requestFocus()
+    }
+
+    private fun focusSelectedMovieCategory() {
+        val position = categories.indexOfFirst { it.categoryId == prefs.lastMovieCategoryId }
+            .takeIf { it >= 0 } ?: 0
+        binding.movieCategoriesRecyclerView.scrollToPosition(position)
+        binding.movieCategoriesRecyclerView.post {
+            binding.movieCategoriesRecyclerView.findViewHolderForAdapterPosition(position)
+                ?.itemView?.requestFocus()
+                ?: binding.movieCategoriesRecyclerView.requestFocus()
+        }
+    }
+
+    private fun isAtLeadingMovieColumn(): Boolean {
+        val focusedChild = binding.moviesRecyclerView.focusedChild ?: return false
+        val position = binding.moviesRecyclerView.getChildAdapterPosition(focusedChild)
+        return position != RecyclerView.NO_POSITION && position % posterGridSpan() == 0
     }
 
     private fun showGenreFilter() {

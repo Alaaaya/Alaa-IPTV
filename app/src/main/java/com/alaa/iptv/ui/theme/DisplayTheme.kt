@@ -219,16 +219,16 @@ object DisplayTheme {
         val palette = palette(prefs.displayTheme) ?: return
         binding.root.setBackgroundColor(Color.parseColor(palette.background))
         binding.sidebarContainer.setBackgroundColor(Color.parseColor(palette.sidebar))
-        binding.movieCategorySelector.background = rounded(palette.accent, palette.radius)
-        binding.movieCategorySelector.setTextColor(Color.parseColor(palette.accentText))
+        binding.movieCategoryPanel.background = rounded(palette.sidebar, palette.radius, palette.panelStroke, 1)
+        binding.movieCategoriesTitle.setTextColor(Color.parseColor(palette.accent))
     }
 
     fun applySeries(binding: ActivitySeriesBinding, prefs: AppPreferences) {
         val palette = palette(prefs.displayTheme) ?: return
         binding.root.setBackgroundColor(Color.parseColor(palette.background))
         binding.sidebarContainer.setBackgroundColor(Color.parseColor(palette.sidebar))
-        binding.seriesCategorySelector.background = rounded(palette.accent, palette.radius)
-        binding.seriesCategorySelector.setTextColor(Color.parseColor(palette.accentText))
+        binding.seriesCategoryPanel.background = rounded(palette.sidebar, palette.radius, palette.panelStroke, 1)
+        binding.seriesCategoriesTitle.setTextColor(Color.parseColor(palette.accent))
     }
 
     fun applySeriesDetails(binding: ActivitySeriesDetailsBinding, prefs: AppPreferences) {
