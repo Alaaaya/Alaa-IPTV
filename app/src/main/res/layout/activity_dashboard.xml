@@ -4,7 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/alaa_bg_dark">
+    android:background="@color/alaa_bg_dark"
+    android:layoutDirection="ltr">
 
     <!-- Sidebar (Left) -->
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -110,8 +111,11 @@
 
     <!-- Main Content Area -->
     <androidx.core.widget.NestedScrollView
+        android:id="@+id/dashboardScrollView"
         android:layout_width="0dp"
         android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:fillViewport="true"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@id/sidebarContainer">
 
@@ -119,7 +123,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="25dp">
+            android:paddingStart="20dp"
+            android:paddingTop="18dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="32dp">
 
             <!-- Top Bar -->
             <RelativeLayout
@@ -200,8 +207,8 @@
             <!-- Hero Banner -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
-                android:layout_height="300dp"
-                android:layout_marginTop="30dp"
+                android:layout_height="230dp"
+                android:layout_marginTop="16dp"
                 app:cardCornerRadius="20dp"
                 app:cardElevation="0dp">
 
@@ -221,11 +228,33 @@
                         android:layout_height="match_parent"
                         android:background="@drawable/bg_hero_gradient" />
 
+                    <androidx.cardview.widget.CardView
+                        android:id="@+id/heroPosterCard"
+                        android:layout_width="138dp"
+                        android:layout_height="196dp"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:layout_marginEnd="24dp"
+                        android:visibility="gone"
+                        app:cardBackgroundColor="@android:color/transparent"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="8dp">
+
+                        <ImageView
+                            android:id="@+id/heroPosterImage"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:contentDescription="@null"
+                            android:scaleType="fitCenter" />
+                    </androidx.cardview.widget.CardView>
+
                     <LinearLayout
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_centerVertical="true"
                         android:layout_marginStart="50dp"
+                        android:layout_marginEnd="20dp"
+                        android:layout_toStartOf="@id/heroPosterCard"
                         android:orientation="vertical">
 
                         <TextView
@@ -233,6 +262,8 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/hero_title"
+                            android:ellipsize="end"
+                            android:maxLines="2"
                             android:textColor="@color/white"
                             android:textSize="42sp"
                             android:textStyle="bold" />
@@ -277,7 +308,7 @@
             <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="35dp">
+                android:layout_marginTop="20dp">
 
                 <TextView
                     android:id="@+id/categoriesHeaderTitle"
@@ -303,15 +334,17 @@
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/categoriesRecyclerView"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="15dp"
-                android:clipToPadding="false" />
+                android:layout_height="148dp"
+                android:layout_marginTop="8dp"
+                android:clipToPadding="false"
+                android:nestedScrollingEnabled="false"
+                android:paddingVertical="8dp" />
 
             <!-- Continue Watching Section -->
             <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="35dp">
+                android:layout_marginTop="20dp">
 
                 <TextView
                     android:id="@+id/continueWatchingHeaderTitle"
@@ -338,8 +371,10 @@
                 android:id="@+id/continueWatchingRecyclerView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="15dp"
-                android:clipToPadding="false" />
+                android:layout_marginTop="8dp"
+                android:clipToPadding="false"
+                android:nestedScrollingEnabled="false"
+                android:paddingVertical="8dp" />
 
             <!-- Bottom Info Grid -->
             <GridLayout

@@ -9,7 +9,6 @@ import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.alaa.iptv.R
 import com.alaa.iptv.data.models.Channel
@@ -162,6 +161,7 @@ class DashboardActivity : AppCompatActivity() {
         binding.heroTitle.text = getString(R.string.hero_title)
         binding.heroSubtitle.text = getString(R.string.hero_desc)
         binding.heroWatchNow.text = getString(R.string.watch_now)
+        binding.heroPosterCard.visibility = View.GONE
         binding.heroWatchNow.setOnClickListener {
             openMain(MainActivity.MODE_LIVE)
         }
@@ -194,14 +194,15 @@ class DashboardActivity : AppCompatActivity() {
         }
 
         if (prefs.isFeatureEnabled(FeatureCatalog.DATA_SAVER) || prefs.isFeatureEnabled(FeatureCatalog.LOW_BANDWIDTH_POSTERS)) {
-            binding.heroImage.setImageResource(R.drawable.bg_hero_sports)
+            binding.heroPosterCard.visibility = View.GONE
         } else {
+            binding.heroPosterCard.visibility = View.VISIBLE
             Glide.with(this)
                 .load(featured.streamIcon)
                 .placeholder(R.drawable.bg_hero_sports)
                 .error(R.drawable.bg_hero_sports)
-                .centerCrop()
-                .into(binding.heroImage)
+                .fitCenter()
+                .into(binding.heroPosterImage)
         }
     }
 
@@ -222,8 +223,10 @@ class DashboardActivity : AppCompatActivity() {
             }
         }
         binding.categoriesRecyclerView.apply {
-            val gridStyle = DisplayTheme.dashboardCategoryGrid(prefs.displayTheme)
-            layoutManager = GridLayoutManager(this@DashboardActivity, gridStyle.spanCount, gridStyle.orientation, false)
+            layoutManager = LinearLayoutManager(this@DashboardActivity, LinearLayoutManager.HORIZONTAL, false)
+            isNestedScrollingEnabled = false
+            setHasFixedSize(true)
+            setItemViewCacheSize(10)
             this.adapter = adapter
         }
     }
@@ -244,6 +247,8 @@ class DashboardActivity : AppCompatActivity() {
 
         binding.continueWatchingRecyclerView.apply {
             layoutManager = LinearLayoutManager(this@DashboardActivity, LinearLayoutManager.HORIZONTAL, false)
+            isNestedScrollingEnabled = false
+            setHasFixedSize(true)
             adapter = ContinueWatchingAdapter(items, ::playContent)
         }
     }
