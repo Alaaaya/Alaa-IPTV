@@ -6,6 +6,7 @@ import com.alaa.iptv.BuildConfig
 import com.alaa.iptv.data.models.*
 import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.data.remote.TvProvisioningClient
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.*
@@ -15,6 +16,8 @@ import java.io.File
 import java.io.IOException
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
 class SubscriptionSessionExpiredException(message: String) : IOException(message)
@@ -32,26 +35,37 @@ class MediaRepository(
         private const val MAX_LIVE_PAGE_CACHES = 18
         private const val MAX_MOVIE_CATEGORY_CACHES = 12
         private const val MAX_SERIES_CATEGORY_CACHES = 12
+        private const val MAX_CATEGORY_CACHES = 6
 
-        private var cachedChannels: List<Channel>? = null
-        private var cachedChannelsTime = 0L
-        private var cachedChannelsCategoryId: String? = null
-        private val cachedChannelPages = mutableMapOf<String, Pair<Long, PagedContent<Channel>>>()
-        private var cachedCategories: List<Category>? = null
-        private var cachedCategoriesTime = 0L
-        private var cachedMovies: List<Movie>? = null
-        private var cachedMoviesTime = 0L
-        private val cachedMoviesByCategory = mutableMapOf<String, Pair<Long, PagedContent<Movie>>>()
-        private var cachedSeries: List<Series>? = null
-        private var cachedSeriesTime = 0L
-        private val cachedSeriesByCategory = mutableMapOf<String, Pair<Long, PagedContent<Series>>>()
+        private val cacheLock = Any()
+        private data class M3UCacheEntry(
+            val sourceKey: String,
+            val savedAt: Long,
+            val channels: List<Channel>
+        )
+
+        private var cachedM3UPlaylist: M3UCacheEntry? = null
+        private val cachedChannelPages = ConcurrentHashMap<String, Pair<Long, PagedContent<Channel>>>()
+        private val cachedLiveCategories = ConcurrentHashMap<String, Pair<Long, List<Category>>>()
+        private val cachedMovieCategories = ConcurrentHashMap<String, Pair<Long, List<Category>>>()
+        private val cachedSeriesCategories = ConcurrentHashMap<String, Pair<Long, List<Category>>>()
+        private val cachedMoviesByCategory = ConcurrentHashMap<String, Pair<Long, PagedContent<Movie>>>()
+        private val cachedSeriesByCategory = ConcurrentHashMap<String, Pair<Long, PagedContent<Series>>>()
+        private val cachedEpisodesBySeries = ConcurrentHashMap<String, Pair<Long, List<Episode>>>()
+
+        private fun <T> getCachedValue(
+            cache: Map<String, Pair<Long, T>>,
+            key: String
+        ): T? = synchronized(cacheLock) {
+            cache[key]?.takeIf { (savedAt, _) -> System.currentTimeMillis() - savedAt < CACHE_DURATION }?.second
+        }
 
         private fun <T> putBoundedCache(
             cache: MutableMap<String, Pair<Long, T>>,
             key: String,
             value: T,
             maxEntries: Int
-        ) {
+        ) = synchronized(cacheLock) {
             if (key !in cache && cache.size >= maxEntries) {
                 cache.entries.iterator().let { iterator ->
                     if (iterator.hasNext()) {
@@ -79,7 +93,7 @@ class MediaRepository(
 
     // ================= HELPERS =================
 
-    private suspend fun ensureContentAccess(): Result<Unit> = runCatching {
+    private suspend fun ensureContentAccess(): Result<Unit> = try {
         if (prefs.isControlPlaneEnrolled && prefs.shouldRefreshControlPlane()) {
             prefs.markControlPlaneRefreshAttempt()
             TvProvisioningClient.syncControlPlane(prefs.getOrCreateTvId(), BuildConfig.VERSION_NAME)
@@ -88,6 +102,11 @@ class MediaRepository(
         if (prefs.isDeviceAccessBlocked()) {
             throw IOException("هذا الجهاز موقوف من لوحة التحكم")
         }
+        Result.success(Unit)
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (error: Exception) {
+        Result.failure(error)
     }
 
     private suspend fun request(url: String): String =
@@ -143,6 +162,18 @@ class MediaRepository(
     private fun encodeQueryParameter(value: String): String =
         URLEncoder.encode(value, StandardCharsets.UTF_8.name())
 
+    /** مفتاح داخلي غير قابل للعرض أو التسجيل يمنع اختلاط كاشات الاشتراكات المختلفة. */
+    private fun sourceCacheKey(): String {
+        val source = if (isM3U()) {
+            "m3u:${prefs.serverUrl.trim()}"
+        } else {
+            "xtream:${normalizeHost(prefs.serverUrl)}:${prefs.username}"
+        }
+        return MessageDigest.getInstance("SHA-256")
+            .digest(source.toByteArray(StandardCharsets.UTF_8))
+            .joinToString("") { "%02x".format(it) }
+    }
+
     /**
      * Verifies an Xtream account before credentials are persisted. For M3U playlists,
      * it verifies that the remote resource is reachable and contains a valid playlist header.
@@ -179,6 +210,8 @@ class MediaRepository(
                         Result.failure(IOException(message))
                     }
                 }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
             } catch (error: Exception) {
                 Log.e(TAG, "Login validation failed", error)
                 Result.failure(error)
@@ -198,18 +231,14 @@ class MediaRepository(
         withContext(Dispatchers.IO) {
             ensureContentAccess().exceptionOrNull()?.let { return@withContext Result.failure(it) }
 
-            val requestedCategory = categoryId?.takeIf { it != "all" }
-            val effectiveCategory = requestedCategory ?: getLiveCategories()
-                .getOrDefault(emptyList())
-                .firstOrNull()
-                ?.categoryId
+            val effectiveCategory = categoryId
+                ?.trim()
+                ?.takeIf { it.isNotEmpty() && !it.equals("all", ignoreCase = true) }
 
             val pageIndex = page.coerceAtLeast(0)
-            val pageCacheKey = "${effectiveCategory ?: "all"}:$pageIndex"
-            cachedChannelPages[pageCacheKey]?.let { (savedAt, cached) ->
-                if (System.currentTimeMillis() - savedAt < CACHE_DURATION) {
-                    return@withContext Result.success(cached)
-                }
+            val pageCacheKey = "${sourceCacheKey()}:live:${effectiveCategory ?: "all"}:$pageIndex"
+            getCachedValue(cachedChannelPages, pageCacheKey)?.let { cached ->
+                return@withContext Result.success(cached)
             }
 
             try {
@@ -218,12 +247,11 @@ class MediaRepository(
                         val scoped = effectiveCategory?.let { selectedId ->
                             channels.filter { it.categoryId == selectedId }
                         } ?: channels
-                        val start = (pageIndex * LIVE_PAGE_SIZE).coerceAtMost(scoped.size)
-                        val end = minOf(scoped.size, start + LIVE_PAGE_SIZE)
+                        val bounds = ContentPagingPolicy.bounds(scoped.size, pageIndex, LIVE_PAGE_SIZE)
                         PagedContent(
-                            items = scoped.subList(start, end),
+                            items = scoped.subList(bounds.startIndex, bounds.endIndex),
                             totalCount = scoped.size,
-                            hasMore = end < scoped.size
+                            hasMore = bounds.hasMore
                         )
                     }
                 }
@@ -235,9 +263,8 @@ class MediaRepository(
                 val base = normalizeHost(prefs.serverUrl)
 
                 val channels = mutableListOf<Channel>()
-                val startIndex = pageIndex * LIVE_PAGE_SIZE
-                val endIndex = minOf(array.length(), startIndex + LIVE_PAGE_SIZE)
-                for (i in startIndex until endIndex) {
+                val bounds = ContentPagingPolicy.bounds(array.length(), pageIndex, LIVE_PAGE_SIZE)
+                for (i in bounds.startIndex until bounds.endIndex) {
                     val obj = array.optJSONObject(i) ?: continue
                     val id = obj.optString("stream_id")
                     if (id.isBlank()) continue
@@ -276,15 +303,14 @@ class MediaRepository(
                 val contentPage = PagedContent(
                     items = channels,
                     totalCount = array.length(),
-                    hasMore = endIndex < array.length()
+                    hasMore = bounds.hasMore
                 )
-                cachedChannels = contentPage.items
-                cachedChannelsTime = System.currentTimeMillis()
-                cachedChannelsCategoryId = effectiveCategory
                 putBoundedCache(cachedChannelPages, pageCacheKey, contentPage, MAX_LIVE_PAGE_CACHES)
 
                 Result.success(contentPage)
 
+            } catch (cancelled: CancellationException) {
+                throw cancelled
             } catch (e: Exception) {
                 Log.e(TAG, "getLiveStreams error", e)
                 Result.failure(e)
@@ -301,11 +327,9 @@ class MediaRepository(
                 return@withContext loadM3U(prefs.serverUrl).map(M3UCategoryMapper::categories)
             }
 
-            // كاش
-            cachedCategories?.let { cached ->
-                if (System.currentTimeMillis() - cachedCategoriesTime < CACHE_DURATION) {
-                    return@withContext Result.success(cached)
-                }
+            val cacheKey = sourceCacheKey()
+            getCachedValue(cachedLiveCategories, cacheKey)?.let { cached ->
+                return@withContext Result.success(cached)
             }
 
             try {
@@ -325,11 +349,12 @@ class MediaRepository(
                     )
                 }
 
-                cachedCategories = categories
-                cachedCategoriesTime = System.currentTimeMillis()
+                putBoundedCache(cachedLiveCategories, cacheKey, categories, MAX_CATEGORY_CACHES)
 
                 Result.success(categories)
 
+            } catch (cancelled: CancellationException) {
+                throw cancelled
             } catch (e: Exception) {
                 Log.e(TAG, "getLiveCategories error", e)
                 Result.failure(e)
@@ -341,6 +366,13 @@ class MediaRepository(
     suspend fun getMovieCategories(): Result<List<Category>> =
         withContext(Dispatchers.IO) {
             ensureContentAccess().exceptionOrNull()?.let { return@withContext Result.failure(it) }
+            if (isM3U()) {
+                return@withContext Result.failure(IOException("قوائم M3U لا تدعم محتوى الأفلام والمسلسلات"))
+            }
+            val cacheKey = sourceCacheKey()
+            getCachedValue(cachedMovieCategories, cacheKey)?.let { cached ->
+                return@withContext Result.success(cached)
+            }
             try {
                 val url = buildApiUrl("get_vod_categories")
                 val body = request(url)
@@ -348,7 +380,7 @@ class MediaRepository(
 
                 val categories = mutableListOf<Category>()
                 for (i in 0 until array.length()) {
-                    val obj = array.getJSONObject(i)
+                    val obj = array.optJSONObject(i) ?: continue
                     categories.add(
                         Category(
                             categoryId = obj.optString("category_id"),
@@ -357,7 +389,10 @@ class MediaRepository(
                         )
                     )
                 }
+                putBoundedCache(cachedMovieCategories, cacheKey, categories, MAX_CATEGORY_CACHES)
                 Result.success(categories)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
             } catch (e: Exception) {
                 Log.e(TAG, "getMovieCategories error", e)
                 Result.failure(e)
@@ -369,6 +404,13 @@ class MediaRepository(
     suspend fun getSeriesCategories(): Result<List<Category>> =
         withContext(Dispatchers.IO) {
             ensureContentAccess().exceptionOrNull()?.let { return@withContext Result.failure(it) }
+            if (isM3U()) {
+                return@withContext Result.failure(IOException("قوائم M3U لا تدعم محتوى الأفلام والمسلسلات"))
+            }
+            val cacheKey = sourceCacheKey()
+            getCachedValue(cachedSeriesCategories, cacheKey)?.let { cached ->
+                return@withContext Result.success(cached)
+            }
             try {
                 val url = buildApiUrl("get_series_categories")
                 val body = request(url)
@@ -376,7 +418,7 @@ class MediaRepository(
 
                 val categories = mutableListOf<Category>()
                 for (i in 0 until array.length()) {
-                    val obj = array.getJSONObject(i)
+                    val obj = array.optJSONObject(i) ?: continue
                     categories.add(
                         Category(
                             categoryId = obj.optString("category_id"),
@@ -385,7 +427,10 @@ class MediaRepository(
                         )
                     )
                 }
+                putBoundedCache(cachedSeriesCategories, cacheKey, categories, MAX_CATEGORY_CACHES)
                 Result.success(categories)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
             } catch (e: Exception) {
                 Log.e(TAG, "getSeriesCategories error", e)
                 Result.failure(e)
@@ -400,19 +445,18 @@ class MediaRepository(
     suspend fun getMovieContentPage(categoryId: String?, page: Int = 0): Result<PagedContent<Movie>> =
         withContext(Dispatchers.IO) {
             ensureContentAccess().exceptionOrNull()?.let { return@withContext Result.failure(it) }
+            if (isM3U()) {
+                return@withContext Result.failure(IOException("قوائم M3U لا تدعم محتوى الأفلام والمسلسلات"))
+            }
             val effectiveCategory = categoryId?.takeIf { it.isNotBlank() && it != "all" }
             val pageIndex = page.coerceAtLeast(0)
-            val cacheKey = "${effectiveCategory ?: "all"}:$pageIndex"
-            cachedMoviesByCategory[cacheKey]?.let { (savedAt, cached) ->
-                if (System.currentTimeMillis() - savedAt < CACHE_DURATION) {
-                    return@withContext Result.success(cached)
-                }
+            val cacheKey = "${sourceCacheKey()}:movie:${effectiveCategory ?: "all"}:$pageIndex"
+            getCachedValue(cachedMoviesByCategory, cacheKey)?.let { cached ->
+                return@withContext Result.success(cached)
             }
 
             try {
                 val contentPage = fetchMovies(effectiveCategory, pageIndex)
-                cachedMovies = contentPage.items
-                cachedMoviesTime = System.currentTimeMillis()
                 putBoundedCache(
                     cachedMoviesByCategory,
                     cacheKey,
@@ -420,6 +464,8 @@ class MediaRepository(
                     MAX_MOVIE_CATEGORY_CACHES
                 )
                 Result.success(contentPage)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
             } catch (e: Exception) {
                 Log.e(TAG, "getMovies error", e)
                 Result.failure(e)
@@ -433,10 +479,9 @@ class MediaRepository(
             ""
         }
         val array = JSONArray(request(buildApiUrl("get_vod_streams", extra)))
-        val startIndex = (page.coerceAtLeast(0) * CONTENT_PAGE_SIZE).coerceAtMost(array.length())
-        val endIndex = minOf(array.length(), startIndex + CONTENT_PAGE_SIZE)
+        val bounds = ContentPagingPolicy.bounds(array.length(), page, CONTENT_PAGE_SIZE)
         val movies = mutableListOf<Movie>()
-        for (index in startIndex until endIndex) {
+        for (index in bounds.startIndex until bounds.endIndex) {
             val obj = array.optJSONObject(index) ?: continue
             val streamId = obj.optString("stream_id")
             if (streamId.isBlank()) continue
@@ -452,7 +497,7 @@ class MediaRepository(
         return PagedContent(
             items = movies,
             totalCount = array.length(),
-            hasMore = endIndex < array.length()
+            hasMore = bounds.hasMore
         )
     }
 
@@ -461,7 +506,15 @@ class MediaRepository(
         val featured = linkedMapOf<String, Movie>()
         for (category in categories) {
             if (featured.size >= 500) break
-            fetchMovies(category.categoryId).items.forEach { movie ->
+            val page = try {
+                fetchMovies(category.categoryId)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                Log.w(TAG, "Skipping unavailable movie category")
+                continue
+            }
+            page.items.forEach { movie ->
                 if (featured.size < 500 && !featured.containsKey(movie.streamId)) {
                     featured[movie.streamId] = movie
                 }
@@ -478,19 +531,18 @@ class MediaRepository(
     suspend fun getSeriesContentPage(categoryId: String?, page: Int = 0): Result<PagedContent<Series>> =
         withContext(Dispatchers.IO) {
             ensureContentAccess().exceptionOrNull()?.let { return@withContext Result.failure(it) }
+            if (isM3U()) {
+                return@withContext Result.failure(IOException("قوائم M3U لا تدعم محتوى الأفلام والمسلسلات"))
+            }
             val effectiveCategory = categoryId?.takeIf { it.isNotBlank() && it != "all" }
             val pageIndex = page.coerceAtLeast(0)
-            val cacheKey = "${effectiveCategory ?: "all"}:$pageIndex"
-            cachedSeriesByCategory[cacheKey]?.let { (savedAt, cached) ->
-                if (System.currentTimeMillis() - savedAt < CACHE_DURATION) {
-                    return@withContext Result.success(cached)
-                }
+            val cacheKey = "${sourceCacheKey()}:series:${effectiveCategory ?: "all"}:$pageIndex"
+            getCachedValue(cachedSeriesByCategory, cacheKey)?.let { cached ->
+                return@withContext Result.success(cached)
             }
 
             try {
                 val contentPage = fetchSeries(effectiveCategory, pageIndex)
-                cachedSeries = contentPage.items
-                cachedSeriesTime = System.currentTimeMillis()
                 putBoundedCache(
                     cachedSeriesByCategory,
                     cacheKey,
@@ -498,6 +550,8 @@ class MediaRepository(
                     MAX_SERIES_CATEGORY_CACHES
                 )
                 Result.success(contentPage)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
             } catch (e: Exception) {
                 Log.e(TAG, "getSeries error", e)
                 Result.failure(e)
@@ -511,10 +565,9 @@ class MediaRepository(
             ""
         }
         val array = JSONArray(request(buildApiUrl("get_series", extra)))
-        val startIndex = (page.coerceAtLeast(0) * CONTENT_PAGE_SIZE).coerceAtMost(array.length())
-        val endIndex = minOf(array.length(), startIndex + CONTENT_PAGE_SIZE)
+        val bounds = ContentPagingPolicy.bounds(array.length(), page, CONTENT_PAGE_SIZE)
         val series = mutableListOf<Series>()
-        for (index in startIndex until endIndex) {
+        for (index in bounds.startIndex until bounds.endIndex) {
             val obj = array.optJSONObject(index) ?: continue
             val seriesId = obj.optString("series_id")
             if (seriesId.isBlank()) continue
@@ -528,7 +581,7 @@ class MediaRepository(
         return PagedContent(
             items = series,
             totalCount = array.length(),
-            hasMore = endIndex < array.length()
+            hasMore = bounds.hasMore
         )
     }
 
@@ -537,7 +590,15 @@ class MediaRepository(
         val featured = linkedMapOf<String, Series>()
         for (category in categories) {
             if (featured.size >= 500) break
-            fetchSeries(category.categoryId).items.forEach { series ->
+            val page = try {
+                fetchSeries(category.categoryId)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                Log.w(TAG, "Skipping unavailable series category")
+                continue
+            }
+            page.items.forEach { series ->
                 if (featured.size < 500 && !featured.containsKey(series.seriesId)) {
                     featured[series.seriesId] = series
                 }
@@ -554,6 +615,10 @@ class MediaRepository(
             try {
                 if (isM3U()) {
                     return@withContext Result.failure(IOException("قوائم M3U لا تحتوي على بيانات حلقات المسلسلات"))
+                }
+                val cacheKey = "${sourceCacheKey()}:episodes:$seriesId"
+                getCachedValue(cachedEpisodesBySeries, cacheKey)?.let { cached ->
+                    return@withContext Result.success(cached)
                 }
                 val url = buildApiUrl("get_series_info", "&series_id=${encodeQueryParameter(seriesId)}")
                 val body = request(url)
@@ -583,7 +648,11 @@ class MediaRepository(
                         )
                     }
                 }
-                Result.success(episodes.sortedWith(compareBy<Episode> { it.seasonNumber }.thenBy { it.episodeNum }))
+                val sortedEpisodes = episodes.sortedWith(compareBy<Episode> { it.seasonNumber }.thenBy { it.episodeNum })
+                putBoundedCache(cachedEpisodesBySeries, cacheKey, sortedEpisodes, MAX_SERIES_CATEGORY_CACHES)
+                Result.success(sortedEpisodes)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
             } catch (error: Exception) {
                 Log.e(TAG, "getSeriesEpisodes error", error)
                 Result.failure(error)
@@ -596,11 +665,12 @@ class MediaRepository(
         withContext(Dispatchers.IO) {
             ensureContentAccess().exceptionOrNull()?.let { return@withContext Result.failure(it) }
 
-            cachedChannels?.let { cached ->
-                if (System.currentTimeMillis() - cachedChannelsTime < CACHE_DURATION) {
-                    return@withContext Result.success(cached)
-                }
-            }
+            val sourceKey = sourceCacheKey()
+            synchronized(cacheLock) {
+                cachedM3UPlaylist
+                    ?.takeIf { it.sourceKey == sourceKey && System.currentTimeMillis() - it.savedAt < CACHE_DURATION }
+                    ?.channels
+            }?.let { cached -> return@withContext Result.success(cached) }
 
             try {
                 val body = readPlaylist(url)
@@ -608,12 +678,14 @@ class MediaRepository(
                 var name = "Channel"
                 var logo: String? = null
                 var group: String? = null
+                var epgChannelId: String? = null
 
                 for (line in body.lineSequence()) {
                     val l = line.trim()
 
                     if (l.startsWith("#EXTINF")) {
                         name = Regex(",(.+)$").find(l)?.groupValues?.get(1)?.trim() ?: "Channel"
+                        epgChannelId = Regex("""tvg-id="([^"]*?)""").find(l)?.groupValues?.get(1)
                         logo = Regex("""tvg-logo="([^"]*?)""").find(l)?.groupValues?.get(1)
                         group = Regex("""group-title="([^"]*?)""").find(l)?.groupValues?.get(1)
                     }
@@ -626,7 +698,7 @@ class MediaRepository(
                                 name = name,
                                 streamType = "live",
                                 streamIcon = logo,
-                                epgChannelId = null,
+                                epgChannelId = epgChannelId,
                                 added = null,
                                 categoryId = group ?: "Uncategorized",
                                 categoryName = group ?: "Uncategorized",
@@ -639,14 +711,18 @@ class MediaRepository(
                         name = "Channel"
                         logo = null
                         group = null
+                        epgChannelId = null
                     }
                 }
 
-                cachedChannels = channels
-                cachedChannelsTime = System.currentTimeMillis()
+                synchronized(cacheLock) {
+                    cachedM3UPlaylist = M3UCacheEntry(sourceKey, System.currentTimeMillis(), channels)
+                }
 
                 Result.success(channels)
 
+            } catch (cancelled: CancellationException) {
+                throw cancelled
             } catch (e: Exception) {
                 Log.e(TAG, "loadM3U error", e)
                 Result.failure(e)
@@ -656,17 +732,15 @@ class MediaRepository(
     // ================= CLEAR CACHE =================
 
     fun clearCache() {
-        cachedChannels = null
-        cachedChannelsTime = 0L
-        cachedChannelsCategoryId = null
-        cachedChannelPages.clear()
-        cachedCategories = null
-        cachedCategoriesTime = 0L
-        cachedMovies = null
-        cachedMoviesTime = 0L
-        cachedMoviesByCategory.clear()
-        cachedSeries = null
-        cachedSeriesTime = 0L
-        cachedSeriesByCategory.clear()
+        synchronized(cacheLock) {
+            cachedM3UPlaylist = null
+            cachedChannelPages.clear()
+            cachedLiveCategories.clear()
+            cachedMovieCategories.clear()
+            cachedSeriesCategories.clear()
+            cachedMoviesByCategory.clear()
+            cachedSeriesByCategory.clear()
+            cachedEpisodesBySeries.clear()
+        }
     }
 }
