@@ -137,16 +137,22 @@ class PlayerActivity : AppCompatActivity() {
             if (shouldAttachListener) {
                 val selector = DefaultTrackSelector(this)
                 trackSelector = selector
+                val lowLatencyMode = prefs.isFeatureEnabled(FeatureCatalog.LOW_LATENCY_MODE)
                 val fastLiveLoadControl = DefaultLoadControl.Builder()
                     .setBufferDurationsMs(
-                        if (prefs.isFeatureEnabled(FeatureCatalog.COMPATIBILITY_MODE)) 2_500 else 1_500,
+                        when {
+                            prefs.isFeatureEnabled(FeatureCatalog.COMPATIBILITY_MODE) -> 2_500
+                            lowLatencyMode -> 1_000
+                            else -> 1_500
+                        },
                         when {
                             prefs.isFeatureEnabled(FeatureCatalog.COMPATIBILITY_MODE) -> 12_000
                             prefs.isFeatureEnabled(FeatureCatalog.HIGH_PERFORMANCE_MODE) -> 16_000
+                            lowLatencyMode -> 3_000
                             else -> 6_000
                         },
-                        300,
-                        800
+                        if (lowLatencyMode) 250 else 300,
+                        if (lowLatencyMode) 600 else 800
                     )
                     .build()
                 player = ExoPlayer.Builder(this)

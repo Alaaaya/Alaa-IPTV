@@ -8,7 +8,7 @@ import org.junit.Test
 class FeatureCatalogTest {
     @Test
     fun `contains every selected optional feature exactly once`() {
-        assertEquals(60, FeatureCatalog.options.size)
+        assertEquals(61, FeatureCatalog.options.size)
         assertEquals(FeatureCatalog.options.size, FeatureCatalog.options.map { it.id }.toSet().size)
         assertTrue(FeatureCatalog.options.any { it.id == FeatureCatalog.CONTENT_RELOAD })
         assertTrue(FeatureCatalog.options.any { it.id == FeatureCatalog.MANUAL_SYNC })
@@ -19,6 +19,7 @@ class FeatureCatalogTest {
         assertTrue(FeatureCatalog.options.any { it.id == FeatureCatalog.NAVIGATION_SOUNDS })
         assertTrue(FeatureCatalog.options.any { it.id == FeatureCatalog.IDLE_REMINDER })
         assertTrue(FeatureCatalog.options.any { it.id == FeatureCatalog.SAFE_SUPPORT_REPORT })
+        assertTrue(FeatureCatalog.options.any { it.id == FeatureCatalog.LOW_LATENCY_MODE })
     }
 
     @Test
@@ -32,6 +33,7 @@ class FeatureCatalogTest {
         assertFalse(FeatureCatalog.option(FeatureCatalog.START_SCREEN).defaultEnabled)
         assertFalse(FeatureCatalog.option(FeatureCatalog.DATA_SAVER).defaultEnabled)
         assertFalse(FeatureCatalog.option(FeatureCatalog.GUEST_MODE).defaultEnabled)
+        assertFalse(FeatureCatalog.option(FeatureCatalog.LOW_LATENCY_MODE).defaultEnabled)
     }
 
     @Test
