@@ -301,8 +301,11 @@ class PlayerActivity : AppCompatActivity() {
 
     private fun updateTrackSelectionVisibility() {
         val hasTrackOptions = player?.currentTracks?.groups?.any { group ->
-            val isMediaLanguageTrack = !streamType.equals("live", ignoreCase = true) &&
-                (group.type == C.TRACK_TYPE_AUDIO || group.type == C.TRACK_TYPE_TEXT)
+            val isMediaLanguageTrack = !streamType.equals("live", ignoreCase = true) && when (group.type) {
+                C.TRACK_TYPE_AUDIO -> prefs.isFeatureEnabled(FeatureCatalog.PLAYER_AUDIO_TRACKS)
+                C.TRACK_TYPE_TEXT -> prefs.isFeatureEnabled(FeatureCatalog.PLAYER_SUBTITLES)
+                else -> false
+            }
             val isVideoQualityTrack = prefs.isFeatureEnabled(FeatureCatalog.QUALITY_SELECTION) &&
                 group.type == C.TRACK_TYPE_VIDEO
             (isMediaLanguageTrack || isVideoQualityTrack) &&
@@ -318,8 +321,8 @@ class PlayerActivity : AppCompatActivity() {
         var hasSubtitleTrack = false
 
         activePlayer.currentTracks.groups.forEach { group ->
-            val isAllowed = group.type == C.TRACK_TYPE_AUDIO ||
-                group.type == C.TRACK_TYPE_TEXT ||
+            val isAllowed = (group.type == C.TRACK_TYPE_AUDIO && prefs.isFeatureEnabled(FeatureCatalog.PLAYER_AUDIO_TRACKS)) ||
+                (group.type == C.TRACK_TYPE_TEXT && prefs.isFeatureEnabled(FeatureCatalog.PLAYER_SUBTITLES)) ||
                 (group.type == C.TRACK_TYPE_VIDEO && prefs.isFeatureEnabled(FeatureCatalog.QUALITY_SELECTION))
             if (!isAllowed) return@forEach
             (0 until group.length)
@@ -339,7 +342,7 @@ class PlayerActivity : AppCompatActivity() {
                 }
         }
 
-        if (hasSubtitleTrack) options += TrackOption(C.TRACK_TYPE_TEXT, "الترجمة: إيقاف")
+        if (hasSubtitleTrack && prefs.isFeatureEnabled(FeatureCatalog.PLAYER_SUBTITLES)) options += TrackOption(C.TRACK_TYPE_TEXT, "الترجمة: إيقاف")
         if (options.isEmpty()) {
             Toast.makeText(this, "لا توجد مسارات صوت أو ترجمة إضافية", Toast.LENGTH_SHORT).show()
             return

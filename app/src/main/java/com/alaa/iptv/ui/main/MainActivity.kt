@@ -23,6 +23,8 @@ import com.alaa.iptv.ui.player.PlayerChannelNavigator
 import com.alaa.iptv.ui.theme.DisplayTheme
 import com.alaa.iptv.ui.common.ControlPlaneActivityGuard
 import com.bumptech.glide.Glide
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
@@ -50,6 +52,8 @@ class MainActivity : AppCompatActivity() {
     private var selectedLiveCategoryTotal = 0
     private var movingChannelKey: String? = null
     private var moveSnapshot: List<Channel> = emptyList()
+    private var typedChannelNumber = ""
+    private var typedChannelNumberResetJob: Job? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -306,13 +310,15 @@ class MainActivity : AppCompatActivity() {
         val isFavorite = channel.isFavorite
         val actions = mutableListOf<Pair<String, () -> Unit>>()
 
-        actions += if (isFavorite) {
-            "إزالة من المفضلة" to { toggleFavorite(channel) }
-        } else {
-            "إضافة إلى المفضلة" to { toggleFavorite(channel) }
+        if (prefs.isFeatureEnabled(FeatureCatalog.LIVE_FAVORITES)) {
+            actions += if (isFavorite) {
+                "إزالة من المفضلة" to { toggleFavorite(channel) }
+            } else {
+                "إضافة إلى المفضلة" to { toggleFavorite(channel) }
+            }
         }
 
-        if (currentMode != MODE_FAVORITES && allChannels.size > 1) {
+        if (prefs.isFeatureEnabled(FeatureCatalog.LIVE_CHANNEL_MOVE) && currentMode != MODE_FAVORITES && allChannels.size > 1) {
             actions += "نقل القناة" to { startChannelMove(channel) }
         }
         actions += "تفاصيل القناة" to { showChannelDetails(channel) }
@@ -479,6 +485,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (currentMode == MODE_LIVE && prefs.isFeatureEnabled(FeatureCatalog.LIVE_NUMBER_JUMP)) {
+            val digit = keyCodeToDigit(keyCode)
+            if (digit != null) {
+                handleChannelNumberDigit(digit)
+                return true
+            }
+        }
         val categorySpec = DisplayTheme.liveCategorySpec(prefs.displayTheme)
         if (categorySpec.placement == DisplayTheme.LiveCategoryPlacement.TOP_RAIL) {
             if (keyCode == KeyEvent.KEYCODE_DPAD_UP && binding.channelsRecyclerView.hasFocus()) {
@@ -501,6 +514,43 @@ class MainActivity : AppCompatActivity() {
             return true
         }
         return super.onKeyDown(keyCode, event)
+    }
+
+    private fun keyCodeToDigit(keyCode: Int): Int? = when (keyCode) {
+        KeyEvent.KEYCODE_0, KeyEvent.KEYCODE_NUMPAD_0 -> 0
+        KeyEvent.KEYCODE_1, KeyEvent.KEYCODE_NUMPAD_1 -> 1
+        KeyEvent.KEYCODE_2, KeyEvent.KEYCODE_NUMPAD_2 -> 2
+        KeyEvent.KEYCODE_3, KeyEvent.KEYCODE_NUMPAD_3 -> 3
+        KeyEvent.KEYCODE_4, KeyEvent.KEYCODE_NUMPAD_4 -> 4
+        KeyEvent.KEYCODE_5, KeyEvent.KEYCODE_NUMPAD_5 -> 5
+        KeyEvent.KEYCODE_6, KeyEvent.KEYCODE_NUMPAD_6 -> 6
+        KeyEvent.KEYCODE_7, KeyEvent.KEYCODE_NUMPAD_7 -> 7
+        KeyEvent.KEYCODE_8, KeyEvent.KEYCODE_NUMPAD_8 -> 8
+        KeyEvent.KEYCODE_9, KeyEvent.KEYCODE_NUMPAD_9 -> 9
+        else -> null
+    }
+
+    private fun handleChannelNumberDigit(digit: Int) {
+        typedChannelNumber = (typedChannelNumber + digit).takeLast(5)
+        typedChannelNumberResetJob?.cancel()
+        typedChannelNumberResetJob = lifecycleScope.launch {
+            delay(1_500)
+            typedChannelNumber = ""
+        }
+        val exactIndex = allChannels.indexOfFirst { it.num.trim() == typedChannelNumber }
+        val positionIndex = typedChannelNumber.toIntOrNull()?.minus(1)?.takeIf { it in allChannels.indices }
+        val index = exactIndex.takeIf { it >= 0 } ?: positionIndex
+        if (index == null) {
+            binding.previewSubtitle.text = "القناة $typedChannelNumber غير محملة في هذه الفئة"
+            return
+        }
+        channelAdapter.updateChannels(allChannels)
+        binding.channelsRecyclerView.scrollToPosition(index)
+        binding.channelsRecyclerView.post {
+            binding.channelsRecyclerView.findViewHolderForAdapterPosition(index)?.itemView?.requestFocus()
+                ?: binding.channelsRecyclerView.requestFocus()
+        }
+        binding.previewSubtitle.text = "تم الانتقال إلى القناة $typedChannelNumber"
     }
 
 }
