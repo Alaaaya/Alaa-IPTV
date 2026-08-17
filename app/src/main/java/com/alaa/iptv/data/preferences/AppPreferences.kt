@@ -64,6 +64,7 @@ class AppPreferences(context: Context) {
         private const val KEY_REMOTE_CONFIG_SNAPSHOT = "remote_config_snapshot"
         private const val KEY_REMOTE_FEATURE_FLAGS = "remote_feature_flags"
         private const val KEY_REMOTE_LOGOUT_REQUESTED = "remote_logout_requested"
+        private const val KEY_UPDATE_CHANNEL = "device_update_channel"
         private const val KEY_SAFE_DIAGNOSTICS = "safe_diagnostics"
         private const val CONTROL_PLANE_REFRESH_MS = 60_000L
         private const val DEFAULT_PROFILE_ID = "owner"
@@ -246,6 +247,8 @@ class AppPreferences(context: Context) {
 
     fun isRemoteLogoutRequested(): Boolean = prefs.getBoolean(KEY_REMOTE_LOGOUT_REQUESTED, false)
 
+    fun updateChannel(): String = prefs.getString(KEY_UPDATE_CHANNEL, "stable").orEmpty().ifBlank { "stable" }
+
     fun applyControlPlaneSnapshot(snapshot: DeviceControlPlaneSnapshot) {
         val remoteConfigJson = JSONObject().apply {
             snapshot.remoteConfig.forEach { (key, item) -> put(key, JSONObject().put("value", item.value).put("type", item.type)) }
@@ -258,6 +261,7 @@ class AppPreferences(context: Context) {
             .putString(KEY_REMOTE_CONFIG_SNAPSHOT, remoteConfigJson.toString())
             .putString(KEY_REMOTE_FEATURE_FLAGS, flagsJson.toString())
             .putBoolean(KEY_REMOTE_LOGOUT_REQUESTED, snapshot.remoteLogoutRequested)
+            .putString(KEY_UPDATE_CHANNEL, snapshot.updateChannel)
             .putLong(KEY_CONTROL_PLANE_SYNCED_AT, System.currentTimeMillis())
             .apply()
     }

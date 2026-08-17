@@ -14,6 +14,7 @@ data class DeviceControlPlaneSnapshot(
     val tvId: String,
     val deviceStatus: String,
     val remoteLogoutRequested: Boolean,
+    val updateChannel: String = "stable",
     val remoteConfig: Map<String, RemoteConfigValue>,
     val featureFlags: Map<String, RemoteFeatureFlag>
 )

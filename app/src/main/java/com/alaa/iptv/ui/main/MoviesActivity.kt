@@ -1,6 +1,7 @@
 package com.alaa.iptv.ui.main
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.KeyEvent
@@ -26,6 +27,7 @@ import com.alaa.iptv.ui.settings.SettingsActivity
 import com.alaa.iptv.ui.theme.DisplayTheme
 import com.alaa.iptv.ui.common.ControlPlaneActivityGuard
 import kotlinx.coroutines.launch
+import java.net.URLEncoder
 
 class MoviesActivity : AppCompatActivity() {
 
@@ -212,9 +214,53 @@ class MoviesActivity : AppCompatActivity() {
             .setTitle(movie.name)
             .setMessage(details.ifBlank { "لا تتوفر تفاصيل إضافية لهذا الفيلم من المصدر." })
             .setPositiveButton("تشغيل") { _, _ -> playMovie(movie) }
-            .setNeutralButton("المشاهدة لاحقاً") { _, _ -> toggleWatchlist(movie) }
+            .setNeutralButton("خيارات") { _, _ -> showMovieExtras(movie) }
             .setNegativeButton("إغلاق", null)
             .show()
+    }
+
+    private fun showMovieExtras(movie: Movie) {
+        val actions = mutableListOf<Pair<String, () -> Unit>>()
+        if (prefs.isFeatureEnabled(FeatureCatalog.WATCHLIST)) actions += "المشاهدة لاحقاً" to { toggleWatchlist(movie) }
+        if (prefs.isFeatureEnabled(FeatureCatalog.LIBRARY_SIMILAR)) actions += "محتوى مشابه" to { showSimilarMovies(movie) }
+        if (prefs.isFeatureEnabled(FeatureCatalog.LIBRARY_TRAILERS)) actions += "البحث عن مقطع دعائي" to { openTrailerSearch(movie) }
+        if (actions.isEmpty()) {
+            Toast.makeText(this, "فعّل خيارات المكتبة من الإعدادات أولاً", Toast.LENGTH_SHORT).show()
+            return
+        }
+        AlertDialog.Builder(this)
+            .setTitle(movie.name)
+            .setItems(actions.map { it.first }.toTypedArray()) { _, index -> actions[index].second.invoke() }
+            .setNegativeButton("إلغاء", null)
+            .show()
+    }
+
+    private fun showSimilarMovies(movie: Movie) {
+        val currentGenres = movie.genre.orEmpty().split(",").map { it.trim().lowercase() }.filter { it.isNotBlank() }.toSet()
+        val titleWords = movie.name.lowercase().split(Regex("[^\\p{L}\\p{N}]+"))
+            .filter { it.length >= 4 }.toSet()
+        val similar = movies.filter { candidate ->
+            candidate.streamId != movie.streamId && (
+                candidate.genre.orEmpty().split(",").map { it.trim().lowercase() }.any { it in currentGenres } ||
+                    candidate.name.lowercase().split(Regex("[^\\p{L}\\p{N}]+"))
+                        .any { word -> word.length >= 4 && word in titleWords }
+                )
+        }.take(12)
+        if (similar.isEmpty()) {
+            Toast.makeText(this, "لا يوجد محتوى مشابه ضمن الأفلام المحملة حالياً", Toast.LENGTH_SHORT).show()
+            return
+        }
+        AlertDialog.Builder(this)
+            .setTitle("محتوى مشابه")
+            .setItems(similar.map { it.name }.toTypedArray()) { _, index -> playMovie(similar[index]) }
+            .setNegativeButton("إغلاق", null)
+            .show()
+    }
+
+    private fun openTrailerSearch(movie: Movie) {
+        val query = URLEncoder.encode("${movie.name} trailer", "UTF-8")
+        runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/results?search_query=$query"))) }
+            .onFailure { Toast.makeText(this, "تعذر فتح بحث المقطع الدعائي", Toast.LENGTH_SHORT).show() }
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
@@ -256,7 +302,7 @@ class MoviesActivity : AppCompatActivity() {
     }
 
     private fun showLibraryFilterMenu() {
-        val options = arrayOf("النوع", "السنة", "الجودة", "التقييم", "إلغاء الفلتر")
+        val options = arrayOf("النوع", "السنة", "الجودة", "التقييم", "اللغة", "إلغاء الفلتر")
         AlertDialog.Builder(this)
             .setTitle("فلترة الأفلام المحملة")
             .setItems(options) { _, index ->
@@ -265,6 +311,7 @@ class MoviesActivity : AppCompatActivity() {
                     1 -> showYearFilter()
                     2 -> showQualityFilter()
                     3 -> showRatingFilter()
+                    4 -> showLanguageFilter()
                     else -> renderFilteredMovies(movies)
                 }
             }
@@ -305,6 +352,31 @@ class MoviesActivity : AppCompatActivity() {
             renderFilteredMovies(if (threshold == null) movies else movies.filter { it.rating?.toDoubleOrNull()?.let { rating -> rating >= threshold } == true })
         }.show()
     }
+
+    private fun showLanguageFilter() {
+        val languageRules = listOf(
+            "العربية" to listOf("عربي", "arabic", "ara", "مدبلج"),
+            "الإنجليزية" to listOf("english", "eng", "en "),
+            "التركية" to listOf("تركي", "turkish", "tur"),
+            "الألمانية" to listOf("ألماني", "german", "deutsch", "deu"),
+            "الفرنسية" to listOf("فرنسي", "french", "fra"),
+            "الإسبانية" to listOf("إسباني", "spanish", "spa")
+        )
+        val available = languageRules.filter { (_, markers) -> movies.any { movie -> movieLanguageText(movie).containsAny(markers) } }
+        if (available.isEmpty()) {
+            Toast.makeText(this, "لا تتوفر مؤشرات لغة كافية في الأفلام المحملة", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val options = listOf("الكل") + available.map { it.first }
+        AlertDialog.Builder(this).setTitle("فلترة حسب اللغة").setItems(options.toTypedArray()) { _, index ->
+            val markers = available.getOrNull(index - 1)?.second
+            renderFilteredMovies(if (markers == null) movies else movies.filter { movie -> movieLanguageText(movie).containsAny(markers) })
+        }.show()
+    }
+
+    private fun movieLanguageText(movie: Movie): String = listOfNotNull(movie.name, movie.genre, movie.plot).joinToString(" ").lowercase()
+
+    private fun String.containsAny(markers: List<String>): Boolean = markers.any { marker -> contains(marker.lowercase()) }
 
     private fun movieQuality(movie: Movie): String = when {
         movie.name.contains("4k", true) || movie.name.contains("uhd", true) -> "4K / UHD"
