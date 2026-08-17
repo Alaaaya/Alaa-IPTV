@@ -1,0 +1,115 @@
+package com.alaa.iptv.data.repository
+
+import android.content.Context
+import com.alaa.iptv.data.preferences.AppPreferences
+import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import org.mockito.Mockito.mock
+import org.mockito.Mockito.`when`
+import java.io.File
+
+class MediaRepositoryDirectPagingTest {
+    @Test
+    fun `Xtream repository treats null category as all and preserves page total`() = runBlocking {
+        val requestedUrls = mutableListOf<String>()
+        val repository = MediaRepository(
+            prefs = session(useM3U = false),
+            context = mock(Context::class.java),
+            responseOverride = { url ->
+                requestedUrls += url
+                xtreamLiveResponse(121)
+            }
+        )
+
+        try {
+            val firstPage = repository.getLiveContentPage(categoryId = null, page = 0).getOrThrow()
+            val lastPage = repository.getLiveContentPage(categoryId = null, page = 1).getOrThrow()
+
+            assertEquals(100, firstPage.items.size)
+            assertEquals(121, firstPage.totalCount)
+            assertTrue(firstPage.hasMore)
+            assertEquals(21, lastPage.items.size)
+            assertEquals(121, lastPage.totalCount)
+            assertFalse(lastPage.hasMore)
+            assertTrue(requestedUrls.isNotEmpty())
+            assertFalse(requestedUrls.any { it.contains("category_id=") })
+        } finally {
+            repository.clearCache()
+        }
+    }
+
+    @Test
+    fun `M3U repository keeps the full category cache across pages`() = runBlocking {
+        val playlist = File.createTempFile("alaa-m3u-page", ".m3u").apply {
+            writeText(m3uPlaylist(205, "Arabic"))
+            deleteOnExit()
+        }
+        val repository = MediaRepository(
+            prefs = session(useM3U = true, serverUrl = playlist.toURI().toString()),
+            context = mock(Context::class.java)
+        )
+
+        try {
+            val firstPage = repository.getLiveContentPage(categoryId = "Arabic", page = 0).getOrThrow()
+            val finalPage = repository.getLiveContentPage(categoryId = "Arabic", page = 2).getOrThrow()
+
+            assertEquals(100, firstPage.items.size)
+            assertEquals(205, firstPage.totalCount)
+            assertTrue(firstPage.hasMore)
+            assertEquals(5, finalPage.items.size)
+            assertEquals(205, finalPage.totalCount)
+            assertFalse(finalPage.hasMore)
+        } finally {
+            repository.clearCache()
+        }
+    }
+
+    @Test
+    fun `M3U repository rejects VOD without attempting an Xtream request`() = runBlocking {
+        val repository = MediaRepository(
+            prefs = session(useM3U = true, serverUrl = "file:///unused.m3u"),
+            context = mock(Context::class.java)
+        )
+
+        try {
+            val error = repository.getMovieContentPage(categoryId = null).exceptionOrNull()
+            assertNotNull(error)
+            assertTrue(error?.message.orEmpty().contains("M3U"))
+        } finally {
+            repository.clearCache()
+        }
+    }
+
+    private fun session(
+        useM3U: Boolean,
+        serverUrl: String = "https://iptv.example"
+    ): AppPreferences = mock(AppPreferences::class.java).also { prefs ->
+        `when`(prefs.useM3U).thenReturn(useM3U)
+        `when`(prefs.serverUrl).thenReturn(serverUrl)
+        `when`(prefs.username).thenReturn("user")
+        `when`(prefs.password).thenReturn("pass")
+        `when`(prefs.isControlPlaneEnrolled).thenReturn(false)
+        `when`(prefs.isDeviceAccessBlocked()).thenReturn(false)
+    }
+
+    private fun xtreamLiveResponse(size: Int): String = buildString {
+        append('[')
+        repeat(size) { index ->
+            if (index > 0) append(',')
+            append("{\"stream_id\":\"${index + 1}\",\"name\":\"Live ${index + 1}\",\"category_id\":\"sports\"}")
+        }
+        append(']')
+    }
+
+    private fun m3uPlaylist(size: Int, group: String): String = buildString {
+        appendLine("#EXTM3U")
+        repeat(size) { index ->
+            appendLine("#EXTINF:-1 tvg-id=\"channel-${index + 1}\" group-title=\"$group\",Channel ${index + 1}")
+            appendLine("https://stream.example/${index + 1}.m3u8")
+        }
+    }
+}

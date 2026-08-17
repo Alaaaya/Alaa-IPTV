@@ -2,6 +2,8 @@ package com.alaa.iptv.data.repository
 
 import android.content.Context
 import android.util.Log
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import com.alaa.iptv.BuildConfig
 import com.alaa.iptv.data.models.*
 import com.alaa.iptv.data.preferences.AppPreferences
@@ -24,7 +26,8 @@ class SubscriptionSessionExpiredException(message: String) : IOException(message
 
 class MediaRepository(
     private val prefs: AppPreferences,
-    private val context: Context
+    private val context: Context,
+    private val responseOverride: (suspend (String) -> String)? = null
 ) {
 
     companion object {
@@ -112,6 +115,7 @@ class MediaRepository(
     private suspend fun request(url: String): String =
         withContext(Dispatchers.IO) {
             ensureContentAccess().getOrThrow()
+            responseOverride?.invoke(url)?.let { return@withContext it }
             Log.d(TAG, "Requesting IPTV endpoint")
             val request = Request.Builder()
                 .url(url)
@@ -161,6 +165,12 @@ class MediaRepository(
 
     private fun encodeQueryParameter(value: String): String =
         URLEncoder.encode(value, StandardCharsets.UTF_8.name())
+
+    private fun JsonObject.stringValue(name: String): String =
+        get(name)?.takeUnless { it.isJsonNull }?.asString.orEmpty()
+
+    private fun JsonObject.intValue(name: String): Int =
+        get(name)?.takeUnless { it.isJsonNull }?.asInt ?: 0
 
     /** مفتاح داخلي غير قابل للعرض أو التسجيل يمنع اختلاط كاشات الاشتراكات المختلفة. */
     private fun sourceCacheKey(): String {
@@ -259,16 +269,16 @@ class MediaRepository(
                 val categoryExtra = effectiveCategory?.let { "&category_id=${encodeQueryParameter(it)}" }.orEmpty()
                 val url = buildApiUrl("get_live_streams", categoryExtra)
                 val body = request(url)
-                val array = JSONArray(body)
+                val array = JsonParser().parse(body).asJsonArray
                 val base = normalizeHost(prefs.serverUrl)
 
                 val channels = mutableListOf<Channel>()
-                val bounds = ContentPagingPolicy.bounds(array.length(), pageIndex, LIVE_PAGE_SIZE)
+                val bounds = ContentPagingPolicy.bounds(array.size(), pageIndex, LIVE_PAGE_SIZE)
                 for (i in bounds.startIndex until bounds.endIndex) {
-                    val obj = array.optJSONObject(i) ?: continue
-                    val id = obj.optString("stream_id")
+                    val obj = array.get(i).takeIf { element -> element.isJsonObject }?.asJsonObject ?: continue
+                    val id = obj.stringValue("stream_id")
                     if (id.isBlank()) continue
-                    val providerSource = obj.optString("direct_source")
+                    val providerSource = obj.stringValue("direct_source")
                         .trim()
                         .takeIf { it.startsWith("http://", true) || it.startsWith("https://", true) }
                     // نفضّل رابط المزود إن وجد، وإلا MPEG-TS المباشر. بعض المزودين يعيدون
@@ -283,18 +293,18 @@ class MediaRepository(
                     channels.add(
                         Channel(
                             streamId = id,
-                            num = obj.optString("num"),
-                            name = obj.optString("name"),
+                            num = obj.stringValue("num"),
+                            name = obj.stringValue("name"),
                             streamType = "live",
-                            streamIcon = obj.optString("stream_icon"),
-                            epgChannelId = obj.optString("epg_channel_id"),
-                            added = obj.optString("added"),
-                            categoryId = obj.optString("category_id"),
+                            streamIcon = obj.stringValue("stream_icon"),
+                            epgChannelId = obj.stringValue("epg_channel_id"),
+                            added = obj.stringValue("added"),
+                            categoryId = obj.stringValue("category_id"),
                             categoryName = null,
                             customSid = null,
-                            tvArchive = obj.optInt("tv_archive"),
+                            tvArchive = obj.intValue("tv_archive"),
                             directSource = direct,
-                            tvArchiveDuration = obj.optInt("tv_archive_duration")
+                            tvArchiveDuration = obj.intValue("tv_archive_duration")
                         )
                     )
                 }
@@ -302,7 +312,7 @@ class MediaRepository(
                 // حفظ في الكاش مع إجمالي الفئة الذي أعاده المصدر في الاستجابة نفسها.
                 val contentPage = PagedContent(
                     items = channels,
-                    totalCount = array.length(),
+                    totalCount = array.size(),
                     hasMore = bounds.hasMore
                 )
                 putBoundedCache(cachedChannelPages, pageCacheKey, contentPage, MAX_LIVE_PAGE_CACHES)
@@ -685,9 +695,9 @@ class MediaRepository(
 
                     if (l.startsWith("#EXTINF")) {
                         name = Regex(",(.+)$").find(l)?.groupValues?.get(1)?.trim() ?: "Channel"
-                        epgChannelId = Regex("""tvg-id="([^"]*?)""").find(l)?.groupValues?.get(1)
-                        logo = Regex("""tvg-logo="([^"]*?)""").find(l)?.groupValues?.get(1)
-                        group = Regex("""group-title="([^"]*?)""").find(l)?.groupValues?.get(1)
+                        epgChannelId = Regex("tvg-id=\"([^\"]*?)\"").find(l)?.groupValues?.get(1)
+                        logo = Regex("tvg-logo=\"([^\"]*?)\"").find(l)?.groupValues?.get(1)
+                        group = Regex("group-title=\"([^\"]*?)\"").find(l)?.groupValues?.get(1)
                     }
 
                     if (l.startsWith("http://") || l.startsWith("https://") || l.startsWith("rtmp")) {
