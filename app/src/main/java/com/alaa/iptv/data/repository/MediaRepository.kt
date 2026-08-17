@@ -36,20 +36,20 @@ class MediaRepository(
         private var cachedChannels: List<Channel>? = null
         private var cachedChannelsTime = 0L
         private var cachedChannelsCategoryId: String? = null
-        private val cachedChannelPages = mutableMapOf<String, Pair<Long, List<Channel>>>()
+        private val cachedChannelPages = mutableMapOf<String, Pair<Long, PagedContent<Channel>>>()
         private var cachedCategories: List<Category>? = null
         private var cachedCategoriesTime = 0L
         private var cachedMovies: List<Movie>? = null
         private var cachedMoviesTime = 0L
-        private val cachedMoviesByCategory = mutableMapOf<String, Pair<Long, List<Movie>>>()
+        private val cachedMoviesByCategory = mutableMapOf<String, Pair<Long, PagedContent<Movie>>>()
         private var cachedSeries: List<Series>? = null
         private var cachedSeriesTime = 0L
-        private val cachedSeriesByCategory = mutableMapOf<String, Pair<Long, List<Series>>>()
+        private val cachedSeriesByCategory = mutableMapOf<String, Pair<Long, PagedContent<Series>>>()
 
         private fun <T> putBoundedCache(
-            cache: MutableMap<String, Pair<Long, List<T>>>,
+            cache: MutableMap<String, Pair<Long, T>>,
             key: String,
-            value: List<T>,
+            value: T,
             maxEntries: Int
         ) {
             if (key !in cache && cache.size >= maxEntries) {
@@ -183,6 +183,13 @@ class MediaRepository(
     // ================= LIVE STREAMS =================
 
     suspend fun getLiveStreams(categoryId: String?, page: Int = 0): Result<List<Channel>> =
+        getLiveContentPage(categoryId, page).map { it.items }
+
+    /**
+     * تعيد الصفحة المطلوبة مع العدد الحقيقي للعناصر في الفئة من الاستجابة نفسها.
+     * لا تُحمّل فئات أخرى ولا تنشئ طلباً إضافياً لغرض العد فقط.
+     */
+    suspend fun getLiveContentPage(categoryId: String?, page: Int = 0): Result<PagedContent<Channel>> =
         withContext(Dispatchers.IO) {
             ensureContentAccess().exceptionOrNull()?.let { return@withContext Result.failure(it) }
 
@@ -203,11 +210,15 @@ class MediaRepository(
             try {
                 if (isM3U()) {
                     return@withContext loadM3U(prefs.serverUrl).map { channels ->
-                        M3UCategoryMapper.page(
-                            channels = channels,
-                            categoryId = effectiveCategory,
-                            page = pageIndex,
-                            pageSize = LIVE_PAGE_SIZE
+                        val scoped = effectiveCategory?.let { selectedId ->
+                            channels.filter { it.categoryId == selectedId }
+                        } ?: channels
+                        val start = (pageIndex * LIVE_PAGE_SIZE).coerceAtMost(scoped.size)
+                        val end = minOf(scoped.size, start + LIVE_PAGE_SIZE)
+                        PagedContent(
+                            items = scoped.subList(start, end),
+                            totalCount = scoped.size,
+                            hasMore = end < scoped.size
                         )
                     }
                 }
@@ -256,13 +267,18 @@ class MediaRepository(
                     )
                 }
 
-                // حفظ في الكاش
-                cachedChannels = channels
+                // حفظ في الكاش مع إجمالي الفئة الذي أعاده المصدر في الاستجابة نفسها.
+                val contentPage = PagedContent(
+                    items = channels,
+                    totalCount = array.length(),
+                    hasMore = endIndex < array.length()
+                )
+                cachedChannels = contentPage.items
                 cachedChannelsTime = System.currentTimeMillis()
                 cachedChannelsCategoryId = effectiveCategory
-                putBoundedCache(cachedChannelPages, pageCacheKey, channels, MAX_LIVE_PAGE_CACHES)
+                putBoundedCache(cachedChannelPages, pageCacheKey, contentPage, MAX_LIVE_PAGE_CACHES)
 
-                Result.success(channels)
+                Result.success(contentPage)
 
             } catch (e: Exception) {
                 Log.e(TAG, "getLiveStreams error", e)
@@ -374,6 +390,9 @@ class MediaRepository(
     // ================= MOVIES (VOD) =================
 
     suspend fun getMovies(categoryId: String?, page: Int = 0): Result<List<Movie>> =
+        getMovieContentPage(categoryId, page).map { it.items }
+
+    suspend fun getMovieContentPage(categoryId: String?, page: Int = 0): Result<PagedContent<Movie>> =
         withContext(Dispatchers.IO) {
             ensureContentAccess().exceptionOrNull()?.let { return@withContext Result.failure(it) }
             val effectiveCategory = categoryId?.takeIf { it.isNotBlank() && it != "all" }
@@ -386,23 +405,23 @@ class MediaRepository(
             }
 
             try {
-                val movies = fetchMovies(effectiveCategory, pageIndex)
-                cachedMovies = movies
+                val contentPage = fetchMovies(effectiveCategory, pageIndex)
+                cachedMovies = contentPage.items
                 cachedMoviesTime = System.currentTimeMillis()
                 putBoundedCache(
                     cachedMoviesByCategory,
                     cacheKey,
-                    movies,
+                    contentPage,
                     MAX_MOVIE_CATEGORY_CACHES
                 )
-                Result.success(movies)
+                Result.success(contentPage)
             } catch (e: Exception) {
                 Log.e(TAG, "getMovies error", e)
                 Result.failure(e)
             }
         }
 
-    private suspend fun fetchMovies(categoryId: String?, page: Int = 0): List<Movie> {
+    private suspend fun fetchMovies(categoryId: String?, page: Int = 0): PagedContent<Movie> {
         val extra = if (!categoryId.isNullOrBlank() && categoryId != "all") {
             "&category_id=${encodeQueryParameter(categoryId)}"
         } else {
@@ -425,7 +444,11 @@ class MediaRepository(
                 containerExtension = obj.optString("container_extension", "mp4"), isFavorite = false
             )
         }
-        return movies
+        return PagedContent(
+            items = movies,
+            totalCount = array.length(),
+            hasMore = endIndex < array.length()
+        )
     }
 
     private suspend fun fetchFeaturedMovies(): List<Movie> {
@@ -433,7 +456,7 @@ class MediaRepository(
         val featured = linkedMapOf<String, Movie>()
         for (category in categories) {
             if (featured.size >= 500) break
-            fetchMovies(category.categoryId).forEach { movie ->
+            fetchMovies(category.categoryId).items.forEach { movie ->
                 if (featured.size < 500 && !featured.containsKey(movie.streamId)) {
                     featured[movie.streamId] = movie
                 }
@@ -445,6 +468,9 @@ class MediaRepository(
     // ================= SERIES =================
 
     suspend fun getSeries(categoryId: String?, page: Int = 0): Result<List<Series>> =
+        getSeriesContentPage(categoryId, page).map { it.items }
+
+    suspend fun getSeriesContentPage(categoryId: String?, page: Int = 0): Result<PagedContent<Series>> =
         withContext(Dispatchers.IO) {
             ensureContentAccess().exceptionOrNull()?.let { return@withContext Result.failure(it) }
             val effectiveCategory = categoryId?.takeIf { it.isNotBlank() && it != "all" }
@@ -457,23 +483,23 @@ class MediaRepository(
             }
 
             try {
-                val series = fetchSeries(effectiveCategory, pageIndex)
-                cachedSeries = series
+                val contentPage = fetchSeries(effectiveCategory, pageIndex)
+                cachedSeries = contentPage.items
                 cachedSeriesTime = System.currentTimeMillis()
                 putBoundedCache(
                     cachedSeriesByCategory,
                     cacheKey,
-                    series,
+                    contentPage,
                     MAX_SERIES_CATEGORY_CACHES
                 )
-                Result.success(series)
+                Result.success(contentPage)
             } catch (e: Exception) {
                 Log.e(TAG, "getSeries error", e)
                 Result.failure(e)
             }
         }
 
-    private suspend fun fetchSeries(categoryId: String?, page: Int = 0): List<Series> {
+    private suspend fun fetchSeries(categoryId: String?, page: Int = 0): PagedContent<Series> {
         val extra = if (!categoryId.isNullOrBlank() && categoryId != "all") {
             "&category_id=${encodeQueryParameter(categoryId)}"
         } else {
@@ -494,7 +520,11 @@ class MediaRepository(
                 categoryId = obj.optString("category_id"), rating = obj.optString("rating"), isFavorite = false
             )
         }
-        return series
+        return PagedContent(
+            items = series,
+            totalCount = array.length(),
+            hasMore = endIndex < array.length()
+        )
     }
 
     private suspend fun fetchFeaturedSeries(): List<Series> {
@@ -502,7 +532,7 @@ class MediaRepository(
         val featured = linkedMapOf<String, Series>()
         for (category in categories) {
             if (featured.size >= 500) break
-            fetchSeries(category.categoryId).forEach { series ->
+            fetchSeries(category.categoryId).items.forEach { series ->
                 if (featured.size < 500 && !featured.containsKey(series.seriesId)) {
                     featured[series.seriesId] = series
                 }

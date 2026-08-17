@@ -47,6 +47,7 @@ class MainActivity : AppCompatActivity() {
     private var selectedLiveCategory: Category? = null
     private var currentLivePage = 0
     private var hasMoreLivePages = false
+    private var selectedLiveCategoryTotal = 0
     private var movingChannelKey: String? = null
     private var moveSnapshot: List<Channel> = emptyList()
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -170,8 +171,10 @@ class MainActivity : AppCompatActivity() {
         selectedLiveCategory = favoritesCategory
         currentLivePage = 0
         hasMoreLivePages = false
+        selectedLiveCategoryTotal = favoriteChannels.size
         binding.filterAll.text = "المفضلة"
         binding.categoryTitle.text = "القنوات المفضلة"
+        binding.channelCountText.text = "${favoriteChannels.size} قناة مفضلة"
         liveCategoryAdapter.submit(liveCategories, favoritesCategory.categoryId)
         allChannels = decorateChannels(favoriteChannels).filter { it.isFavorite }
         updateChannelList()
@@ -182,8 +185,10 @@ class MainActivity : AppCompatActivity() {
         selectedLiveCategory = category
         currentLivePage = 0
         hasMoreLivePages = false
+        selectedLiveCategoryTotal = 0
         binding.filterAll.text = "الفئات"
         binding.categoryTitle.text = "البث المباشر / ${category.categoryName}"
+        binding.channelCountText.text = "جارٍ تحميل عدد القنوات…"
         liveCategoryAdapter.submit(liveCategories, category.categoryId)
         loadContent(category.categoryId, page = 0, append = false)
     }
@@ -200,9 +205,10 @@ class MainActivity : AppCompatActivity() {
     private fun loadContent(categoryId: String, page: Int, append: Boolean) {
         lifecycleScope.launch {
             try {
-                val result = repository.getLiveStreams(categoryId, page)
+                val result = repository.getLiveContentPage(categoryId, page)
 
-                result.onSuccess { loadedChannels ->
+                result.onSuccess { contentPage ->
+                    val loadedChannels = contentPage.items
                     val namedChannels = loadedChannels.map { channel ->
                         channel.copy(categoryName = selectedLiveCategory?.categoryName)
                     }
@@ -213,7 +219,10 @@ class MainActivity : AppCompatActivity() {
                         decoratedChannels
                     }
                     currentLivePage = page
-                    hasMoreLivePages = loadedChannels.size >= 100
+                    selectedLiveCategoryTotal = contentPage.totalCount
+                    hasMoreLivePages = contentPage.hasMore
+                    updateLiveCategoryCount(categoryId, selectedLiveCategoryTotal)
+                    binding.channelCountText.text = liveCountText()
                     updateChannelList(if (append) allChannels.firstOrNull() else null)
                 }.onFailure(::showContentError)
             } catch (e: Exception) {
@@ -227,6 +236,7 @@ class MainActivity : AppCompatActivity() {
         allChannels = emptyList()
         binding.previewTitle.text = "تعذر تحميل القنوات"
         binding.previewSubtitle.text = error?.message ?: "تحقق من اتصال الإنترنت والسيرفر"
+        binding.channelCountText.text = "تعذر احتساب القنوات"
         binding.channelCounterFooter.text = "0 / 0"
         channelAdapter.updateChannels(emptyList())
     }
@@ -286,9 +296,9 @@ class MainActivity : AppCompatActivity() {
 
         val pos = allChannels.indexOfFirst { channelKey(it) == channelKey(channel) } + 1
         binding.channelCounterFooter.text = if (hasMoreLivePages) {
-            "$pos / ${allChannels.size}  •  اضغط هنا لتحميل المزيد"
+            "$pos / ${allChannels.size} من أصل $selectedLiveCategoryTotal  •  اضغط هنا لتحميل المزيد"
         } else {
-            "$pos / ${allChannels.size}"
+            "$pos / ${allChannels.size} من أصل $selectedLiveCategoryTotal"
         }
     }
 
@@ -434,6 +444,15 @@ class MainActivity : AppCompatActivity() {
                 ?: binding.liveCategoriesRecyclerView.requestFocus()
         }
     }
+
+    private fun updateLiveCategoryCount(categoryId: String, totalCount: Int) {
+        liveCategories = liveCategories.map { category ->
+            if (category.categoryId == categoryId) category.copy(channelCount = totalCount) else category
+        }
+        liveCategoryAdapter.submit(liveCategories, categoryId)
+    }
+
+    private fun liveCountText(): String = "$selectedLiveCategoryTotal قناة في الفئة المختارة"
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (event.action == KeyEvent.ACTION_DOWN && movingChannelKey != null) {
