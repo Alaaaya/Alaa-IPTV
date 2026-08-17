@@ -105,9 +105,15 @@ class AccountManagementActivity : AppCompatActivity() {
 
     private fun renderSubscriptions() {
         section("اشتراكات IPTV")
-        val activeId = prefs.getSubscriptions().firstOrNull { it.serverUrl == prefs.serverUrl }?.id
-        item("الاشتراك الحالي: ${prefs.getSubscriptions().firstOrNull { it.id == activeId }?.title ?: "غير محفوظ"}") { chooseSubscription() }
+        val subscriptions = prefs.getSubscriptions()
+        val activeId = subscriptions.firstOrNull { it.serverUrl == prefs.serverUrl }?.id
+        val activeTitle = subscriptions.firstOrNull { it.id == activeId }?.title ?: "غير محفوظ"
+        item("الاشتراك الحالي: $activeTitle") { chooseSubscription() }
         item("حفظ الاشتراك الحالي") { saveCurrentSubscription() }
+        if (subscriptions.isNotEmpty()) {
+            item("تعيين الاشتراك الافتراضي") { chooseDefaultSubscription() }
+            item("إضافة أو إزالة اشتراك من المفضلة") { toggleSubscriptionFavorite() }
+        }
     }
 
     private fun renderPin() {
@@ -219,11 +225,39 @@ class AccountManagementActivity : AppCompatActivity() {
         }
         AlertDialog.Builder(this)
             .setTitle("اختر الاشتراك")
-            .setItems(subscriptions.map { it.title }.toTypedArray()) { _, index ->
+            .setItems(subscriptions.map { subscription ->
+                buildString {
+                    if (subscription.isFavorite) append("★ ")
+                    append(subscription.title)
+                    if (subscription.isDefault) append(" (افتراضي)")
+                    if (subscription.status != "active") append(" (${subscription.status})")
+                }
+            }.toTypedArray()) { _, index ->
                 if (prefs.activateSubscription(subscriptions[index].id)) {
                     toast("تم تفعيل ${subscriptions[index].title}")
                     render()
-                }
+                } else toast("الحساب موقوف أو منتهي")
+            }.show()
+    }
+
+    private fun chooseDefaultSubscription() {
+        val subscriptions = prefs.getSubscriptions()
+        AlertDialog.Builder(this)
+            .setTitle("الاشتراك الافتراضي")
+            .setItems(subscriptions.map { it.title }.toTypedArray()) { _, index ->
+                prefs.setDefaultSubscription(subscriptions[index].id)
+                toast("تم تعيين ${subscriptions[index].title} كاشتراك افتراضي")
+                render()
+            }.show()
+    }
+
+    private fun toggleSubscriptionFavorite() {
+        val subscriptions = prefs.getSubscriptions()
+        AlertDialog.Builder(this)
+            .setTitle("المفضلة")
+            .setItems(subscriptions.map { subscription -> "${if (subscription.isFavorite) "★" else "☆"} ${subscription.title}" }.toTypedArray()) { _, index ->
+                prefs.toggleSubscriptionFavorite(subscriptions[index].id)
+                render()
             }.show()
     }
 

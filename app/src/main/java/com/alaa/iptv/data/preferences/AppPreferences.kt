@@ -456,7 +456,13 @@ class AppPreferences(context: Context) {
                         serverUrl = host,
                         username = item.optString("username"),
                         password = item.optString("password"),
-                        m3uUrl = item.optString("m3uUrl")
+                        m3uUrl = item.optString("m3uUrl"),
+                        isFavorite = item.optBoolean("favorite", false),
+                        isDefault = item.optBoolean("default", false),
+                        color = item.optString("color", "#22D3EE"),
+                        expiresAtMs = item.optLong("expiresAt", 0L),
+                        status = item.optString("status", "active"),
+                        notes = item.optString("notes")
                     ))
                 }
             }
@@ -474,6 +480,12 @@ class AppPreferences(context: Context) {
                     .put("username", it.username)
                     .put("password", it.password)
                     .put("m3uUrl", it.m3uUrl)
+                    .put("favorite", it.isFavorite)
+                    .put("default", it.isDefault)
+                    .put("color", it.color)
+                    .put("expiresAt", it.expiresAtMs)
+                    .put("status", it.status)
+                    .put("notes", it.notes)
                 )
             }
         }.toString()
@@ -482,12 +494,26 @@ class AppPreferences(context: Context) {
 
     fun activateSubscription(subscriptionId: String): Boolean {
         val subscription = getSubscriptions().firstOrNull { it.id == subscriptionId } ?: return false
+        if (subscription.status != "active" || (subscription.expiresAtMs > 0 && subscription.expiresAtMs <= System.currentTimeMillis())) return false
         serverUrl = subscription.serverUrl
         username = subscription.username
         password = subscription.password
         m3uUrl = subscription.m3uUrl
         useM3U = subscription.m3uUrl.isNotBlank()
         prefs.edit().putString(KEY_ACTIVE_SUBSCRIPTION_ID, subscription.id).apply()
+        return true
+    }
+
+    fun toggleSubscriptionFavorite(subscriptionId: String): Boolean {
+        val subscription = getSubscriptions().firstOrNull { it.id == subscriptionId } ?: return false
+        saveSubscription(subscription.copy(isFavorite = !subscription.isFavorite))
+        return true
+    }
+
+    fun setDefaultSubscription(subscriptionId: String): Boolean {
+        val subscriptions = getSubscriptions()
+        if (subscriptions.none { it.id == subscriptionId }) return false
+        subscriptions.forEach { saveSubscription(it.copy(isDefault = it.id == subscriptionId)) }
         return true
     }
 
