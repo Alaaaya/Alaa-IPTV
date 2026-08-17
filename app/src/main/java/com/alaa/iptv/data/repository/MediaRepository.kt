@@ -130,7 +130,7 @@ class MediaRepository(
     }
 
     fun isM3U(url: String = prefs.serverUrl): Boolean {
-        return IptvSourceClassifier.isM3U(url)
+        return (url == prefs.serverUrl && prefs.useM3U) || IptvSourceClassifier.isM3U(url)
     }
 
     private fun buildApiUrl(action: String, extra: String = ""): String {
@@ -147,10 +147,15 @@ class MediaRepository(
      * Verifies an Xtream account before credentials are persisted. For M3U playlists,
      * it verifies that the remote resource is reachable and contains a valid playlist header.
      */
-    suspend fun validateLogin(serverUrl: String, username: String, password: String): Result<Unit> =
+    suspend fun validateLogin(
+        serverUrl: String,
+        username: String,
+        password: String,
+        forceM3U: Boolean = false
+    ): Result<Unit> =
         withContext(Dispatchers.IO) {
             try {
-                if (isM3U(serverUrl)) {
+                if (forceM3U || IptvSourceClassifier.isM3U(serverUrl)) {
                     val playlist = readPlaylist(serverUrl)
                     if (playlist.contains("#EXTM3U")) {
                         Result.success(Unit)

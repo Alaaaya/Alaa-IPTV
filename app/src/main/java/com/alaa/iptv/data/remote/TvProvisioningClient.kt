@@ -14,6 +14,7 @@ import java.util.concurrent.TimeUnit
 
 data class ProvisionedIptvSubscription(
     val tvId: String,
+    val sourceType: String,
     val serverUrl: String,
     val username: String,
     val password: String
@@ -57,11 +58,15 @@ object TvProvisioningClient {
 
                     ProvisionedIptvSubscription(
                         tvId = data.optString("tvId"),
+                        sourceType = subscription.optString("sourceType", "xtream").lowercase(),
                         serverUrl = subscription.optString("serverUrl"),
                         username = subscription.optString("username"),
                         password = subscription.optString("password")
                     ).also {
-                        require(it.serverUrl.isNotBlank() && it.username.isNotBlank() && it.password.isNotBlank()) {
+                        require(it.sourceType == "xtream" || it.sourceType == "m3u") {
+                            "نوع مصدر الاشتراك غير صالح"
+                        }
+                        require(it.serverUrl.isNotBlank() && (it.sourceType == "m3u" || (it.username.isNotBlank() && it.password.isNotBlank()))) {
                             "بيانات الاشتراك المستلمة غير مكتملة"
                         }
                     }

@@ -25,12 +25,15 @@ class LoginActivity : AppCompatActivity() {
     companion object {
         private const val TAG = "LoginActivity"
         const val EXTRA_DEVICE_BLOCKED = "device_blocked"
+        private const val SOURCE_XTREAM = "xtream"
+        private const val SOURCE_M3U = "m3u"
     }
 
     private lateinit var binding: ActivityLoginBinding
     private lateinit var prefs: AppPreferences
     private lateinit var repository: MediaRepository
     private var passwordVisible = false
+    private var selectedSourceType = SOURCE_XTREAM
 
     private val playlistPicker = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri ?: return@registerForActivityResult
@@ -57,6 +60,8 @@ class LoginActivity : AppCompatActivity() {
 
     private fun setupUI() {
         binding.loginButton.setOnClickListener { submitLogin() }
+        binding.sourceXtreamButton.setOnClickListener { setSourceType(SOURCE_XTREAM) }
+        binding.sourceM3uButton.setOnClickListener { setSourceType(SOURCE_M3U) }
         binding.importPlaylistButton.setOnClickListener {
             playlistPicker.launch(arrayOf(
                 "application/x-mpegURL",
@@ -69,7 +74,8 @@ class LoginActivity : AppCompatActivity() {
         binding.passwordVisibilityButton.setOnClickListener { togglePasswordVisibility() }
         binding.fetchTvIdButton.setOnClickListener { fetchTvSubscription() }
         binding.tvIdValue.text = prefs.getOrCreateTvId()
-        listOf(binding.loginButton, binding.importPlaylistButton).forEach { button ->
+        setSourceType(SOURCE_XTREAM)
+        listOf(binding.loginButton, binding.importPlaylistButton, binding.sourceXtreamButton, binding.sourceM3uButton).forEach { button ->
             button.setOnFocusChangeListener { view, hasFocus ->
                 view.animate()
                     .scaleX(if (hasFocus) 1.025f else 1f)
@@ -82,8 +88,8 @@ class LoginActivity : AppCompatActivity() {
 
     private fun submitLogin() {
         val serverUrl = binding.serverUrlInput.text.toString().trim()
-        val username = binding.usernameInput.text.toString().trim()
-        val password = binding.passwordInput.text.toString().trim()
+        val username = if (selectedSourceType == SOURCE_M3U) "" else binding.usernameInput.text.toString().trim()
+        val password = if (selectedSourceType == SOURCE_M3U) "" else binding.passwordInput.text.toString().trim()
         if (validateInput(serverUrl, username, password)) {
             performLogin(serverUrl, username, password)
         }
@@ -102,6 +108,7 @@ class LoginActivity : AppCompatActivity() {
                 prefs.tvId = subscription.tvId
                 prefs.isControlPlaneEnrolled = true
                 binding.tvIdValue.text = subscription.tvId
+                setSourceType(subscription.sourceType)
                 binding.serverUrlInput.setText(subscription.serverUrl)
                 binding.usernameInput.setText(subscription.username)
                 binding.passwordInput.setText(subscription.password)
@@ -137,6 +144,7 @@ class LoginActivity : AppCompatActivity() {
                     targetFile.toURI().toString()
                 }
             }.onSuccess { localUrl ->
+                setSourceType(SOURCE_M3U)
                 binding.serverUrlInput.setText(localUrl)
                 binding.usernameInput.text?.clear()
                 binding.passwordInput.text?.clear()
@@ -150,16 +158,27 @@ class LoginActivity : AppCompatActivity() {
 
     private fun validateInput(serverUrl: String, username: String, password: String): Boolean {
         binding.errorText.visibility = android.view.View.GONE
+        if (selectedSourceType == SOURCE_M3U) {
+            if (serverUrl.isEmpty()) {
+                binding.serverUrlInput.error = "يرجى إدخال رابط M3U الكامل"
+                return false
+            }
+            return true
+        }
         when {
             serverUrl.isEmpty() -> {
                 binding.serverUrlInput.error = "يرجى إدخال رابط الاشتراك"
                 return false
             }
-            !repository.isM3U(serverUrl) && username.isEmpty() -> {
+            repository.isM3U(serverUrl) -> {
+                binding.serverUrlInput.error = "هذا رابط M3U. اختر نوع المصدر M3U أولاً"
+                return false
+            }
+            username.isEmpty() -> {
                 binding.usernameInput.error = "يرجى إدخال اسم المستخدم"
                 return false
             }
-            !repository.isM3U(serverUrl) && password.isEmpty() -> {
+            password.isEmpty() -> {
                 binding.passwordInput.error = "يرجى إدخال كلمة المرور"
                 return false
             }
@@ -175,12 +194,17 @@ class LoginActivity : AppCompatActivity() {
         setLoading(true)
 
         lifecycleScope.launch {
-            val validation = repository.validateLogin(serverUrl, username, password)
+            val validation = repository.validateLogin(
+                serverUrl = serverUrl,
+                username = username,
+                password = password,
+                forceM3U = selectedSourceType == SOURCE_M3U
+            )
             validation.onSuccess {
                 prefs.serverUrl = serverUrl.trim()
                 prefs.username = username
                 prefs.password = password
-                prefs.useM3U = repository.isM3U(serverUrl)
+                prefs.useM3U = selectedSourceType == SOURCE_M3U || repository.isM3U(serverUrl)
                 prefs.m3uUrl = if (prefs.useM3U) serverUrl.trim() else ""
                 prefs.isLoggedIn = true
                 prefs.resetConnectionFailures()
@@ -211,6 +235,8 @@ class LoginActivity : AppCompatActivity() {
         binding.passwordInput.isEnabled = !loading
         binding.fetchTvIdButton.isEnabled = !loading
         binding.passwordVisibilityButton.isEnabled = !loading
+        binding.sourceXtreamButton.isEnabled = !loading
+        binding.sourceM3uButton.isEnabled = !loading
         binding.loginButton.text = if (loading) "جاري تسجيل الدخول…" else getString(com.alaa.iptv.R.string.login)
         binding.progressBar.visibility = if (loading) android.view.View.VISIBLE else android.view.View.GONE
     }
@@ -218,6 +244,27 @@ class LoginActivity : AppCompatActivity() {
     private fun showLoginError(message: String) {
         binding.errorText.text = message
         binding.errorText.visibility = android.view.View.VISIBLE
+    }
+
+    private fun setSourceType(sourceType: String) {
+        selectedSourceType = if (sourceType == SOURCE_M3U) SOURCE_M3U else SOURCE_XTREAM
+        val isM3U = selectedSourceType == SOURCE_M3U
+        binding.sourceXtreamButton.setBackgroundResource(
+            if (isM3U) com.alaa.iptv.R.drawable.bg_login_secondary_button else com.alaa.iptv.R.drawable.bg_login_primary_button
+        )
+        binding.sourceM3uButton.setBackgroundResource(
+            if (isM3U) com.alaa.iptv.R.drawable.bg_login_primary_button else com.alaa.iptv.R.drawable.bg_login_secondary_button
+        )
+        binding.serverUrlInput.hint = if (isM3U) "رابط M3U الكامل" else "رابط خادم Xtream"
+        binding.sourceTypeHint.text = if (isM3U) {
+            "الصق رابط M3U الكامل فقط؛ لا تحتاج اسم المستخدم أو كلمة المرور هنا."
+        } else {
+            "Xtream يحتاج رابط الخادم واسم المستخدم وكلمة المرور."
+        }
+        (binding.usernameInput.parent as? android.view.View)?.visibility = if (isM3U) android.view.View.GONE else android.view.View.VISIBLE
+        (binding.passwordInput.parent as? android.view.View)?.visibility = if (isM3U) android.view.View.GONE else android.view.View.VISIBLE
+        binding.serverUrlInput.nextFocusDownId = if (isM3U) com.alaa.iptv.R.id.loginButton else com.alaa.iptv.R.id.usernameInput
+        binding.loginButton.nextFocusUpId = if (isM3U) com.alaa.iptv.R.id.serverUrlInput else com.alaa.iptv.R.id.passwordInput
     }
 
     private fun navigateToDashboard() {
