@@ -64,6 +64,7 @@ object FeatureCatalog {
     const val AUTO_CACHE_CLEAN = "auto_cache_clean"
     const val COMPATIBILITY_MODE = "compatibility_mode"
     const val HIGH_PERFORMANCE_MODE = "high_performance_mode"
+    const val LOW_LATENCY_MODE = "low_latency_mode"
     const val STORAGE_WARNING = "storage_warning"
     const val REMOTE_TEST = "remote_test"
     const val REMOTE_GUIDE = "remote_guide"
@@ -126,6 +127,7 @@ object FeatureCatalog {
         OptionalFeature(AUTO_CACHE_CLEAN, "تنظيف مؤقت تلقائي", "نظّف صور البوسترات القديمة دورياً في الخلفية.", "الأداء والبيانات", defaultEnabled = false),
         OptionalFeature(COMPATIBILITY_MODE, "وضع توافق للأجهزة الضعيفة", "استخدم مخزناً مؤقتاً أكثر تحفظاً لتقليل التقطيع على الأجهزة الضعيفة.", "الأداء والبيانات", defaultEnabled = false),
         OptionalFeature(HIGH_PERFORMANCE_MODE, "وضع أداء عالٍ", "استخدم مخزناً مؤقتاً أسرع على الأجهزة القوية؛ أوقف وضع التوافق أولاً.", "الأداء والبيانات", defaultEnabled = false),
+        OptionalFeature(LOW_LATENCY_MODE, "وضع زمن استجابة منخفض", "يقلل التخزين المؤقت في البث المباشر لتقريب البث من المصدر؛ قد لا يناسب الشبكات غير المستقرة.", "الأداء والبيانات", defaultEnabled = false),
         OptionalFeature(STORAGE_WARNING, "تنبيه مساحة التخزين", "نبّهك عندما تقل المساحة المتاحة عن حد آمن.", "الأداء والبيانات", defaultEnabled = false),
         OptionalFeature(REMOTE_TEST, "اختبار الريموت", "اعرض آخر زر يصل إلى التطبيق للتحقق من الريموت.", "التشغيل", defaultEnabled = false),
         OptionalFeature(REMOTE_GUIDE, "دليل اختصارات الريموت", "اعرض ملخص اختصارات التنقل والتشغيل داخل التطبيق.", "التشغيل", defaultEnabled = false),
