@@ -122,6 +122,7 @@ object TvProvisioningClient {
             tvId = device.optString("tvId", fallbackTvId),
             deviceStatus = device.optString("status", "unknown"),
             remoteLogoutRequested = device.optBoolean("remoteLogoutRequested", false),
+            updateChannel = device.optString("updateChannel", "stable"),
             remoteConfig = parseRemoteConfig(data.optJSONObject("remoteConfig")),
             featureFlags = parseFeatureFlags(data.optJSONObject("featureFlags"))
         )
@@ -131,12 +132,14 @@ object TvProvisioningClient {
         tvId: String,
         deviceStatus: String,
         remoteLogoutRequested: Boolean,
+        updateChannel: String = "stable",
         remoteConfig: Map<String, RemoteConfigValue>,
         featureFlags: Map<String, RemoteFeatureFlag>
     ): DeviceControlPlaneSnapshot = DeviceControlPlaneSnapshot(
         tvId = tvId,
         deviceStatus = deviceStatus,
         remoteLogoutRequested = remoteLogoutRequested,
+        updateChannel = updateChannel,
         remoteConfig = remoteConfig,
         featureFlags = featureFlags
     )
