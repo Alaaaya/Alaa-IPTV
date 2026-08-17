@@ -177,7 +177,7 @@ class MediaRepository(
         val source = if (isM3U()) {
             "m3u:${prefs.serverUrl.trim()}"
         } else {
-            "xtream:${normalizeHost(prefs.serverUrl)}:${prefs.username}"
+            "xtream:${normalizeHost(prefs.serverUrl)}:${prefs.username}:${prefs.password}"
         }
         return MessageDigest.getInstance("SHA-256")
             .digest(source.toByteArray(StandardCharsets.UTF_8))
