@@ -44,6 +44,26 @@ class MediaRepositoryDirectPagingTest {
     }
 
     @Test
+    fun `Xtream repository filters items that do not match the selected category`() = runBlocking {
+        val repository = MediaRepository(
+            prefs = session(useM3U = false),
+            context = mock(Context::class.java),
+            responseOverride = { xtreamMixedCategoryResponse() }
+        )
+
+        try {
+            val page = repository.getLiveContentPage(categoryId = "sports", page = 0).getOrThrow()
+
+            assertEquals(2, page.totalCount)
+            assertEquals(listOf("Sports 1", "Sports 2"), page.items.map { it.name })
+            assertTrue(page.items.all { it.categoryId == "sports" })
+            assertFalse(page.hasMore)
+        } finally {
+            repository.clearCache()
+        }
+    }
+
+    @Test
     fun `M3U repository keeps the full category cache across pages`() = runBlocking {
         val playlist = File.createTempFile("alaa-m3u-page", ".m3u").apply {
             writeText(m3uPlaylist(205, "Arabic"))
@@ -64,6 +84,39 @@ class MediaRepositoryDirectPagingTest {
             assertEquals(5, finalPage.items.size)
             assertEquals(205, finalPage.totalCount)
             assertFalse(finalPage.hasMore)
+        } finally {
+            repository.clearCache()
+        }
+    }
+
+    @Test
+    fun `M3U repository ignores orphan metadata without a playable stream URL`() = runBlocking {
+        val playlist = File.createTempFile("alaa-m3u-orphan", ".m3u").apply {
+            writeText(
+                """
+                #EXTM3U
+                #EXTINF:-1 tvg-id="first" group-title="Arabic",First channel
+                https://stream.example/first.m3u8
+                #EXTINF:-1 tvg-id="orphan" group-title="Arabic",Orphan metadata
+                #EXTINF:-1 tvg-id="second" group-title="News",Second channel
+                https://stream.example/second.m3u8
+                """.trimIndent()
+            )
+            deleteOnExit()
+        }
+        val repository = MediaRepository(
+            prefs = session(useM3U = true, serverUrl = playlist.toURI().toString()),
+            context = mock(Context::class.java)
+        )
+
+        try {
+            val firstPage = repository.getLiveContentPage(categoryId = null).getOrThrow()
+            val categories = repository.getLiveCategories().getOrThrow()
+
+            assertEquals(2, firstPage.totalCount)
+            assertEquals(listOf("First channel", "Second channel"), firstPage.items.map { it.name })
+            assertEquals(2, categories.sumOf { it.channelCount })
+            assertFalse(categories.any { it.categoryName == "Orphan metadata" })
         } finally {
             repository.clearCache()
         }
@@ -91,7 +144,7 @@ class MediaRepositoryDirectPagingTest {
         assumeTrue("يتطلب هذا الاختبار ملف M3U مؤقتاً يمرر من بيئة الاختبار", !path.isNullOrBlank())
         val playlist = File(path!!)
         assumeTrue("ملف M3U المؤقت غير متاح", playlist.isFile)
-        val expectedEntries = playlist.useLines { lines -> lines.count { it.startsWith("#EXTINF") } }
+        val expectedEntries = playlist.useLines { lines -> lines.count(::isPlayableM3UStreamLine) }
 
         val repository = MediaRepository(
             prefs = session(useM3U = true, serverUrl = playlist.toURI().toString()),
@@ -140,11 +193,26 @@ class MediaRepositoryDirectPagingTest {
         append(']')
     }
 
+    private fun xtreamMixedCategoryResponse(): String = """
+        [
+          {"stream_id":"1","name":"Sports 1","category_id":"sports"},
+          {"stream_id":"2","name":"News 1","category_id":"news"},
+          {"stream_id":"3","name":"Sports 2","category_id":"sports"}
+        ]
+    """.trimIndent()
+
     private fun m3uPlaylist(size: Int, group: String): String = buildString {
         appendLine("#EXTM3U")
         repeat(size) { index ->
             appendLine("#EXTINF:-1 tvg-id=\"channel-${index + 1}\" group-title=\"$group\",Channel ${index + 1}")
             appendLine("https://stream.example/${index + 1}.m3u8")
         }
+    }
+
+    private fun isPlayableM3UStreamLine(line: String): Boolean {
+        val normalized = line.trim()
+        return normalized.startsWith("http://", ignoreCase = true) ||
+            normalized.startsWith("https://", ignoreCase = true) ||
+            normalized.startsWith("rtmp", ignoreCase = true)
     }
 }
