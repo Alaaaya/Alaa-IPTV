@@ -7,6 +7,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.`when`
@@ -79,6 +80,40 @@ class MediaRepositoryDirectPagingTest {
             val error = repository.getMovieContentPage(categoryId = null).exceptionOrNull()
             assertNotNull(error)
             assertTrue(error?.message.orEmpty().contains("M3U"))
+        } finally {
+            repository.clearCache()
+        }
+    }
+
+    @Test
+    fun `open M3U fixture keeps category count and pagination stable`() = runBlocking {
+        val path = System.getProperty("alaa.openM3uPath")
+        assumeTrue("يتطلب هذا الاختبار ملف M3U مؤقتاً يمرر من بيئة الاختبار", !path.isNullOrBlank())
+        val playlist = File(path!!)
+        assumeTrue("ملف M3U المؤقت غير متاح", playlist.isFile)
+        val expectedEntries = playlist.useLines { lines -> lines.count { it.startsWith("#EXTINF") } }
+
+        val repository = MediaRepository(
+            prefs = session(useM3U = true, serverUrl = playlist.toURI().toString()),
+            context = mock(Context::class.java)
+        )
+
+        try {
+            val firstPage = repository.getLiveContentPage(categoryId = null, page = 0).getOrThrow()
+            val nextPage = repository.getLiveContentPage(categoryId = null, page = 1).getOrThrow()
+            val categories = repository.getLiveCategories().getOrThrow()
+            val populatedCategory = categories.maxBy { it.channelCount }
+            val categoryPage = repository.getLiveContentPage(populatedCategory.categoryId, page = 0).getOrThrow()
+
+            assertEquals(expectedEntries, firstPage.totalCount)
+            assertEquals(minOf(100, expectedEntries), firstPage.items.size)
+            assertEquals(firstPage.totalCount, nextPage.totalCount)
+            assertEquals(minOf(100, (expectedEntries - 100).coerceAtLeast(0)), nextPage.items.size)
+            assertTrue(categories.isNotEmpty())
+            assertEquals(expectedEntries, categories.sumOf { it.channelCount })
+            assertEquals(expectedEntries > firstPage.items.size, firstPage.hasMore)
+            assertEquals(populatedCategory.channelCount, categoryPage.totalCount)
+            assertEquals(minOf(100, populatedCategory.channelCount), categoryPage.items.size)
         } finally {
             repository.clearCache()
         }
