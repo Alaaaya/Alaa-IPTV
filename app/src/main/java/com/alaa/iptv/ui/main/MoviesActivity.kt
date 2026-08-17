@@ -37,6 +37,7 @@ class MoviesActivity : AppCompatActivity() {
     private var currentMoviePage = 0
     private var hasMoreMoviePages = false
     private var isLoadingMovies = false
+    private var selectedMovieTotal = 0
     private lateinit var movieCategoryAdapter: LiveCategoryAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -125,6 +126,7 @@ class MoviesActivity : AppCompatActivity() {
     private fun selectCategory(category: Category) {
         prefs.lastMovieCategoryId = category.categoryId
         binding.moviesTitle.text = "الأفلام / ${category.categoryName}"
+        binding.moviesCount.text = "جارٍ تحميل عدد الأفلام…"
         movieCategoryAdapter.submit(categories, category.categoryId)
         currentMoviePage = 0
         hasMoreMoviePages = false
@@ -135,17 +137,16 @@ class MoviesActivity : AppCompatActivity() {
         if (isLoadingMovies) return
         isLoadingMovies = true
         lifecycleScope.launch {
-            runCatching { repository.getMovies(categoryId, page) }
+            runCatching { repository.getMovieContentPage(categoryId, page) }
                 .onSuccess { result ->
-                    result.onSuccess { loadedMovies ->
+                    result.onSuccess { contentPage ->
+                        val loadedMovies = contentPage.items
                         movies = if (append) movies + loadedMovies else loadedMovies
                         currentMoviePage = page
-                        hasMoreMoviePages = loadedMovies.size >= 120
-                        binding.moviesCount.text = if (hasMoreMoviePages) {
-                            "${movies.size} فيلم • تابع للأسفل لتحميل المزيد"
-                        } else {
-                            "${movies.size} فيلم"
-                        }
+                        selectedMovieTotal = contentPage.totalCount
+                        hasMoreMoviePages = contentPage.hasMore
+                        updateMovieCategoryCount(categoryId, selectedMovieTotal)
+                        binding.moviesCount.text = movieCountText()
                         binding.moviesRecyclerView.adapter = MovieAdapter(
                             movies,
                             prefs.displayTheme,
@@ -271,7 +272,7 @@ class MoviesActivity : AppCompatActivity() {
                     isPosterDataSaver = usePosterDataSaver(),
                     gridSpan = posterGridSpan()
                 )
-                binding.moviesCount.text = "${filtered.size} فيلم"
+                binding.moviesCount.text = "${filtered.size} نتيجة من أصل ${movies.size} فيلم محمّل • ${movieCountText()}"
             }
             .show()
     }
@@ -279,7 +280,26 @@ class MoviesActivity : AppCompatActivity() {
     private fun showPreview(movie: Movie) {
         if (!prefs.isFeatureEnabled(FeatureCatalog.FOCUS_PREVIEW)) return
         val meta = listOfNotNull(movie.year?.takeIf { it.isNotBlank() }, movie.rating?.takeIf { it.isNotBlank() }?.let { "★ $it" })
-        binding.moviesCount.text = listOf(movie.name, meta.joinToString(" • ")).filter { it.isNotBlank() }.joinToString(" — ")
+        binding.moviesCount.text = listOf(movie.name, meta.joinToString(" • "), movieCountText())
+            .filter { it.isNotBlank() }
+            .joinToString(" — ")
+    }
+
+    private fun updateMovieCategoryCount(categoryId: String, totalCount: Int) {
+        categories = categories.map { category ->
+            if (category.categoryId == categoryId) category.copy(channelCount = totalCount) else category
+        }
+        movieCategoryAdapter.submit(categories, categoryId)
+    }
+
+    private fun movieCountText(): String {
+        val visible = movies.size
+        val base = if (selectedMovieTotal > 0) {
+            "$visible من أصل $selectedMovieTotal فيلم"
+        } else {
+            "$visible فيلم"
+        }
+        return if (hasMoreMoviePages) "$base • تابع للأسفل لتحميل المزيد" else base
     }
 
     private fun openMain(mode: String) {

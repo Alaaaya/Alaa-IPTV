@@ -76,6 +76,7 @@ class SeriesDetailsActivity : AppCompatActivity() {
                         if (episodes.isEmpty()) {
                             showError(getString(R.string.no_episodes))
                         } else {
+                            binding.episodesTitle.text = "الحلقات (${episodes.size})"
                             binding.errorText.visibility = View.GONE
                             PlayerEpisodeNavigator.setEpisodes(episodes.map { episode ->
                                 PlayableEpisode(

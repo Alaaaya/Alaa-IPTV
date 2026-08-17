@@ -36,6 +36,7 @@ class SeriesActivity : AppCompatActivity() {
     private var currentSeriesPage = 0
     private var hasMoreSeriesPages = false
     private var isLoadingSeries = false
+    private var selectedSeriesTotal = 0
     private lateinit var seriesCategoryAdapter: LiveCategoryAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -124,6 +125,7 @@ class SeriesActivity : AppCompatActivity() {
     private fun selectCategory(category: Category) {
         prefs.lastSeriesCategoryId = category.categoryId
         binding.seriesTitle.text = "المسلسلات / ${category.categoryName}"
+        binding.seriesCount.text = "جارٍ تحميل عدد المسلسلات…"
         seriesCategoryAdapter.submit(categories, category.categoryId)
         currentSeriesPage = 0
         hasMoreSeriesPages = false
@@ -135,17 +137,16 @@ class SeriesActivity : AppCompatActivity() {
         isLoadingSeries = true
         lifecycleScope.launch {
             try {
-                val result = repository.getSeries(categoryId, page)
+                val result = repository.getSeriesContentPage(categoryId, page)
                 if (result.isSuccess) {
-                    val loadedSeries = result.getOrDefault(emptyList())
+                    val contentPage = result.getOrThrow()
+                    val loadedSeries = contentPage.items
                     seriesList = if (append) seriesList + loadedSeries else loadedSeries
                     currentSeriesPage = page
-                    hasMoreSeriesPages = loadedSeries.size >= 120
-                    binding.seriesCount.text = if (hasMoreSeriesPages) {
-                        "${seriesList.size} مسلسل • تابع للأسفل لتحميل المزيد"
-                    } else {
-                        "${seriesList.size} مسلسل"
-                    }
+                    selectedSeriesTotal = contentPage.totalCount
+                    hasMoreSeriesPages = contentPage.hasMore
+                    updateSeriesCategoryCount(categoryId, selectedSeriesTotal)
+                    binding.seriesCount.text = seriesCountText()
                     binding.seriesRecyclerView.adapter = SeriesAdapter(
                         seriesList,
                         prefs.displayTheme,
@@ -263,7 +264,7 @@ class SeriesActivity : AppCompatActivity() {
                     isPosterDataSaver = usePosterDataSaver(),
                     gridSpan = posterGridSpan()
                 )
-                binding.seriesCount.text = "${filtered.size} مسلسل"
+                binding.seriesCount.text = "${filtered.size} نتيجة من أصل ${seriesList.size} مسلسل محمّل • ${seriesCountText()}"
             }
             .show()
     }
@@ -271,7 +272,26 @@ class SeriesActivity : AppCompatActivity() {
     private fun showPreview(series: Series) {
         if (!prefs.isFeatureEnabled(FeatureCatalog.FOCUS_PREVIEW)) return
         val meta = listOfNotNull(series.genre?.takeIf { it.isNotBlank() }, series.rating?.takeIf { it.isNotBlank() }?.let { "★ $it" })
-        binding.seriesCount.text = listOf(series.name, meta.joinToString(" • ")).filter { it.isNotBlank() }.joinToString(" — ")
+        binding.seriesCount.text = listOf(series.name, meta.joinToString(" • "), seriesCountText())
+            .filter { it.isNotBlank() }
+            .joinToString(" — ")
+    }
+
+    private fun updateSeriesCategoryCount(categoryId: String, totalCount: Int) {
+        categories = categories.map { category ->
+            if (category.categoryId == categoryId) category.copy(channelCount = totalCount) else category
+        }
+        seriesCategoryAdapter.submit(categories, categoryId)
+    }
+
+    private fun seriesCountText(): String {
+        val visible = seriesList.size
+        val base = if (selectedSeriesTotal > 0) {
+            "$visible من أصل $selectedSeriesTotal مسلسل"
+        } else {
+            "$visible مسلسل"
+        }
+        return if (hasMoreSeriesPages) "$base • تابع للأسفل لتحميل المزيد" else base
     }
 
     private fun openMain(mode: String) {
