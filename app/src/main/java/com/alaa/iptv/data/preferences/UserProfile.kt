@@ -13,5 +13,11 @@ data class IptvSubscription(
     val serverUrl: String,
     val username: String,
     val password: String,
-    val m3uUrl: String = ""
+    val m3uUrl: String = "",
+    val isFavorite: Boolean = false,
+    val isDefault: Boolean = false,
+    val color: String = "#22D3EE",
+    val expiresAtMs: Long = 0L,
+    val status: String = "active",
+    val notes: String = ""
 )
