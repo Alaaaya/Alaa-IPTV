@@ -20,6 +20,9 @@ class AppPreferences(context: Context) {
 
     init {
         migrateCredentialsIfNeeded()
+        if (isLoggedIn) {
+            activateDefaultSubscriptionIfAvailable()
+        }
     }
     
     companion object {
@@ -515,6 +518,16 @@ class AppPreferences(context: Context) {
         if (subscriptions.none { it.id == subscriptionId }) return false
         subscriptions.forEach { saveSubscription(it.copy(isDefault = it.id == subscriptionId)) }
         return true
+    }
+
+    /** يعيد تطبيق الحساب الافتراضي عند بدء التطبيق، مع تجاهل الحساب الموقوف أو المنتهي. */
+    fun activateDefaultSubscriptionIfAvailable(): Boolean {
+        val defaultSubscription = getSubscriptions().firstOrNull { subscription ->
+            subscription.isDefault &&
+                subscription.status == "active" &&
+                (subscription.expiresAtMs <= 0L || subscription.expiresAtMs > System.currentTimeMillis())
+        } ?: return false
+        return activateSubscription(defaultSubscription.id)
     }
 
     fun saveCurrentSubscription(title: String): IptvSubscription {
