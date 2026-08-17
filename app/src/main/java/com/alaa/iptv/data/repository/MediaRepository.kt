@@ -272,10 +272,20 @@ class MediaRepository(
                 val array = JsonParser().parse(body).asJsonArray
                 val base = normalizeHost(prefs.serverUrl)
 
+                // بعض مزودي Xtream قد يعيدون عناصر من فئات أخرى رغم تمرير category_id.
+                // نتحقق من الاستجابة نفسها كي لا تظهر قناة في عمود فئة غير فئتها المختارة.
+                val scopedObjects = buildList {
+                    for (i in 0 until array.size()) {
+                        val obj = array.get(i).takeIf { element -> element.isJsonObject }?.asJsonObject ?: continue
+                        if (effectiveCategory == null || obj.stringValue("category_id") == effectiveCategory) {
+                            add(obj)
+                        }
+                    }
+                }
                 val channels = mutableListOf<Channel>()
-                val bounds = ContentPagingPolicy.bounds(array.size(), pageIndex, LIVE_PAGE_SIZE)
+                val bounds = ContentPagingPolicy.bounds(scopedObjects.size, pageIndex, LIVE_PAGE_SIZE)
                 for (i in bounds.startIndex until bounds.endIndex) {
-                    val obj = array.get(i).takeIf { element -> element.isJsonObject }?.asJsonObject ?: continue
+                    val obj = scopedObjects[i]
                     val id = obj.stringValue("stream_id")
                     if (id.isBlank()) continue
                     val providerSource = obj.stringValue("direct_source")
@@ -309,10 +319,10 @@ class MediaRepository(
                     )
                 }
 
-                // حفظ في الكاش مع إجمالي الفئة الذي أعاده المصدر في الاستجابة نفسها.
+                // حفظ في الكاش مع إجمالي الفئة بعد التحقق الدفاعي من استجابة المصدر.
                 val contentPage = PagedContent(
                     items = channels,
-                    totalCount = array.size(),
+                    totalCount = scopedObjects.size,
                     hasMore = bounds.hasMore
                 )
                 putBoundedCache(cachedChannelPages, pageCacheKey, contentPage, MAX_LIVE_PAGE_CACHES)
