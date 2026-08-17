@@ -227,7 +227,7 @@ class MoviesActivity : AppCompatActivity() {
             return true
         }
         if (keyCode == KeyEvent.KEYCODE_MENU && prefs.isFeatureEnabled(FeatureCatalog.LIBRARY_FILTERS)) {
-            showGenreFilter()
+            showLibraryFilterMenu()
             return true
         }
         return super.onKeyDown(keyCode, event)
@@ -255,6 +255,22 @@ class MoviesActivity : AppCompatActivity() {
         return position != RecyclerView.NO_POSITION && position % posterGridSpan() == 0
     }
 
+    private fun showLibraryFilterMenu() {
+        val options = arrayOf("النوع", "السنة", "الجودة", "التقييم", "إلغاء الفلتر")
+        AlertDialog.Builder(this)
+            .setTitle("فلترة الأفلام المحملة")
+            .setItems(options) { _, index ->
+                when (index) {
+                    0 -> showGenreFilter()
+                    1 -> showYearFilter()
+                    2 -> showQualityFilter()
+                    3 -> showRatingFilter()
+                    else -> renderFilteredMovies(movies)
+                }
+            }
+            .show()
+    }
+
     private fun showGenreFilter() {
         val genres = movies.flatMap { it.genre.orEmpty().split(",") }
             .map { it.trim() }.filter { it.isNotBlank() }.distinct().sorted()
@@ -262,19 +278,52 @@ class MoviesActivity : AppCompatActivity() {
         AlertDialog.Builder(this)
             .setTitle("فلترة الأفلام")
             .setItems(options.toTypedArray()) { _, index ->
-                val filtered = if (index == 0) movies else movies.filter { it.genre.orEmpty().contains(options[index], true) }
-                binding.moviesRecyclerView.adapter = MovieAdapter(
-                    filtered,
-                    prefs.displayTheme,
-                    ::playMovie,
-                    ::showMovieDetails,
-                    ::showPreview,
-                    isPosterDataSaver = usePosterDataSaver(),
-                    gridSpan = posterGridSpan()
-                )
-                binding.moviesCount.text = "${filtered.size} نتيجة من أصل ${movies.size} فيلم محمّل • ${movieCountText()}"
+                renderFilteredMovies(if (index == 0) movies else movies.filter { it.genre.orEmpty().contains(options[index], true) })
             }
             .show()
+    }
+
+    private fun showYearFilter() {
+        val years = movies.mapNotNull { (it.year ?: it.releaseDate)?.take(4)?.takeIf(String::isNotBlank) }.distinct().sortedDescending()
+        val options = listOf("الكل") + years
+        AlertDialog.Builder(this).setTitle("فلترة حسب السنة").setItems(options.toTypedArray()) { _, index ->
+            renderFilteredMovies(if (index == 0) movies else movies.filter { (it.year ?: it.releaseDate).orEmpty().startsWith(options[index]) })
+        }.show()
+    }
+
+    private fun showQualityFilter() {
+        val options = listOf("الكل", "4K / UHD", "FHD", "HD", "SD أو غير محددة")
+        AlertDialog.Builder(this).setTitle("فلترة حسب الجودة").setItems(options.toTypedArray()) { _, index ->
+            renderFilteredMovies(if (index == 0) movies else movies.filter { movieQuality(it) == options[index] })
+        }.show()
+    }
+
+    private fun showRatingFilter() {
+        val options = listOf("الكل", "8+", "7+", "6+")
+        AlertDialog.Builder(this).setTitle("فلترة حسب التقييم").setItems(options.toTypedArray()) { _, index ->
+            val threshold = options.getOrNull(index)?.removeSuffix("+")?.toDoubleOrNull()
+            renderFilteredMovies(if (threshold == null) movies else movies.filter { it.rating?.toDoubleOrNull()?.let { rating -> rating >= threshold } == true })
+        }.show()
+    }
+
+    private fun movieQuality(movie: Movie): String = when {
+        movie.name.contains("4k", true) || movie.name.contains("uhd", true) -> "4K / UHD"
+        movie.name.contains("fhd", true) || movie.name.contains("1080", true) -> "FHD"
+        movie.name.contains("hd", true) || movie.name.contains("720", true) -> "HD"
+        else -> "SD أو غير محددة"
+    }
+
+    private fun renderFilteredMovies(filtered: List<Movie>) {
+        binding.moviesRecyclerView.adapter = MovieAdapter(
+            filtered,
+            prefs.displayTheme,
+            ::playMovie,
+            ::showMovieDetails,
+            ::showPreview,
+            isPosterDataSaver = usePosterDataSaver(),
+            gridSpan = posterGridSpan()
+        )
+        binding.moviesCount.text = "${filtered.size} نتيجة من أصل ${movies.size} فيلم محمّل • ${movieCountText()}"
     }
 
     private fun showPreview(movie: Movie) {

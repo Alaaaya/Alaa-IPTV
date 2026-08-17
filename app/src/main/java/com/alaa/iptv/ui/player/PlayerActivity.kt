@@ -1,10 +1,12 @@
 package com.alaa.iptv.ui.player
 
+import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.os.SystemClock
 import android.annotation.SuppressLint
 import android.util.Log
+import android.util.TypedValue
 import android.view.KeyEvent
 import android.view.View
 import android.widget.Toast
@@ -25,6 +27,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
+import androidx.media3.ui.CaptionStyleCompat
 import com.alaa.iptv.R
 import com.alaa.iptv.data.models.LiveUrlFallbackPolicy
 import com.alaa.iptv.data.preferences.AppPreferences
@@ -160,6 +163,12 @@ class PlayerActivity : AppCompatActivity() {
                     .setLoadControl(fastLiveLoadControl)
                     .build()
                 binding.playerView.player = player
+                if (prefs.isFeatureEnabled(FeatureCatalog.PLAYER_SUBTITLE_STYLE)) {
+                    binding.playerView.subtitleView?.apply {
+                        setStyle(CaptionStyleCompat(Color.WHITE, Color.BLACK, Color.TRANSPARENT, CaptionStyleCompat.EDGE_TYPE_OUTLINE, Color.BLACK, null))
+                        setFixedTextSize(TypedValue.COMPLEX_UNIT_SP, 22f)
+                    }
+                }
             }
 
             val uri = Uri.parse(url)
@@ -237,10 +246,10 @@ class PlayerActivity : AppCompatActivity() {
                 Player.STATE_ENDED -> {
                     Log.d(TAG, "🏁 STATE_ENDED")
                     showLoading(false)
-                    if (streamType.equals("series", ignoreCase = true) &&
-                        prefs.isFeatureEnabled(FeatureCatalog.AUTO_NEXT_EPISODE) &&
-                        promptNextEpisode()
-                    ) return
+                    if (streamType.equals("series", ignoreCase = true)) {
+                        if (prefs.isFeatureEnabled(FeatureCatalog.PLAYER_AUTO_PLAY) && playNextEpisodeAutomatically()) return
+                        if (prefs.isFeatureEnabled(FeatureCatalog.AUTO_NEXT_EPISODE) && promptNextEpisode()) return
+                    }
                     val message = if (streamType.equals("live", ignoreCase = true)) {
                         "انتهى البث مؤقتاً، جرّب قناة أخرى"
                     } else {
@@ -429,6 +438,12 @@ class PlayerActivity : AppCompatActivity() {
             .setPositiveButton("تشغيل") { _, _ -> switchEpisode(next) }
             .setNegativeButton("إلغاء", null)
             .show()
+        return true
+    }
+
+    private fun playNextEpisodeAutomatically(): Boolean {
+        val next = PlayerEpisodeNavigator.episodeAt(episodeIndex + 1) ?: return false
+        switchEpisode(next)
         return true
     }
 
