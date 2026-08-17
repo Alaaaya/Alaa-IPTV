@@ -39,6 +39,8 @@ object FeatureCatalog {
     const val PLAYER_AUDIO_TRACKS = "player_audio_tracks"
     const val PLAYER_SUBTITLES = "player_subtitles"
     const val PLAYER_BACKGROUND_AUDIO = "player_background_audio"
+    const val PLAYER_SUBTITLE_STYLE = "player_subtitle_style"
+    const val PLAYER_AUTO_PLAY = "player_auto_play"
     const val QUICK_START = "quick_start"
     const val START_SCREEN = "start_screen"
     const val CONTENT_RELOAD = "content_reload"
@@ -92,6 +94,8 @@ object FeatureCatalog {
         OptionalFeature(PLAYER_AUDIO_TRACKS, "اختيار مسار الصوت", "أظهر مسارات اللغة أو الدبلجة المتاحة في الفيديو عند توفيرها من المصدر.", "التشغيل", defaultEnabled = false),
         OptionalFeature(PLAYER_SUBTITLES, "اختيار الترجمة", "أظهر الترجمات المتاحة والسماح بإيقافها أثناء تشغيل الفيديو.", "التشغيل", defaultEnabled = false),
         OptionalFeature(PLAYER_BACKGROUND_AUDIO, "الصوت في الخلفية", "استمر في تشغيل الصوت عند انتقال التطبيق إلى الخلفية مؤقتاً؛ يتوقف عند إغلاق المشغل.", "التشغيل", defaultEnabled = false),
+        OptionalFeature(PLAYER_SUBTITLE_STYLE, "نمط ترجمة عالي التباين", "استخدم ترجمة أكبر بتباين واضح لتحسين القراءة عند تفعيلها.", "التشغيل", defaultEnabled = false),
+        OptionalFeature(PLAYER_AUTO_PLAY, "تشغيل تلقائي للحلقة التالية", "شغّل الحلقة التالية من المسلسل مباشرة عند نهاية الحلقة الحالية.", "التشغيل", defaultEnabled = false),
         OptionalFeature(AUTO_NEXT_EPISODE, "الحلقة التالية تلقائياً", "اعرض عدّاداً وشغّل الحلقة التالية عند انتهاء الحالية.", "التشغيل"),
         OptionalFeature(SKIP_CONTROLS, "أزرار التخطي", "التقديم أو الإرجاع 10 و30 ثانية داخل الفيديو.", "التشغيل"),
         OptionalFeature(QUALITY_SELECTION, "اختيار جودة البث", "اسمح باختيار الجودة عندما يوفرها الاشتراك.", "التشغيل"),
