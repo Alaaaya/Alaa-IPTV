@@ -35,8 +35,10 @@ object FeatureCatalog {
     const val LIVE_FAVORITES = "live_favorites"
     const val LIVE_CHANNEL_MOVE = "live_channel_move"
     const val LIVE_NUMBER_JUMP = "live_number_jump"
+    const val LIVE_AUDIO_ONLY = "live_audio_only"
     const val PLAYER_AUDIO_TRACKS = "player_audio_tracks"
     const val PLAYER_SUBTITLES = "player_subtitles"
+    const val PLAYER_BACKGROUND_AUDIO = "player_background_audio"
     const val QUICK_START = "quick_start"
     const val START_SCREEN = "start_screen"
     const val CONTENT_RELOAD = "content_reload"
@@ -86,8 +88,10 @@ object FeatureCatalog {
         OptionalFeature(LIVE_FAVORITES, "قنوات مفضلة", "اسمح بإضافة القنوات إلى قائمة المفضلة المحلية.", "القنوات المباشرة", defaultEnabled = false),
         OptionalFeature(LIVE_CHANNEL_MOVE, "نقل القنوات", "اسمح بإعادة ترتيب القنوات محلياً من خيارات القناة.", "القنوات المباشرة", defaultEnabled = false),
         OptionalFeature(LIVE_NUMBER_JUMP, "الانتقال برقم القناة", "اسمح بإدخال رقم قناة من الريموت للانتقال إليها داخل الفئة المحملة.", "القنوات المباشرة", defaultEnabled = false),
+        OptionalFeature(LIVE_AUDIO_ONLY, "بث صوت فقط", "عطّل مسار الفيديو للبث المباشر واستخدم الصوت فقط عند توفره لتقليل الاستهلاك.", "القنوات المباشرة", defaultEnabled = false),
         OptionalFeature(PLAYER_AUDIO_TRACKS, "اختيار مسار الصوت", "أظهر مسارات اللغة أو الدبلجة المتاحة في الفيديو عند توفيرها من المصدر.", "التشغيل", defaultEnabled = false),
         OptionalFeature(PLAYER_SUBTITLES, "اختيار الترجمة", "أظهر الترجمات المتاحة والسماح بإيقافها أثناء تشغيل الفيديو.", "التشغيل", defaultEnabled = false),
+        OptionalFeature(PLAYER_BACKGROUND_AUDIO, "الصوت في الخلفية", "استمر في تشغيل الصوت عند انتقال التطبيق إلى الخلفية مؤقتاً؛ يتوقف عند إغلاق المشغل.", "التشغيل", defaultEnabled = false),
         OptionalFeature(AUTO_NEXT_EPISODE, "الحلقة التالية تلقائياً", "اعرض عدّاداً وشغّل الحلقة التالية عند انتهاء الحالية.", "التشغيل"),
         OptionalFeature(SKIP_CONTROLS, "أزرار التخطي", "التقديم أو الإرجاع 10 و30 ثانية داخل الفيديو.", "التشغيل"),
         OptionalFeature(QUALITY_SELECTION, "اختيار جودة البث", "اسمح باختيار الجودة عندما يوفرها الاشتراك.", "التشغيل"),

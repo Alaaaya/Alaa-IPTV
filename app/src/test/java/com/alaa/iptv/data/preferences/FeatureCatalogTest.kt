@@ -8,7 +8,7 @@ import org.junit.Test
 class FeatureCatalogTest {
     @Test
     fun `contains every selected optional feature exactly once`() {
-        assertEquals(66, FeatureCatalog.options.size)
+        assertEquals(68, FeatureCatalog.options.size)
         assertEquals(FeatureCatalog.options.size, FeatureCatalog.options.map { it.id }.toSet().size)
         assertTrue(FeatureCatalog.options.any { it.id == FeatureCatalog.CONTENT_RELOAD })
         assertTrue(FeatureCatalog.options.any { it.id == FeatureCatalog.MANUAL_SYNC })
@@ -25,6 +25,8 @@ class FeatureCatalogTest {
         assertTrue(FeatureCatalog.options.any { it.id == FeatureCatalog.LIVE_NUMBER_JUMP })
         assertTrue(FeatureCatalog.options.any { it.id == FeatureCatalog.PLAYER_AUDIO_TRACKS })
         assertTrue(FeatureCatalog.options.any { it.id == FeatureCatalog.PLAYER_SUBTITLES })
+        assertTrue(FeatureCatalog.options.any { it.id == FeatureCatalog.PLAYER_BACKGROUND_AUDIO })
+        assertTrue(FeatureCatalog.options.any { it.id == FeatureCatalog.LIVE_AUDIO_ONLY })
     }
 
     @Test
@@ -44,6 +46,8 @@ class FeatureCatalogTest {
         assertFalse(FeatureCatalog.option(FeatureCatalog.LIVE_NUMBER_JUMP).defaultEnabled)
         assertFalse(FeatureCatalog.option(FeatureCatalog.PLAYER_AUDIO_TRACKS).defaultEnabled)
         assertFalse(FeatureCatalog.option(FeatureCatalog.PLAYER_SUBTITLES).defaultEnabled)
+        assertFalse(FeatureCatalog.option(FeatureCatalog.PLAYER_BACKGROUND_AUDIO).defaultEnabled)
+        assertFalse(FeatureCatalog.option(FeatureCatalog.LIVE_AUDIO_ONLY).defaultEnabled)
     }
 
     @Test

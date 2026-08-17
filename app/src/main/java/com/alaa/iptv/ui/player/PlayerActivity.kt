@@ -164,6 +164,15 @@ class PlayerActivity : AppCompatActivity() {
 
             val uri = Uri.parse(url)
             val mediaItem = MediaItem.fromUri(uri)
+            if (streamType.equals("live", ignoreCase = true) && prefs.isFeatureEnabled(FeatureCatalog.LIVE_AUDIO_ONLY)) {
+                trackSelector?.let { currentSelector ->
+                    currentSelector.parameters = currentSelector.buildUponParameters()
+                        .setTrackTypeDisabled(C.TRACK_TYPE_VIDEO, true)
+                        .build()
+                }
+                binding.playerView.visibility = View.INVISIBLE
+                binding.channelNameText.visibility = View.VISIBLE
+            }
 
             // Configure HTTP data source to allow cleartext and custom headers
             val httpDataSourceFactory = DefaultHttpDataSource.Factory()
@@ -520,8 +529,12 @@ class PlayerActivity : AppCompatActivity() {
 
     override fun onStop() {
         inactivityReminderJob?.cancel()
-        Log.d(TAG, "⏸️ onStop - Pausing player")
-        player?.pause()
+        if (prefs.isFeatureEnabled(FeatureCatalog.PLAYER_BACKGROUND_AUDIO)) {
+            Log.d(TAG, "🎧 onStop - Keeping audio active by user preference")
+        } else {
+            Log.d(TAG, "⏸️ onStop - Pausing player")
+            player?.pause()
+        }
         super.onStop()
     }
 
