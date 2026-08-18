@@ -432,16 +432,16 @@ object DisplayTheme {
     /** الفئات إما قائمة جانبية أو مصفوفة جانبية أو مسار أعلى مستقل. */
     fun liveCategorySpec(theme: String): LiveCategorySpec = when (theme) {
         AppPreferences.THEME_ALAA_NEON_IPTV -> LiveCategorySpec(LiveCategoryPlacement.SIDE_LIST, 0.27f, 1, 66, 15f, "", true)
-        AppPreferences.THEME_NEON_ARCADE -> LiveCategorySpec(LiveCategoryPlacement.TOP_RAIL, 0.34f, 1, 72, 15f, "◆ ", false)
+        AppPreferences.THEME_NEON_ARCADE -> LiveCategorySpec(LiveCategoryPlacement.TOP_RAIL, 0.34f, 1, 72, 15f, "", false)
         AppPreferences.THEME_CINEMA_SPOTLIGHT -> LiveCategorySpec(LiveCategoryPlacement.SIDE_LIST, 0.25f, 1, 72, 17f, "", true)
         AppPreferences.THEME_SAPPHIRE_HORIZON -> LiveCategorySpec(LiveCategoryPlacement.SIDE_GRID, 0.38f, 2, 70, 14f, "", true)
-        AppPreferences.THEME_EMERALD_PULSE -> LiveCategorySpec(LiveCategoryPlacement.SIDE_GRID, 0.36f, 2, 62, 13f, "● ", false)
+        AppPreferences.THEME_EMERALD_PULSE -> LiveCategorySpec(LiveCategoryPlacement.SIDE_GRID, 0.36f, 2, 62, 13f, "", false)
         AppPreferences.THEME_AMBER_CONSOLE -> LiveCategorySpec(LiveCategoryPlacement.TOP_RAIL, 0.22f, 1, 58, 12f, "[ ", false)
         AppPreferences.THEME_NORDIC_LIGHT -> LiveCategorySpec(LiveCategoryPlacement.SIDE_GRID, 0.32f, 2, 66, 14f, "", true)
-        AppPreferences.THEME_SUNSET_LOUNGE -> LiveCategorySpec(LiveCategoryPlacement.TOP_RAIL, 0.38f, 1, 74, 16f, "✦ ", false)
+        AppPreferences.THEME_SUNSET_LOUNGE -> LiveCategorySpec(LiveCategoryPlacement.TOP_RAIL, 0.38f, 1, 74, 16f, "", false)
         AppPreferences.THEME_MONO_STUDIO -> LiveCategorySpec(LiveCategoryPlacement.SIDE_LIST, 0.20f, 1, 48, 12f, "# ", true)
-        AppPreferences.THEME_OCEAN_WAVE -> LiveCategorySpec(LiveCategoryPlacement.SIDE_GRID, 0.40f, 2, 70, 14f, "≈ ", false)
-        AppPreferences.THEME_ROYAL_VELVET -> LiveCategorySpec(LiveCategoryPlacement.SIDE_LIST, 0.40f, 1, 78, 16f, "✦ ", true)
+        AppPreferences.THEME_OCEAN_WAVE -> LiveCategorySpec(LiveCategoryPlacement.SIDE_GRID, 0.40f, 2, 70, 14f, "", false)
+        AppPreferences.THEME_ROYAL_VELVET -> LiveCategorySpec(LiveCategoryPlacement.SIDE_LIST, 0.40f, 1, 78, 16f, "", true)
         else -> LiveCategorySpec(LiveCategoryPlacement.SIDE_LIST, 0.34f, 1, 52, 14f, "", true)
     }
 
