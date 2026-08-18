@@ -226,7 +226,9 @@ class PlayerActivity : AppCompatActivity() {
         } catch (e: Exception) {
             Log.e(TAG, "❌ Failed to initialize player", e)
             showLoading(false)
-            showError("فشل تهيئة المشغل: ${e.message}")
+            // قد تحتوي رسالة المكتبة على رابط البث الذي يتضمن بيانات اشتراك؛
+            // نحتفظ بالتفاصيل في السجل المحلي فقط ولا نعرضها على شاشة التلفاز.
+            showError("فشل تهيئة المشغل. اضغط هنا لإعادة المحاولة")
         }
     }
 
@@ -268,14 +270,7 @@ class PlayerActivity : AppCompatActivity() {
             Log.e(TAG, "❌ Player Error: ${error.errorCodeName}", error)
             showLoading(false)
             if (prefs.isFeatureEnabled(FeatureCatalog.AUTO_RECONNECT) && tryAlternativeLiveUrl()) return
-            val errorMsg = when (error.errorCode) {
-                PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED -> "فشل الاتصال بالشبكة"
-                PlaybackException.ERROR_CODE_IO_INVALID_HTTP_CONTENT_TYPE -> "نوع المحتوى غير مدعوم"
-                PlaybackException.ERROR_CODE_PARSING_CONTAINER_UNSUPPORTED -> "صيغة الملف غير مدعومة"
-                PlaybackException.ERROR_CODE_DECODER_INIT_FAILED -> "فشل تشغيل الفيديو (Decoder)"
-                PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS -> "خطأ في الخادم (HTTP ${error.message})"
-                else -> "خطأ في التشغيل: ${error.message}"
-            }
+            val errorMsg = PlayerErrorMessagePolicy.messageFor(error.errorCode)
             // لا تُغلق الشاشة عند خطأ البث؛ النص قابل للضغط لإعادة المحاولة.
             showError("$errorMsg\nاضغط هنا لإعادة المحاولة")
             Toast.makeText(this@PlayerActivity, errorMsg, Toast.LENGTH_LONG).show()

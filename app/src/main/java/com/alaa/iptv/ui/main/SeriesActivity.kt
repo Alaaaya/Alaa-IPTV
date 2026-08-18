@@ -45,7 +45,7 @@ class SeriesActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         prefs = AppPreferences(this)
-        repository = MediaRepository(prefs, this)
+        repository = MediaRepository(prefs, applicationContext)
         DisplayTheme.applySeries(binding, prefs)
         DisplayTheme.applyViewingPreferences(binding.root, prefs)
         binding.root.isSoundEffectsEnabled = prefs.isFeatureEnabled(FeatureCatalog.NAVIGATION_SOUNDS)

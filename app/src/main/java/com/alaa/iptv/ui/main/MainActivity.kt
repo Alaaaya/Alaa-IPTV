@@ -60,7 +60,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         prefs = AppPreferences(this)
-        repository = MediaRepository(prefs, this)
+        repository = MediaRepository(prefs, applicationContext)
         DisplayTheme.applyLive(binding, prefs)
         DisplayTheme.applyViewingPreferences(binding.root, prefs)
         binding.root.isSoundEffectsEnabled = prefs.isFeatureEnabled(FeatureCatalog.NAVIGATION_SOUNDS)
