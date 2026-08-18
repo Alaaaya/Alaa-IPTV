@@ -167,9 +167,20 @@ class DashboardActivity : AppCompatActivity() {
             layoutManager = LinearLayoutManager(this@DashboardActivity)
             this.adapter = adapter
         }
-        
-        binding.securityTitle.text = getString(R.string.security_title)
-        binding.securityDesc.text = getString(R.string.security_desc)
+
+        if (neonIptv) {
+            binding.sidebarFooterIcon.visibility = View.GONE
+            binding.securityTitle.textSize = 24f
+            binding.securityDesc.textSize = 11f
+            binding.securityTitle.text = "--:--"
+            binding.securityDesc.text = ""
+        } else {
+            binding.sidebarFooterIcon.visibility = View.VISIBLE
+            binding.securityTitle.textSize = 13f
+            binding.securityDesc.textSize = 10f
+            binding.securityTitle.text = getString(R.string.security_title)
+            binding.securityDesc.text = getString(R.string.security_desc)
+        }
     }
 
     private fun setupHeroBanner() {
@@ -307,10 +318,16 @@ class DashboardActivity : AppCompatActivity() {
         try {
             val now = Date()
             val timeFormat = SimpleDateFormat("hh:mm a", Locale("ar"))
-            binding.timeText.text = timeFormat.format(now)
+            val time = timeFormat.format(now)
+            binding.timeText.text = time
 
             val dateFormat = SimpleDateFormat("EEEE، dd MMMM yyyy", Locale("ar"))
-            binding.dateText.text = dateFormat.format(now)
+            val date = dateFormat.format(now)
+            binding.dateText.text = date
+            if (DisplayTheme.isNeonIptv(prefs.displayTheme)) {
+                binding.securityTitle.text = time
+                binding.securityDesc.text = date
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Error updating date/time", e)
         }

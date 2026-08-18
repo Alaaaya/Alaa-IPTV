@@ -28,6 +28,7 @@
             android:background="#AA07111F" />
 
         <LinearLayout
+            android:id="@+id/categoryContent"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:gravity="center"
