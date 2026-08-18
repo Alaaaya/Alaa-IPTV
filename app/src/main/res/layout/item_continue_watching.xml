@@ -75,6 +75,15 @@
                 android:progress="65"
                 android:progressDrawable="@drawable/bg_progress_red" />
         </LinearLayout>
+
+        <View
+            android:id="@+id/continueFocusOutline"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/bg_neon_card_focus"
+            android:clickable="false"
+            android:focusable="false"
+            android:visibility="gone" />
     </FrameLayout>
 
 </androidx.cardview.widget.CardView>

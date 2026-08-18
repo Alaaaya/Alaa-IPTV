@@ -134,6 +134,7 @@
                 android:layout_height="wrap_content">
 
                 <LinearLayout
+                    android:id="@+id/topSearchGroup"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentStart="true"
@@ -148,6 +149,7 @@
                         app:tint="@color/white" />
 
                     <TextView
+                        android:id="@+id/topSearchLabel"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
@@ -164,11 +166,24 @@
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
-                    <ImageView
+                    <FrameLayout
                         android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@drawable/ic_notification"
-                        app:tint="@color/white" />
+                        android:layout_height="24dp">
+
+                        <ImageView
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:src="@drawable/ic_notification"
+                            app:tint="@color/white" />
+
+                        <View
+                            android:id="@+id/notificationDot"
+                            android:layout_width="8dp"
+                            android:layout_height="8dp"
+                            android:layout_gravity="top|end"
+                            android:background="@drawable/bg_neon_notification_dot"
+                            android:visibility="gone" />
+                    </FrameLayout>
 
                     <ImageView
                         android:layout_width="24dp"
@@ -206,6 +221,7 @@
 
             <!-- Hero Banner -->
             <androidx.cardview.widget.CardView
+                android:id="@+id/heroCard"
                 android:layout_width="match_parent"
                 android:layout_height="230dp"
                 android:layout_marginTop="16dp"
@@ -288,6 +304,34 @@
                             android:textAllCaps="false"
                             android:textColor="@color/white"
                             android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/heroIndicators"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentBottom="true"
+                        android:layout_marginStart="50dp"
+                        android:layout_marginBottom="16dp"
+                        android:orientation="horizontal"
+                        android:visibility="gone">
+
+                        <View
+                            android:layout_width="18dp"
+                            android:layout_height="6dp"
+                            android:background="@drawable/bg_neon_indicator_active" />
+
+                        <View
+                            android:layout_width="6dp"
+                            android:layout_height="6dp"
+                            android:layout_marginStart="7dp"
+                            android:background="@drawable/bg_neon_indicator_inactive" />
+
+                        <View
+                            android:layout_width="6dp"
+                            android:layout_height="6dp"
+                            android:layout_marginStart="7dp"
+                            android:background="@drawable/bg_neon_indicator_inactive" />
                     </LinearLayout>
                 </RelativeLayout>
             </androidx.cardview.widget.CardView>
@@ -378,6 +422,7 @@
 
             <!-- Bottom Info Grid -->
             <GridLayout
+                android:id="@+id/bottomInfoGrid"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="40dp"

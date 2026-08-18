@@ -65,6 +65,9 @@ class CategoryCardAdapter(
             binding.categoryBackdrop.setImageResource(item.backgroundRes)
             binding.categoryBackdrop.alpha = DisplayTheme.categoryCardStyle(theme).backdropAlpha
             binding.categoryIcon.setImageResource(item.iconRes)
+            if (DisplayTheme.hasCustomTheme(theme)) {
+                binding.focusOutline.background = DisplayTheme.focusOutlineBackground(theme)
+            }
             val neonColor = Color.parseColor(item.colorHex)
             val style = DisplayTheme.categoryCardStyle(theme)
             binding.categoryIcon.setColorFilter(if (style.monochrome) Color.WHITE else neonColor)

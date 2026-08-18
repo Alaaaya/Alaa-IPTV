@@ -110,9 +110,10 @@ class DashboardActivity : AppCompatActivity() {
     }
 
     private fun setupSidebar() {
+        val neonIptv = DisplayTheme.isNeonIptv(prefs.displayTheme)
         val standardItems = listOf(
-            SidebarItem(getString(R.string.menu_home), R.drawable.ic_logo, true) { /* Home */ },
-            SidebarItem(getString(R.string.menu_live), R.drawable.ic_live_tv, false) { openMain(MainActivity.MODE_LIVE) },
+            SidebarItem(getString(R.string.menu_home), R.drawable.ic_logo, !neonIptv) { /* Home */ },
+            SidebarItem(getString(R.string.menu_live), R.drawable.ic_live_tv, neonIptv) { openMain(MainActivity.MODE_LIVE) },
             SidebarItem(getString(R.string.menu_movies), R.drawable.ic_movies, false) { openMain(MainActivity.MODE_MOVIES) },
             SidebarItem(getString(R.string.menu_series), R.drawable.ic_series, false) { openMain(MainActivity.MODE_SERIES) },
             SidebarItem(getString(R.string.menu_favorites), R.drawable.ic_favorite, false) { openMain(MainActivity.MODE_FAVORITES) },
@@ -143,8 +144,22 @@ class DashboardActivity : AppCompatActivity() {
                 )
             }
         } else standardItems
+        val navigationItems = if (neonIptv) {
+            val neonOrder = listOf(
+                getString(R.string.menu_live),
+                getString(R.string.menu_movies),
+                getString(R.string.menu_series),
+                getString(R.string.menu_favorites),
+                getString(R.string.menu_recent),
+                getString(R.string.menu_categories),
+                getString(R.string.menu_settings),
+                getString(R.string.menu_server)
+            )
+            items.filterNot { it.title == getString(R.string.menu_home) }
+                .sortedBy { neonOrder.indexOf(it.title).takeIf { index -> index >= 0 } ?: Int.MAX_VALUE }
+        } else items
 
-        val adapter = SidebarAdapter(items, prefs.displayTheme) { item ->
+        val adapter = SidebarAdapter(navigationItems, prefs.displayTheme) { item ->
             item.action.invoke()
         }
 
@@ -166,8 +181,13 @@ class DashboardActivity : AppCompatActivity() {
             openMain(MainActivity.MODE_LIVE)
         }
 
+        val fallbackHero = if (DisplayTheme.isNeonIptv(prefs.displayTheme)) {
+            R.drawable.alaa_neon_iptv_hero
+        } else {
+            R.drawable.bg_hero_sports
+        }
         Glide.with(this)
-            .load(R.drawable.bg_hero_sports)
+            .load(fallbackHero)
             .placeholder(R.drawable.bg_dark_pattern)
             .into(binding.heroImage)
     }
@@ -195,7 +215,9 @@ class DashboardActivity : AppCompatActivity() {
 
         if (prefs.isFeatureEnabled(FeatureCatalog.DATA_SAVER) || prefs.isFeatureEnabled(FeatureCatalog.LOW_BANDWIDTH_POSTERS)) {
             binding.heroPosterCard.visibility = View.GONE
-            binding.heroImage.setImageResource(R.drawable.bg_hero_sports)
+            binding.heroImage.setImageResource(
+                if (DisplayTheme.isNeonIptv(prefs.displayTheme)) R.drawable.alaa_neon_iptv_hero else R.drawable.bg_hero_sports
+            )
         } else {
             binding.heroPosterCard.visibility = View.VISIBLE
             Glide.with(this)
@@ -259,7 +281,7 @@ class DashboardActivity : AppCompatActivity() {
             layoutManager = LinearLayoutManager(this@DashboardActivity, LinearLayoutManager.HORIZONTAL, false)
             isNestedScrollingEnabled = false
             setHasFixedSize(true)
-            adapter = ContinueWatchingAdapter(items, ::playContent)
+            adapter = ContinueWatchingAdapter(items, prefs.displayTheme, ::playContent)
         }
     }
 

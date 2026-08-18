@@ -11,6 +11,7 @@ data class ThemeOption(
 object ThemeCatalog {
     val options = listOf(
         ThemeOption(AppPreferences.THEME_ALAA_CLASSIC, "Alaa Player Classic", "التصميم الأصلي الافتراضي"),
+        ThemeOption(AppPreferences.THEME_ALAA_NEON_IPTV, "Alaa Player – Neon IPTV", "واجهة IPTV سينمائية زجاجية بتوهج أحمر نيون"),
         ThemeOption(AppPreferences.THEME_MIDNIGHT_GOLD, "Midnight Gold", "كحلي داكن ولمسات ذهبية"),
         ThemeOption(AppPreferences.THEME_CRIMSON_CLASSIC, "Crimson Classic", "قوائم داكنة بتمييز أحمر"),
         ThemeOption(AppPreferences.THEME_MODERN_GRID, "Modern Grid", "شبكة حديثة بلون بنفسجي"),
