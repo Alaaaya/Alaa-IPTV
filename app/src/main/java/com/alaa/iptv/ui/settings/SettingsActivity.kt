@@ -24,6 +24,7 @@ import com.alaa.iptv.ui.dashboard.DashboardActivity
 import com.alaa.iptv.ui.theme.ThemeCatalog
 import com.alaa.iptv.ui.common.ControlPlaneActivityGuard
 import com.alaa.iptv.utils.ConnectionDiagnostics
+import com.alaa.iptv.utils.UpdateChecker
 import com.bumptech.glide.Glide
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
@@ -261,6 +262,9 @@ class SettingsActivity : AppCompatActivity() {
                 .setMessage("يتضمن هذا الإصدار بدءاً سريعاً، بحثاً موحداً، تفاصيل محتوى أوضح، أدوات اتصال ودعم آمنة، وخيارات خصوصية وأداء اختيارية. لا يحتوي التطبيق على EPG.")
                 .setPositiveButton("حسناً", null)
                 .show()
+        }
+        if (prefs.isFeatureEnabled(FeatureCatalog.IN_APP_UPDATES)) action("فحص تحديث Alaa Player") {
+            lifecycleScope.launch { UpdateChecker(this@SettingsActivity).checkForUpdate(showToast = true) }
         }
     }
 

@@ -85,6 +85,7 @@ class DashboardActivity : AppCompatActivity() {
     }
 
     private fun checkUpdates() {
+        if (!prefs.isFeatureEnabled(FeatureCatalog.IN_APP_UPDATES)) return
         lifecycleScope.launch {
             try {
                 UpdateChecker(this@DashboardActivity).checkForUpdate(showToast = false)
