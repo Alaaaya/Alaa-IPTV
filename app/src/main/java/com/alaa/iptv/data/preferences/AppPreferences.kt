@@ -397,6 +397,7 @@ class AppPreferences(context: Context) {
         return saved.ifEmpty { defaultTypes }
     }
 
+    @Synchronized
     fun registerConnectionFailure(): Int {
         val next = prefs.getInt(KEY_CONNECTION_FAILURE_COUNT, 0).coerceAtMost(9) + 1
         prefs.edit().putInt(KEY_CONNECTION_FAILURE_COUNT, next).apply()
@@ -629,6 +630,7 @@ class AppPreferences(context: Context) {
         .digest(pin.toByteArray(Charsets.UTF_8))
         .joinToString("") { "%02x".format(it) }
 
+    @Synchronized
     fun getOrCreateTvId(): String {
         if (tvId.isNotBlank()) return tvId
 

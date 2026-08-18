@@ -46,7 +46,7 @@ class LoginActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         prefs = AppPreferences(this)
-        repository = MediaRepository(prefs, this)
+        repository = MediaRepository(prefs, applicationContext)
 
         // Check if already logged in (isLoggedIn is a PROPERTY not a function)
         if (prefs.isLoggedIn) {

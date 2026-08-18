@@ -29,6 +29,7 @@ import com.alaa.iptv.ui.theme.DisplayTheme
 import com.alaa.iptv.ui.common.ControlPlaneActivityGuard
 import com.alaa.iptv.utils.UpdateChecker
 import com.bumptech.glide.Glide
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -65,7 +66,7 @@ class DashboardActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         prefs = AppPreferences(this)
-        repository = MediaRepository(prefs, this)
+        repository = MediaRepository(prefs, applicationContext)
         DisplayTheme.applyDashboard(binding, prefs)
         DisplayTheme.applyViewingPreferences(binding.root, prefs)
         binding.root.isSoundEffectsEnabled = prefs.isFeatureEnabled(FeatureCatalog.NAVIGATION_SOUNDS)
@@ -381,7 +382,7 @@ class DashboardActivity : AppCompatActivity() {
                     }
                 } else lastFailure = seriesCategoriesResult.exceptionOrNull()
                 updateUI()
-                if (lastFailure is SubscriptionSessionExpiredException && prefs.isFeatureEnabled(FeatureCatalog.SESSION_RECOVERY)) {
+                if (lastFailure is SubscriptionSessionExpiredException) {
                     showToast("انتهت جلسة الاشتراك. أدخل بياناتك من جديد.")
                     startActivity(Intent(this@DashboardActivity, LoginActivity::class.java).apply {
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -403,6 +404,8 @@ class DashboardActivity : AppCompatActivity() {
                     } else "",
                     visible = isEmpty && prefs.isFeatureEnabled(FeatureCatalog.SMART_EMPTY_STATES)
                 )
+            } catch (cancelled: CancellationException) {
+                throw cancelled
             } catch (e: Exception) {
                 Log.e(TAG, "Content loading failed", e)
                 val reference = if (prefs.isFeatureEnabled(FeatureCatalog.SAFE_ERROR_LOG)) prefs.addSafeDiagnostic("dashboard-content", e) else ""

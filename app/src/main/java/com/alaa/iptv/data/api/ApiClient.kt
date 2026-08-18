@@ -5,6 +5,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import com.alaa.iptv.BuildConfig
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
 object ApiClient {
@@ -13,7 +14,9 @@ object ApiClient {
     private var currentBaseUrl: String? = null
 
     private val cookieJar = object : CookieJar {
-        private val cookieStore = HashMap<String, List<Cookie>>()
+        // قد يستدعي OkHttp الحفظ والقراءة من خيوط Dispatcher مختلفة؛ Map المتزامنة
+        // تمنع سباقاً في ذاكرة الجلسة عند تنفيذ طلبات متوازية.
+        private val cookieStore = ConcurrentHashMap<String, List<Cookie>>()
 
         override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
             cookieStore[url.host] = cookies
