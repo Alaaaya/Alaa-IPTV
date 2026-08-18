@@ -70,6 +70,7 @@ class AppPreferences(context: Context) {
         private const val DEFAULT_PROFILE_ID = "owner"
 
         const val THEME_ALAA_CLASSIC = "alaa_classic"
+        const val THEME_ALAA_NEON_IPTV = "alaa_neon_iptv"
         const val THEME_MIDNIGHT_GOLD = "midnight_gold"
         const val THEME_CRIMSON_CLASSIC = "crimson_classic"
         const val THEME_MODERN_GRID = "modern_grid"

@@ -6,9 +6,10 @@ import org.junit.Test
 
 class ThemeCatalogTest {
     @Test
-    fun `catalog exposes all existing and ten new visual choices`() {
-        assertEquals(17, ThemeCatalog.options.size)
-        assertEquals(17, ThemeCatalog.options.map { it.id }.toSet().size)
+    fun `catalog exposes all existing designs plus the Alaa Neon IPTV choice`() {
+        assertEquals(18, ThemeCatalog.options.size)
+        assertEquals(18, ThemeCatalog.options.map { it.id }.toSet().size)
+        assertTrue(ThemeCatalog.options.any { it.id == "alaa_neon_iptv" && it.title == "Alaa Player – Neon IPTV" })
         assertTrue(ThemeCatalog.options.any { it.title == "Neon Arcade" })
         assertTrue(ThemeCatalog.options.any { it.title == "Royal Velvet" })
     }
@@ -23,8 +24,18 @@ class ThemeCatalogTest {
     }
 
     @Test
+    fun `alaa neon iptv uses a neon focus profile with a live category sidebar`() {
+        val theme = "alaa_neon_iptv"
+
+        assertTrue(DisplayTheme.isNeonIptv(theme))
+        assertEquals(DisplayTheme.LiveCategoryPlacement.SIDE_LIST, DisplayTheme.liveCategorySpec(theme).placement)
+        assertTrue(DisplayTheme.categoryCardStyle(theme).focusScale > 1f)
+        assertTrue(DisplayTheme.channelRowSpec(theme).showNumber)
+    }
+
+    @Test
     fun `ten new themes expose distinct structural layouts not only palette changes`() {
-        val newThemeIds = ThemeCatalog.options.drop(7).map { it.id }
+        val newThemeIds = ThemeCatalog.options.drop(8).map { it.id }
         assertEquals(10, newThemeIds.size)
 
         val signatures = newThemeIds.map { id ->
