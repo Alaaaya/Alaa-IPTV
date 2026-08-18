@@ -50,6 +50,14 @@ class ContinueWatchingAdapter(
         }
 
         fun bind(item: ContinueWatchingItem) {
+            if (DisplayTheme.isNeonIptv(theme)) {
+                val density = binding.root.resources.displayMetrics.density
+                binding.root.layoutParams = binding.root.layoutParams.apply {
+                    width = (258 * density).toInt()
+                    height = (178 * density).toInt()
+                }
+                binding.root.radius = 20f * density
+            }
             binding.contentTitle.text = item.title
             binding.contentSubtitle.text = item.subtitle
 

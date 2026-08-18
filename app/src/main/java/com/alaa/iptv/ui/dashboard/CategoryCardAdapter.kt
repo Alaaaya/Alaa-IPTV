@@ -2,6 +2,7 @@ package com.alaa.iptv.ui.dashboard
 
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
@@ -63,7 +64,11 @@ class CategoryCardAdapter(
             binding.categoryName.text = item.name
             binding.categoryCount.text = if (item.count > 0) item.count.toString() else ""
             binding.categoryBackdrop.setImageResource(item.backgroundRes)
-            binding.categoryBackdrop.alpha = DisplayTheme.categoryCardStyle(theme).backdropAlpha
+            val isNeonIptv = DisplayTheme.isNeonIptv(theme)
+            binding.categoryBackdrop.alpha = if (isNeonIptv) 0.26f else DisplayTheme.categoryCardStyle(theme).backdropAlpha
+            binding.categoryContent.gravity = if (isNeonIptv) Gravity.START or Gravity.CENTER_VERTICAL else Gravity.CENTER
+            binding.categoryName.gravity = if (isNeonIptv) Gravity.START else Gravity.CENTER
+            binding.categoryCount.gravity = if (isNeonIptv) Gravity.START else Gravity.CENTER
             binding.categoryIcon.setImageResource(item.iconRes)
             if (DisplayTheme.hasCustomTheme(theme)) {
                 binding.focusOutline.background = DisplayTheme.focusOutlineBackground(theme)
@@ -71,8 +76,8 @@ class CategoryCardAdapter(
             val neonColor = Color.parseColor(item.colorHex)
             val style = DisplayTheme.categoryCardStyle(theme)
             binding.categoryIcon.setColorFilter(if (style.monochrome) Color.WHITE else neonColor)
-            binding.categoryIcon.scaleX = spec.iconScale
-            binding.categoryIcon.scaleY = spec.iconScale
+            binding.categoryIcon.scaleX = if (isNeonIptv) 1.12f else spec.iconScale
+            binding.categoryIcon.scaleY = if (isNeonIptv) 1.12f else spec.iconScale
             binding.iconGlow.background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
                 val alpha = (70 * style.glowMultiplier).toInt().coerceAtMost(120)

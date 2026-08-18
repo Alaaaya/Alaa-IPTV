@@ -117,7 +117,7 @@ object DisplayTheme {
         }
         binding.heroWatchNow.background = rounded(
             palette.accent,
-            if (isNeonIptv) 14f else palette.radius,
+            if (isNeonIptv) 28f else palette.radius,
             if (isNeonIptv) "#FF8994" else null,
             if (isNeonIptv) 1 else 0
         )
@@ -127,23 +127,31 @@ object DisplayTheme {
         binding.continueWatchingViewAll.setTextColor(Color.parseColor(palette.accent))
         binding.heroIndicators.visibility = if (isNeonIptv) View.VISIBLE else View.GONE
         binding.notificationDot.visibility = if (isNeonIptv) View.VISIBLE else View.GONE
+        binding.heroLiveBadge.visibility = if (isNeonIptv) View.VISIBLE else View.GONE
         if (isNeonIptv) {
-            binding.topSearchLabel.visibility = View.GONE
+            binding.topSearchLabel.visibility = View.VISIBLE
+            binding.topSearchLabel.text = binding.root.context.getString(R.string.search_placeholder)
+            binding.topSearchGroup.background = rounded(palette.panel, 28f, palette.panelStroke, 1)
+            binding.topSearchGroup.setPadding((18 * density).toInt(), (12 * density).toInt(), (18 * density).toInt(), (12 * density).toInt())
             (binding.topSearchGroup.layoutParams as? RelativeLayout.LayoutParams)?.let { params ->
                 params.removeRule(RelativeLayout.ALIGN_PARENT_START)
                 params.removeRule(RelativeLayout.START_OF)
                 params.addRule(RelativeLayout.LEFT_OF, R.id.topStatusGroup)
                 params.addRule(RelativeLayout.START_OF, R.id.topStatusGroup)
+                params.width = (290 * density).toInt()
                 binding.topSearchGroup.layoutParams = params
             }
+            binding.topClockGroup.visibility = View.GONE
             binding.sidebarContainer.layoutParams = binding.sidebarContainer.layoutParams.apply {
-                width = (272 * density).toInt()
+                width = (300 * density).toInt()
             }
             binding.heroCard.layoutParams = binding.heroCard.layoutParams.apply {
                 height = (292 * density).toInt()
             }
             binding.heroCard.radius = 22f * density
             binding.heroCard.cardElevation = 10f
+            binding.heroTitle.textSize = 46f
+            binding.heroSubtitle.textSize = 18f
             binding.sidebarFooter.background = rounded(palette.panel, 14f, palette.panelStroke, 1)
             for (index in 0 until binding.bottomInfoGrid.childCount) {
                 binding.bottomInfoGrid.getChildAt(index).background = rounded(palette.panel, 14f, palette.panelStroke, 1)
@@ -153,6 +161,8 @@ object DisplayTheme {
             binding.continueWatchingHeaderTitle.setShadowLayer(8f, 0f, 1f, Color.parseColor("#66000000"))
         } else {
             binding.topSearchLabel.visibility = View.VISIBLE
+            binding.topSearchLabel.text = binding.root.context.getString(R.string.search)
+            binding.topClockGroup.visibility = View.VISIBLE
         }
         binding.heroImage.alpha = when (prefs.displayTheme) {
             AppPreferences.THEME_ALAA_NEON_IPTV -> 0.96f
