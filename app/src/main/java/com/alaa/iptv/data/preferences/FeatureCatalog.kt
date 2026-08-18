@@ -82,6 +82,7 @@ object FeatureCatalog {
     const val RESET_PREFERENCES = "reset_preferences"
     const val SAFE_SUPPORT_REPORT = "safe_support_report"
     const val WHATS_NEW = "whats_new"
+    const val IN_APP_UPDATES = "in_app_updates"
 
     val options = listOf(
         OptionalFeature(GLOBAL_SEARCH, "البحث الشامل", "ابحث في القنوات والأفلام والمسلسلات.", "المكتبة"),
@@ -156,6 +157,7 @@ object FeatureCatalog {
         OptionalFeature(RESET_PREFERENCES, "استعادة إعدادات العرض", "أعد التصميم والخيارات المحلية إلى افتراضياتها دون حذف الاشتراك.", "الخصوصية", defaultEnabled = false),
         OptionalFeature(SAFE_SUPPORT_REPORT, "تقرير دعم آمن", "انسخ تقريراً قصيراً بلا بيانات اشتراك للمشاركة مع الدعم.", "الاتصال", defaultEnabled = false),
         OptionalFeature(WHATS_NEW, "ما الجديد", "اعرض ملخصاً محلياً للإضافات بعد تحديث التطبيق.", "الواجهة", defaultEnabled = false)
+        ,OptionalFeature(IN_APP_UPDATES, "التحديث من داخل التطبيق", "افحص إصدار Alaa Player الرسمي ثم نزّله بعد موافقتك الصريحة؛ لا يثبت أي تحديث تلقائياً.", "الاتصال", defaultEnabled = false)
     )
 
     fun option(id: String): OptionalFeature = options.firstOrNull { it.id == id }
