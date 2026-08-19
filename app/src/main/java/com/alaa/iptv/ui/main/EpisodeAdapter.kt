@@ -5,15 +5,18 @@ import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
+import com.alaa.iptv.R
 import com.alaa.iptv.data.models.Episode
 import com.alaa.iptv.databinding.ItemEpisodeBinding
 import com.alaa.iptv.ui.navigation.FocusBoundaryPolicy
+import com.bumptech.glide.Glide
 
 class EpisodeAdapter(
     private val episodes: List<Episode>,
     private val onEpisodeClick: (Episode, Int) -> Unit,
     private val completedEpisodeTitles: Set<String> = emptySet(),
-    private val seriesName: String = ""
+    private val seriesName: String = "",
+    private val fallbackImageUrl: String? = null
 ) : RecyclerView.Adapter<EpisodeAdapter.EpisodeViewHolder>() {
 
     inner class EpisodeViewHolder(private val binding: ItemEpisodeBinding) :
@@ -26,10 +29,8 @@ class EpisodeAdapter(
             }
             binding.root.setOnFocusChangeListener { _, hasFocus ->
                 binding.episodeCard.setCardBackgroundColor(
-                    Color.parseColor(if (hasFocus) "#E53935" else "#1AFFFFFF")
+                    Color.parseColor(if (hasFocus) "#2A3B111A" else "#10131D")
                 )
-                binding.root.scaleX = if (hasFocus) 1.02f else 1f
-                binding.root.scaleY = if (hasFocus) 1.02f else 1f
             }
             binding.root.setOnKeyListener { _, keyCode, event ->
                 if (event.action != KeyEvent.ACTION_DOWN) return@setOnKeyListener false
@@ -46,11 +47,15 @@ class EpisodeAdapter(
         fun bind(episode: Episode) {
             binding.episodeNumber.text = "E${episode.episodeNum}"
             binding.episodeTitle.text = episode.title
-            val details = listOfNotNull(
-                episode.info?.duration?.takeIf { it.isNotBlank() },
-                episode.info?.rating?.takeIf { it.isNotBlank() }?.let { "★ $it" }
-            )
-            binding.episodeMeta.text = details.joinToString("  •  ")
+            binding.episodeMeta.text = episode.info?.plot?.takeIf { it.isNotBlank() }
+                ?: episode.info?.rating?.takeIf { it.isNotBlank() }?.let { "التقييم ★ $it" }
+                ?: "حلقة من $seriesName"
+            binding.episodeDuration.text = episode.info?.duration?.takeIf { it.isNotBlank() }.orEmpty()
+            Glide.with(binding.root)
+                .load(fallbackImageUrl)
+                .placeholder(R.drawable.bg_dark_pattern)
+                .error(R.drawable.bg_dark_pattern)
+                .into(binding.episodeImage)
             val fullTitle = "$seriesName - ${episode.title}"
             binding.episodeCompletedBadge.visibility = if (completedEpisodeTitles.contains(fullTitle)) {
                 android.view.View.VISIBLE
@@ -72,6 +77,6 @@ class EpisodeAdapter(
     override fun getItemCount(): Int = episodes.size
 
     companion object {
-        const val EPISODE_GRID_COLUMNS = 4
+        const val EPISODE_GRID_COLUMNS = 2
     }
 }
