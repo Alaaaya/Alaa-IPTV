@@ -8,10 +8,19 @@ import com.alaa.iptv.data.models.FavoriteChannelCodec
 import com.alaa.iptv.data.remote.DeviceControlPlaneSnapshot
 import com.alaa.iptv.data.remote.RemoteConfigValue
 import com.alaa.iptv.data.remote.RemoteFeatureFlag
+import com.alaa.iptv.data.remote.RemoteSmartFavoriteGroup
 import org.json.JSONArray
 import org.json.JSONObject
 import java.security.MessageDigest
 import java.util.UUID
+
+data class SmartFavoriteGroup(
+    val id: String,
+    val name: String,
+    val color: String,
+    val syncEnabled: Boolean,
+    val itemKeys: List<String>
+)
 
 class AppPreferences(context: Context) {
     private val appContext = context.applicationContext
@@ -35,6 +44,7 @@ class AppPreferences(context: Context) {
         private const val KEY_M3U_URL = "m3u_url"
         private const val KEY_TV_ID = "tv_id"
         private const val KEY_FAVORITES = "favorites"
+        private const val KEY_SMART_FAVORITE_GROUPS = "smart_favorite_groups"
         private const val KEY_FAVORITE_CHANNEL_DATA = "favorite_channel_data"
         private const val KEY_CHANNEL_ORDER = "channel_order"
         private const val KEY_LAST_LIVE_CATEGORY = "last_live_category"
@@ -265,6 +275,11 @@ class AppPreferences(context: Context) {
             .putString(KEY_UPDATE_CHANNEL, snapshot.updateChannel)
             .putLong(KEY_CONTROL_PLANE_SYNCED_AT, System.currentTimeMillis())
             .apply()
+        val smartFavoritesAllowed = snapshot.featureFlags[FeatureCatalog.SMART_FAVORITES]?.enabled == true
+        val smartFavoritesLocallyEnabled = prefs.getBoolean(featureKey(FeatureCatalog.SMART_FAVORITES), false)
+        if (smartFavoritesAllowed && smartFavoritesLocallyEnabled) {
+            applySyncedSmartFavoriteGroups(snapshot.smartFavorites)
+        }
     }
 
     fun isHomeCategoryRemotelyHidden(categoryType: String): Boolean =
@@ -657,6 +672,77 @@ class AppPreferences(context: Context) {
     
     fun getFavorites(): Set<String> {
         return prefs.getStringSet(KEY_FAVORITES, emptySet())?.toSet() ?: emptySet()
+    }
+
+    fun getSmartFavoriteGroups(): List<SmartFavoriteGroup> {
+        val source = prefs.getString(KEY_SMART_FAVORITE_GROUPS, "[]") ?: "[]"
+        return runCatching {
+            val array = JSONArray(source)
+            buildList {
+                for (index in 0 until array.length()) {
+                    val item = array.optJSONObject(index) ?: continue
+                    val id = item.optString("id").trim()
+                    val name = item.optString("name").trim()
+                    if (id.isBlank() || name.isBlank()) continue
+                    val keys = item.optJSONArray("itemKeys")?.let { values ->
+                        buildList { for (keyIndex in 0 until values.length()) values.optString(keyIndex).trim().takeIf { it.isNotBlank() }?.let(::add) }
+                    }.orEmpty()
+                    add(SmartFavoriteGroup(id, name, item.optString("color", "#dc143c"), item.optBoolean("syncEnabled", false), keys.distinct()))
+                }
+            }
+        }.getOrDefault(emptyList())
+    }
+
+    fun createSmartFavoriteGroup(name: String, color: String = "#dc143c", syncEnabled: Boolean = false): SmartFavoriteGroup {
+        val normalized = name.trim().take(80)
+        require(normalized.isNotBlank()) { "اسم المجموعة مطلوب" }
+        val existing = getSmartFavoriteGroups()
+        require(existing.none { it.name.equals(normalized, ignoreCase = true) }) { "اسم المجموعة مستخدم" }
+        val group = SmartFavoriteGroup("fav-${UUID.randomUUID()}", normalized, color, syncEnabled, emptyList())
+        saveSmartFavoriteGroups(existing + group)
+        return group
+    }
+
+    /** يعيد true عند الإضافة وfalse عند الإزالة؛ يحفظ مفاتيح المحتوى فقط. */
+    fun toggleSmartFavorite(groupId: String, contentKey: String): Boolean {
+        val groups = getSmartFavoriteGroups()
+        val group = groups.firstOrNull { it.id == groupId } ?: return false
+        val keys = group.itemKeys.toMutableSet()
+        val added = keys.add(contentKey)
+        if (!added) keys.remove(contentKey)
+        saveSmartFavoriteGroups(groups.map { if (it.id == groupId) it.copy(itemKeys = keys.toList().sorted()) else it })
+        return added
+    }
+
+    fun isInSmartFavoriteGroup(groupId: String, contentKey: String): Boolean =
+        getSmartFavoriteGroups().firstOrNull { it.id == groupId }?.itemKeys?.contains(contentKey) == true
+
+    private fun saveSmartFavoriteGroups(groups: List<SmartFavoriteGroup>) {
+        val encoded = JSONArray().apply {
+            groups.forEach { group -> put(JSONObject()
+                .put("id", group.id)
+                .put("name", group.name)
+                .put("color", group.color)
+                .put("syncEnabled", group.syncEnabled)
+                .put("itemKeys", JSONArray(group.itemKeys))) }
+        }
+        prefs.edit().putString(KEY_SMART_FAVORITE_GROUPS, encoded.toString()).apply()
+    }
+
+    private fun applySyncedSmartFavoriteGroups(groups: List<RemoteSmartFavoriteGroup>) {
+        val localGroups = getSmartFavoriteGroups().filterNot { it.id.startsWith("remote-") }
+        val remoteGroups = groups.sortedBy { it.sortOrder }.map { group ->
+            SmartFavoriteGroup(
+                id = "remote-${group.id}",
+                name = group.name.take(80),
+                color = group.color,
+                syncEnabled = true,
+                itemKeys = group.entries.sortedBy { it.sortOrder }
+                    .map { "${it.contentType}:${it.contentKey}" }
+                    .distinct()
+            )
+        }
+        saveSmartFavoriteGroups(localGroups + remoteGroups)
     }
 
     fun saveFavoriteChannel(channel: Channel) {

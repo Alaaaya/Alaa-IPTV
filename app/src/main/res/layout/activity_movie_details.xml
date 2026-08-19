@@ -123,6 +123,20 @@
                 android:text="♡ المشاهدة لاحقاً"
                 android:textColor="@color/white"
                 android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/shareContentButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="14dp"
+                android:background="@drawable/bg_login_secondary_button"
+                android:clickable="true"
+                android:focusable="true"
+                android:paddingHorizontal="20dp"
+                android:paddingVertical="13dp"
+                android:text="⌁ مشاركة للهاتف"
+                android:textColor="@color/white"
+                android:textSize="15sp" />
         </LinearLayout>
     </LinearLayout>
 

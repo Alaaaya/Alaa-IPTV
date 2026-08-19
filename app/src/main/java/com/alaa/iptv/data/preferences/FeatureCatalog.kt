@@ -83,6 +83,10 @@ object FeatureCatalog {
     const val SAFE_SUPPORT_REPORT = "safe_support_report"
     const val WHATS_NEW = "whats_new"
     const val IN_APP_UPDATES = "in_app_updates"
+    const val PHONE_QR_PAIRING = "phone_qr_pairing"
+    const val CONTENT_QR_SHARE = "content_qr_share"
+    const val SMART_FAVORITES = "smart_favorites"
+    const val VOICE_SEARCH = "voice_search"
 
     val options = listOf(
         OptionalFeature(GLOBAL_SEARCH, "البحث الشامل", "ابحث في القنوات والأفلام والمسلسلات.", "المكتبة"),
@@ -156,8 +160,12 @@ object FeatureCatalog {
         OptionalFeature(REMOTE_GUIDE, "دليل اختصارات الريموت", "اعرض ملخص اختصارات التنقل والتشغيل داخل التطبيق.", "التشغيل", defaultEnabled = false),
         OptionalFeature(RESET_PREFERENCES, "استعادة إعدادات العرض", "أعد التصميم والخيارات المحلية إلى افتراضياتها دون حذف الاشتراك.", "الخصوصية", defaultEnabled = false),
         OptionalFeature(SAFE_SUPPORT_REPORT, "تقرير دعم آمن", "انسخ تقريراً قصيراً بلا بيانات اشتراك للمشاركة مع الدعم.", "الاتصال", defaultEnabled = false),
-        OptionalFeature(WHATS_NEW, "ما الجديد", "اعرض ملخصاً محلياً للإضافات بعد تحديث التطبيق.", "الواجهة", defaultEnabled = false)
-        ,OptionalFeature(IN_APP_UPDATES, "التحديث من داخل التطبيق", "افحص إصدار Alaa Player الرسمي ثم نزّله بعد موافقتك الصريحة؛ لا يثبت أي تحديث تلقائياً.", "الاتصال", defaultEnabled = false)
+        OptionalFeature(WHATS_NEW, "ما الجديد", "اعرض ملخصاً محلياً للإضافات بعد تحديث التطبيق.", "الواجهة", defaultEnabled = false),
+        OptionalFeature(IN_APP_UPDATES, "التحديث من داخل التطبيق", "افحص إصدار Alaa Player الرسمي ثم نزّله بعد موافقتك الصريحة؛ لا يثبت أي تحديث تلقائياً.", "الاتصال", defaultEnabled = false),
+        OptionalFeature(PHONE_QR_PAIRING, "ربط الهاتف عبر QR", "أنشئ رمزاً مؤقتاً لربط الهاتف بعد موافقة واضحة على التلفزيون.", "الاتصال", defaultEnabled = false),
+        OptionalFeature(CONTENT_QR_SHARE, "مشاركة المحتوى عبر QR", "شارك بطاقة محتوى آمنة مع الهاتف من دون إرسال رابط تشغيل أو بيانات اشتراك.", "المكتبة", defaultEnabled = false),
+        OptionalFeature(SMART_FAVORITES, "مجموعات مفضلة ذكية", "نظّم المفضلة في مجموعات منفصلة مع مزامنة اختيارية عبر لوحة التحكم.", "المكتبة", defaultEnabled = false),
+        OptionalFeature(VOICE_SEARCH, "بحث صوتي", "استخدم ميكروفون ريموت Android TV لإدخال عبارة البحث عندما يدعم الجهاز ذلك.", "المكتبة", defaultEnabled = false)
     )
 
     fun option(id: String): OptionalFeature = options.firstOrNull { it.id == id }

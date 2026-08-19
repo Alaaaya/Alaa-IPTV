@@ -320,6 +320,10 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        if (prefs.isFeatureEnabled(FeatureCatalog.SMART_FAVORITES)) {
+            actions += "إضافة إلى مجموعة مفضلة ذكية" to { showSmartFavoriteGroupPicker(channel) }
+        }
+
         if (prefs.isFeatureEnabled(FeatureCatalog.LIVE_CHANNEL_MOVE) && currentMode != MODE_FAVORITES && allChannels.size > 1) {
             actions += "نقل القناة" to { startChannelMove(channel) }
         }
@@ -369,6 +373,41 @@ class MainActivity : AppCompatActivity() {
             if (adding) "تمت إضافة ${channel.name} إلى المفضلة" else "تمت إزالة ${channel.name} من المفضلة",
             Toast.LENGTH_SHORT
         ).show()
+    }
+
+    private fun showSmartFavoriteGroupPicker(channel: Channel) {
+        val groups = prefs.getSmartFavoriteGroups()
+        if (groups.isEmpty()) {
+            Toast.makeText(this, "أنشئ مجموعة مفضلة من الإعدادات أولاً", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val key = channelKey(channel)
+        AlertDialog.Builder(this)
+            .setTitle("${channel.name} — مجموعات مفضلة")
+            .setItems(groups.map { group ->
+                val mark = if (prefs.isInSmartFavoriteGroup(group.id, key)) "✓ " else ""
+                "$mark${group.name}"
+            }.toTypedArray()) { _, selected ->
+                val group = groups[selected]
+                val added = prefs.toggleSmartFavorite(group.id, key)
+                val normalFavorites = prefs.getFavorites().toMutableSet()
+                if (added) {
+                    normalFavorites.add(key)
+                    prefs.saveFavoriteChannel(channel)
+                } else {
+                    val stillGrouped = prefs.getSmartFavoriteGroups().any { key in it.itemKeys }
+                    if (!stillGrouped) {
+                        normalFavorites.remove(key)
+                        prefs.removeFavoriteChannel(channel)
+                    }
+                }
+                prefs.saveFavorites(normalFavorites)
+                allChannels = allChannels.map { item -> if (channelKey(item) == key) item.copy(isFavorite = key in normalFavorites) else item }
+                updateChannelList(channel)
+                Toast.makeText(this, if (added) "أُضيفت إلى ${group.name}" else "أُزيلت من ${group.name}", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("إلغاء", null)
+            .show()
     }
 
     private fun startChannelMove(channel: Channel) {
