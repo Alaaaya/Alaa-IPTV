@@ -5,10 +5,11 @@ import android.graphics.drawable.GradientDrawable
 import android.util.TypedValue
 import android.view.View
 import android.view.ViewGroup
-import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.RelativeLayout
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.ui.DefaultTimeBar
 import androidx.constraintlayout.widget.ConstraintSet
 import androidx.recyclerview.widget.RecyclerView
 import com.alaa.iptv.R
@@ -303,12 +304,13 @@ object DisplayTheme {
         binding.trackSelectionButton.background = rounded(palette.panel, palette.radius, palette.focusStroke ?: palette.accent, 1)
     }
 
+    @UnstableApi
     fun applyPlayerControls(root: View, prefs: AppPreferences) {
         val palette = palette(prefs.displayTheme) ?: return
-        root.findViewById<SeekBar?>(R.id.exo_progress)?.let { progress ->
+        root.findViewById<DefaultTimeBar?>(R.id.exo_progress)?.let { progress ->
             val accent = android.content.res.ColorStateList.valueOf(Color.parseColor(palette.accent))
-            progress.progressTintList = accent
-            progress.thumbTintList = accent
+            progress.setPlayedColor(accent.defaultColor)
+            progress.setScrubberColor(accent.defaultColor)
         }
     }
 
