@@ -235,6 +235,7 @@ class MainActivity : AppCompatActivity() {
         if (!append) binding.channelCountText.text = "جارٍ تحميل قنوات الفئة…"
         channelLoadJob = lifecycleScope.launch {
             try {
+                var renderedCachedContent = false
                 if (!append) {
                     repository.getPersistedLiveContentPage(categoryId, page)?.let { cachedPage ->
                         if (requestId == channelLoadRequestId && selectedLiveCategory?.categoryId == categoryId) {
@@ -247,6 +248,7 @@ class MainActivity : AppCompatActivity() {
                             binding.channelCountText.text = liveCountText()
                             updateChannelList()
                             binding.previewSubtitle.text = "عرض محفوظ محلياً — جارٍ التحديث"
+                            renderedCachedContent = true
                         }
                     }
                 }
@@ -256,6 +258,7 @@ class MainActivity : AppCompatActivity() {
                 if (requestId != channelLoadRequestId || selectedLiveCategory?.categoryId != categoryId) return@launch
 
                 result.onSuccess { contentPage ->
+                    val focusedChannelBeforeAppend = if (append) focusedChannelOrNull() else null
                     val loadedChannels = contentPage.items
                     val namedChannels = loadedChannels.map { channel ->
                         channel.copy(categoryName = selectedLiveCategory?.categoryName)
@@ -271,7 +274,18 @@ class MainActivity : AppCompatActivity() {
                     hasMoreLivePages = contentPage.hasMore
                     updateLiveCategoryCount(categoryId, selectedLiveCategoryTotal)
                     binding.channelCountText.text = liveCountText()
-                    updateChannelList(if (append) allChannels.firstOrNull() else null)
+                    val requestChannelFocus = if (append) {
+                        LiveContentFocusPolicy.requestFocusAfterAppend(binding.channelsRecyclerView.hasFocus())
+                    } else {
+                        LiveContentFocusPolicy.requestFocusAfterRefresh(
+                            renderedCachedContent,
+                            binding.channelsRecyclerView.hasFocus()
+                        )
+                    }
+                    updateChannelList(
+                        focusChannel = if (append) focusedChannelBeforeAppend else null,
+                        requestChannelFocus = requestChannelFocus
+                    )
                 }.onFailure { error ->
                     if (requestId == channelLoadRequestId && selectedLiveCategory?.categoryId == categoryId) {
                         failedChannelLoad = ChannelLoadRequest(categoryId, page, append)
@@ -319,7 +333,16 @@ class MainActivity : AppCompatActivity() {
             .map { channel -> channel.copy(isFavorite = favoriteKeys.contains(channelKey(channel))) }
     }
 
-    private fun updateChannelList(focusChannel: Channel? = null) {
+    private fun focusedChannelOrNull(): Channel? {
+        val focusedChild = binding.channelsRecyclerView.focusedChild ?: return null
+        val position = binding.channelsRecyclerView.getChildAdapterPosition(focusedChild)
+        return allChannels.getOrNull(position)
+    }
+
+    private fun updateChannelList(
+        focusChannel: Channel? = null,
+        requestChannelFocus: Boolean = true
+    ) {
         channelAdapter.updateChannels(allChannels)
 
         if (allChannels.isNotEmpty()) {
@@ -328,6 +351,7 @@ class MainActivity : AppCompatActivity() {
             } ?: allChannels.first()
             updatePreview(target)
             val position = allChannels.indexOf(target)
+            if (!requestChannelFocus) return
             binding.channelsRecyclerView.post {
                 binding.channelsRecyclerView.scrollToPosition(position)
                 val requestVisibleChannelFocus = {
