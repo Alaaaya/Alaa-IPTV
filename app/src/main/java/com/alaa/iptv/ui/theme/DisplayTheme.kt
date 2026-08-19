@@ -22,7 +22,6 @@ import com.alaa.iptv.databinding.ActivityPlayerBinding
 import com.alaa.iptv.databinding.ActivitySeriesBinding
 import com.alaa.iptv.databinding.ActivitySeriesDetailsBinding
 import com.alaa.iptv.databinding.ItemMovieCardBinding
-import kotlin.math.ceil
 
 /**
  * نظام الهوية البصرية. كل تصميم جديد يحدد خريطة شاشة مستقلة للفئات والقنوات
@@ -387,32 +386,12 @@ object DisplayTheme {
      * يترك مسافة آمنة للبطاقة الأعلى في كل الثيمات بعد تكبير التركيز، حتى لا تُقص
      * حواف البطاقة أو مؤشر التركيز في صف الفئات الأفقي على Android TV.
      */
-    fun dashboardCategoryRailHeightDp(): Int {
-        val themes = listOf(
-            AppPreferences.THEME_ALAA_CLASSIC,
-            AppPreferences.THEME_ALAA_NEON_IPTV,
-            AppPreferences.THEME_MIDNIGHT_GOLD,
-            AppPreferences.THEME_CRIMSON_CLASSIC,
-            AppPreferences.THEME_MODERN_GRID,
-            AppPreferences.THEME_TV_MINIMAL,
-            AppPreferences.THEME_GLASS_UI,
-            AppPreferences.THEME_CLASSIC_BLACK_TV,
-            AppPreferences.THEME_NEON_ARCADE,
-            AppPreferences.THEME_CINEMA_SPOTLIGHT,
-            AppPreferences.THEME_SAPPHIRE_HORIZON,
-            AppPreferences.THEME_EMERALD_PULSE,
-            AppPreferences.THEME_AMBER_CONSOLE,
-            AppPreferences.THEME_NORDIC_LIGHT,
-            AppPreferences.THEME_SUNSET_LOUNGE,
-            AppPreferences.THEME_MONO_STUDIO,
-            AppPreferences.THEME_OCEAN_WAVE,
-            AppPreferences.THEME_ROYAL_VELVET
+    fun dashboardCategoryRailHeightDp(theme: String): Int {
+        val card = dashboardCardSpec(theme)
+        return com.alaa.iptv.ui.dashboard.DashboardRailLayoutPolicy.categoryRailHeightDp(
+            card.heightDp,
+            categoryCardStyle(theme).focusScale
         )
-        return themes.maxOf { theme ->
-            val card = dashboardCardSpec(theme)
-            val focusedHeight = ceil(card.heightDp * categoryCardStyle(theme).focusScale).toInt()
-            focusedHeight + 24
-        }
     }
 
     /** صف القناة نفسه يتبدل من مسار عريض إلى بطاقات كثيفة أو صف كونسول مدمج. */

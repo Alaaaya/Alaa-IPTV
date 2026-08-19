@@ -187,10 +187,15 @@ class DashboardActivity : AppCompatActivity() {
     }
 
     private fun setupHeroBanner() {
+        showFallbackHero()
+    }
+
+    private fun showFallbackHero() {
         binding.heroTitle.text = getString(R.string.hero_title)
         binding.heroSubtitle.text = getString(R.string.hero_desc)
         binding.heroWatchNow.text = getString(R.string.watch_now)
         binding.heroPosterCard.visibility = View.GONE
+        binding.heroImage.contentDescription = null
         binding.heroWatchNow.setOnClickListener {
             openMain(MainActivity.MODE_LIVE)
         }
@@ -210,7 +215,10 @@ class DashboardActivity : AppCompatActivity() {
         if (_binding == null) return
         val featured = allMovies.firstOrNull { !it.streamIcon.isNullOrBlank() }
             ?: allSeries.firstOrNull { !it.streamIcon.isNullOrBlank() }
-            ?: return
+            ?: run {
+                showFallbackHero()
+                return
+            }
 
         val typeLabel = if (featured.streamType.equals("series", ignoreCase = true)) "مسلسل" else "فيلم"
         binding.heroTitle.text = featured.name
@@ -267,7 +275,7 @@ class DashboardActivity : AppCompatActivity() {
         }
         binding.categoriesRecyclerView.apply {
             val density = resources.displayMetrics.density
-            val rowHeightDp = DisplayTheme.dashboardCategoryRailHeightDp()
+            val rowHeightDp = DisplayTheme.dashboardCategoryRailHeightDp(prefs.displayTheme)
             layoutParams = layoutParams.apply { height = (rowHeightDp * density).toInt() }
             layoutManager = LinearLayoutManager(this@DashboardActivity, LinearLayoutManager.HORIZONTAL, false)
             isNestedScrollingEnabled = false

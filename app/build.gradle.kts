@@ -13,8 +13,8 @@ android {
         applicationId = "com.alaa.iptv"
         minSdk = 21
         targetSdk = 34
-        versionCode = 49
-        versionName = "2.7.12"
+        versionCode = 50
+        versionName = "2.7.13"
         buildConfigField(
             "String",
             "PROVISIONING_API_URL",
