@@ -395,6 +395,7 @@ class MediaRepository(
                     )
                 }
 
+                persistentLiveCatalogOrNull()?.replaceCategories(categories)
                 putBoundedCache(cachedLiveCategories, cacheKey, categories, MAX_CATEGORY_CACHES)
 
                 Result.success(categories)
