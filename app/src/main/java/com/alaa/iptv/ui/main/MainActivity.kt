@@ -18,6 +18,7 @@ import com.alaa.iptv.data.preferences.FeatureCatalog
 import com.alaa.iptv.data.repository.MediaRepository
 import com.alaa.iptv.databinding.ActivityMainBinding
 import com.alaa.iptv.ui.player.PlayerActivity
+import com.alaa.iptv.ui.player.PlaybackUrlPolicy
 import com.alaa.iptv.ui.player.PlayableChannel
 import com.alaa.iptv.ui.player.PlayerChannelNavigator
 import com.alaa.iptv.ui.theme.DisplayTheme
@@ -413,15 +414,19 @@ class MainActivity : AppCompatActivity() {
     private fun channelKey(channel: Channel): String = ChannelOrderMover.keyFor(channel)
 
     private fun playChannel(channel: Channel) {
-        val url = channel.directSource ?: channel.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password)
-        if (url.isNullOrBlank()) return
+        val rawUrl = channel.directSource ?: channel.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password)
+        val url = PlaybackUrlPolicy.normalizedHttpUrlOrNull(rawUrl)
+        if (url == null) {
+            Toast.makeText(this, "تعذر تشغيل هذه القناة: رابط البث غير صالح", Toast.LENGTH_SHORT).show()
+            return
+        }
 
         val liveChannels = if (channel.streamType.equals("live", ignoreCase = true)) {
             allChannels.mapNotNull { item ->
                 if (!item.streamType.equals("live", ignoreCase = true)) return@mapNotNull null
-                val itemUrl = item.directSource ?: item.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password)
-                itemUrl.takeIf { it.isNotBlank() }?.let {
-                    PlayableChannel(item.name, it, item.streamType)
+                val rawItemUrl = item.directSource ?: item.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password)
+                PlaybackUrlPolicy.normalizedHttpUrlOrNull(rawItemUrl)?.let { itemUrl ->
+                    PlayableChannel(item.name, itemUrl, item.streamType)
                 }
             }
         } else {
@@ -430,13 +435,17 @@ class MainActivity : AppCompatActivity() {
         val playerIndex = liveChannels.indexOfFirst { it.streamUrl == url }
         if (playerIndex >= 0) PlayerChannelNavigator.setChannels(liveChannels)
 
-        startActivity(
+        runCatching {
+            startActivity(
             Intent(this, PlayerActivity::class.java)
                 .putExtra("STREAM_URL", url)
                 .putExtra("CHANNEL_NAME", channel.name)
                 .putExtra("STREAM_TYPE", channel.streamType)
                 .putExtra(PlayerActivity.EXTRA_CHANNEL_INDEX, playerIndex)
-        )
+            )
+        }.onFailure {
+            Toast.makeText(this, "تعذر فتح المشغل. حاول مجدداً", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun focusSelectedCategory() {
