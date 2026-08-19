@@ -18,6 +18,7 @@ import com.alaa.iptv.databinding.ActivitySeriesDetailsBinding
 import com.alaa.iptv.ui.player.PlayerActivity
 import com.alaa.iptv.ui.player.PlayableEpisode
 import com.alaa.iptv.ui.player.PlayerEpisodeNavigator
+import com.alaa.iptv.ui.player.PlaybackUrlPolicy
 import com.alaa.iptv.ui.theme.DisplayTheme
 import com.bumptech.glide.Glide
 import kotlinx.coroutines.launch
@@ -175,8 +176,10 @@ class SeriesDetailsActivity : AppCompatActivity() {
     }
 
     private fun playEpisode(episode: Episode, episodeIndex: Int) {
-        val streamUrl = episode.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password)
-        if (streamUrl.isBlank()) {
+        val streamUrl = PlaybackUrlPolicy.normalizedHttpUrlOrNull(
+            episode.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password)
+        )
+        if (streamUrl == null) {
             showError(getString(R.string.player_error))
             return
         }

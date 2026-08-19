@@ -13,6 +13,7 @@ import com.alaa.iptv.data.preferences.FeatureCatalog
 import com.alaa.iptv.data.preferences.MediaLibraryEntry
 import com.alaa.iptv.databinding.ActivityMovieDetailsBinding
 import com.alaa.iptv.ui.player.PlayerActivity
+import com.alaa.iptv.ui.player.PlaybackUrlPolicy
 import com.alaa.iptv.ui.settings.ContentShareActivity
 import com.bumptech.glide.Glide
 
@@ -63,8 +64,10 @@ class MovieDetailsActivity : AppCompatActivity() {
     }
 
     private fun playMovie() {
-        val url = movie.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password)
-        if (url.isBlank()) {
+        val url = PlaybackUrlPolicy.normalizedHttpUrlOrNull(
+            movie.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password)
+        )
+        if (url == null) {
             Toast.makeText(this, "تعذر إنشاء رابط التشغيل لهذا الفيلم", Toast.LENGTH_SHORT).show()
             return
         }
