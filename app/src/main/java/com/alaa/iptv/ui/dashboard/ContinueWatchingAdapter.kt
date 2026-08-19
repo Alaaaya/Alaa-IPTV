@@ -17,6 +17,12 @@ class ContinueWatchingAdapter(
     private val onItemClick: (ContinueWatchingItem) -> Unit
 ) : RecyclerView.Adapter<ContinueWatchingAdapter.ViewHolder>() {
 
+    fun railHeightDp(): Int = if (DisplayTheme.isNeonIptv(theme)) {
+        ContinueWatchingRailPolicy.railHeightDp(cardHeightDp = 178, focusScale = 1.08f)
+    } else {
+        ContinueWatchingRailPolicy.railHeightDp(cardHeightDp = 140, focusScale = 1.05f)
+    }
+
     inner class ViewHolder(val binding: ItemContinueWatchingBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
@@ -38,6 +44,9 @@ class ContinueWatchingAdapter(
                     binding.root.cardElevation = 2f
                     binding.playOverlay.visibility = View.GONE
                     binding.continueFocusOutline.visibility = View.GONE
+                }
+                if (hasFocus) {
+                    (binding.root.parent as? RecyclerView)?.smoothScrollToPosition(bindingAdapterPosition)
                 }
             }
 

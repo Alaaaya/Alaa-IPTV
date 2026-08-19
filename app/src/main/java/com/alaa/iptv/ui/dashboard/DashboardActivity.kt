@@ -299,11 +299,18 @@ class DashboardActivity : AppCompatActivity() {
         binding.continueWatchingRecyclerView.visibility = if (hasItems) View.VISIBLE else View.GONE
         if (!hasItems) return
 
+        val continueWatchingAdapter = ContinueWatchingAdapter(items, prefs.displayTheme, ::playContent)
         binding.continueWatchingRecyclerView.apply {
+            val density = resources.displayMetrics.density
+            layoutParams = layoutParams.apply {
+                height = (continueWatchingAdapter.railHeightDp() * density).toInt()
+            }
             layoutManager = LinearLayoutManager(this@DashboardActivity, LinearLayoutManager.HORIZONTAL, false)
             isNestedScrollingEnabled = false
             setHasFixedSize(true)
-            adapter = ContinueWatchingAdapter(items, prefs.displayTheme, ::playContent)
+            clipToPadding = false
+            setPadding(paddingLeft, (8 * density).toInt(), paddingRight, (8 * density).toInt())
+            adapter = continueWatchingAdapter
         }
     }
 
@@ -569,6 +576,9 @@ class DashboardActivity : AppCompatActivity() {
         }
         if (keyCode == android.view.KeyEvent.KEYCODE_DPAD_UP && binding.continueWatchingRecyclerView.hasFocus()) {
             focusFirstCategory()
+            return true
+        }
+        if (keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN && binding.continueWatchingRecyclerView.hasFocus()) {
             return true
         }
         return super.onKeyDown(keyCode, event)
