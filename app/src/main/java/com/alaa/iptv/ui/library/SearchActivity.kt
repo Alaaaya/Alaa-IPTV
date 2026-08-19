@@ -1,8 +1,11 @@
 package com.alaa.iptv.ui.library
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Bundle
+import android.speech.RecognizerIntent
 import android.text.InputType
 import android.view.Gravity
 import android.view.View
@@ -13,16 +16,20 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.ScrollView
 import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.alaa.iptv.data.models.Channel
 import com.alaa.iptv.data.models.Movie
 import com.alaa.iptv.data.models.Series
 import com.alaa.iptv.data.preferences.AppPreferences
+import com.alaa.iptv.data.preferences.FeatureCatalog
 import com.alaa.iptv.data.repository.MediaRepository
 import com.alaa.iptv.ui.main.SeriesDetailsActivity
 import com.alaa.iptv.ui.player.PlayerActivity
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 /** بحث محلي فوق الفهارس المتاحة: لا يبدأ تحميل كل فئات الكتالوج أو صفحاته. */
 class SearchActivity : AppCompatActivity() {
@@ -35,6 +42,19 @@ class SearchActivity : AppCompatActivity() {
     private lateinit var tabsContainer: LinearLayout
     private var searchable: List<SearchEntry> = emptyList()
     private var selectedType: String? = null
+    private val voiceSearchLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        val heard = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()?.trim().orEmpty()
+        if (result.resultCode == RESULT_OK && heard.isNotBlank()) {
+            queryInput.setText(heard)
+            queryInput.setSelection(heard.length)
+            search()
+        } else {
+            status.text = "لم يتم التقاط عبارة بحث صوتي؛ يمكنك الكتابة في حقل البحث."
+        }
+    }
+    private val microphonePermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) launchVoiceSearch() else status.text = "يلزم السماح بالميكروفون لاستخدام البحث الصوتي."
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,6 +83,13 @@ class SearchActivity : AppCompatActivity() {
         }
         root.addView(queryInput)
         root.addView(Button(this).apply { text = "بحث"; setOnClickListener { search() } })
+        if (prefs.isFeatureEnabled(FeatureCatalog.VOICE_SEARCH)) {
+            root.addView(Button(this).apply {
+                text = "بحث صوتي"
+                isAllCaps = false
+                setOnClickListener { requestVoiceSearch() }
+            })
+        }
 
         tabsContainer = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -165,6 +192,32 @@ class SearchActivity : AppCompatActivity() {
                 setOnClickListener { open(entry) }
             })
         }
+    }
+
+    private fun requestVoiceSearch() {
+        if (!prefs.isFeatureEnabled(FeatureCatalog.VOICE_SEARCH)) {
+            status.text = "البحث الصوتي غير مفعّل لهذا التلفزيون."
+            return
+        }
+        if (packageManager.resolveActivity(Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH), 0) == null) {
+            status.text = "هذا الجهاز لا يدعم التعرف الصوتي؛ استخدم البحث النصي."
+            return
+        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            microphonePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+            return
+        }
+        launchVoiceSearch()
+    }
+
+    private fun launchVoiceSearch() {
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault().toLanguageTag())
+            putExtra(RecognizerIntent.EXTRA_PROMPT, "قل اسم القناة أو الفيلم أو المسلسل")
+        }
+        runCatching { voiceSearchLauncher.launch(intent) }
+            .onFailure { status.text = "تعذر فتح البحث الصوتي؛ استخدم البحث النصي." }
     }
 
     private fun open(entry: SearchEntry) {

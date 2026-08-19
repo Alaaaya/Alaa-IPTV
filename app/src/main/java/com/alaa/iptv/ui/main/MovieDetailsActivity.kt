@@ -13,6 +13,7 @@ import com.alaa.iptv.data.preferences.FeatureCatalog
 import com.alaa.iptv.data.preferences.MediaLibraryEntry
 import com.alaa.iptv.databinding.ActivityMovieDetailsBinding
 import com.alaa.iptv.ui.player.PlayerActivity
+import com.alaa.iptv.ui.settings.ContentShareActivity
 import com.bumptech.glide.Glide
 
 class MovieDetailsActivity : AppCompatActivity() {
@@ -34,6 +35,8 @@ class MovieDetailsActivity : AppCompatActivity() {
         binding.backButton.setOnClickListener { finish() }
         binding.playMovieButton.setOnClickListener { playMovie() }
         binding.watchLaterButton.setOnClickListener { toggleWatchLater() }
+        binding.shareContentButton.visibility = if (prefs.isFeatureEnabled(FeatureCatalog.CONTENT_QR_SHARE)) View.VISIBLE else View.GONE
+        binding.shareContentButton.setOnClickListener { shareForPhone() }
     }
 
     private fun bindMovie() {
@@ -87,6 +90,18 @@ class MovieDetailsActivity : AppCompatActivity() {
         )
         Toast.makeText(this, if (added) "أُضيف إلى المشاهدة لاحقاً" else "أُزيل من المشاهدة لاحقاً", Toast.LENGTH_SHORT).show()
         updateWatchLaterLabel()
+    }
+
+    private fun shareForPhone() {
+        if (!prefs.isFeatureEnabled(FeatureCatalog.CONTENT_QR_SHARE)) {
+            Toast.makeText(this, "فعّل مشاركة المحتوى عبر QR من الإعدادات أولاً", Toast.LENGTH_SHORT).show()
+            return
+        }
+        startActivity(Intent(this, ContentShareActivity::class.java)
+            .putExtra(ContentShareActivity.EXTRA_CONTENT_TYPE, "movie")
+            .putExtra(ContentShareActivity.EXTRA_CONTENT_KEY, movie.streamId)
+            .putExtra(ContentShareActivity.EXTRA_TITLE, movie.name)
+            .putExtra(ContentShareActivity.EXTRA_POSTER_URL, movie.streamIcon))
     }
 
     private fun updateWatchLaterLabel() {

@@ -20,6 +20,16 @@ data class ProvisionedIptvSubscription(
     val password: String
 )
 
+data class QrIssuedSession(
+    val token: String,
+    val expiresAt: String
+)
+
+data class QrPairingStatus(
+    val state: String,
+    val expiresAt: String? = null
+)
+
 object TvProvisioningClient {
     private val client = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
@@ -116,6 +126,66 @@ object TvProvisioningClient {
         }
     }
 
+    suspend fun issuePhonePairing(tvId: String): Result<QrIssuedSession> = withContext(Dispatchers.IO) {
+        runCatching {
+            require(tvId.length >= 16) { "يرجى إدخال TV ID صحيح" }
+            val data = postJson("qr.issuePairing", JSONObject().put("tvId", tvId))
+            val token = data.optString("token")
+            require(token.length == 43) { "استجابة رمز QR غير صالحة" }
+            QrIssuedSession(token, data.optString("expiresAt"))
+        }
+    }
+
+    suspend fun getPhonePairingStatus(tvId: String, token: String): Result<QrPairingStatus> = withContext(Dispatchers.IO) {
+        runCatching {
+            val data = postJson("qr.pairingStatus", JSONObject().put("tvId", tvId).put("token", token))
+            QrPairingStatus(data.optString("state", "expired"), data.optString("expiresAt").ifBlank { null })
+        }
+    }
+
+    suspend fun confirmPhonePairing(tvId: String, token: String): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            postJson("qr.confirmPairing", JSONObject().put("tvId", tvId).put("token", token))
+            Unit
+        }
+    }
+
+    suspend fun createContentShare(
+        tvId: String,
+        contentType: String,
+        contentKey: String,
+        title: String,
+        posterUrl: String? = null
+    ): Result<QrIssuedSession> = withContext(Dispatchers.IO) {
+        runCatching {
+            val content = JSONObject()
+                .put("contentType", contentType)
+                .put("contentKey", contentKey)
+                .put("title", title)
+            posterUrl?.takeIf { it.isNotBlank() }?.let { content.put("posterUrl", it) }
+            val data = postJson("qr.createContentShare", JSONObject().put("tvId", tvId).put("content", content))
+            val token = data.optString("token")
+            require(token.length == 43) { "استجابة رمز المشاركة غير صالحة" }
+            QrIssuedSession(token, data.optString("expiresAt"))
+        }
+    }
+
+    private fun postJson(procedure: String, payloadJson: JSONObject): JSONObject {
+        val payload = JSONObject().put("json", payloadJson).toString()
+            .toRequestBody("application/json; charset=utf-8".toMediaType())
+        val request = Request.Builder()
+            .url("${BuildConfig.PROVISIONING_API_URL.trimEnd('/')}/$procedure")
+            .post(payload)
+            .header("Accept", "application/json")
+            .build()
+        client.newCall(request).execute().use { response ->
+            val body = response.body?.string().orEmpty()
+            if (!response.isSuccessful) throw IOException("تعذر إتمام طلب رمز QR")
+            return JSONObject(body).optJSONObject("result")?.optJSONObject("data")?.optJSONObject("json")
+                ?: throw IOException("استجابة لوحة التحكم غير صالحة")
+        }
+    }
+
     internal fun parseControlPlaneSnapshot(data: JSONObject, fallbackTvId: String): DeviceControlPlaneSnapshot {
         val device = data.optJSONObject("device") ?: throw IOException("حالة الجهاز غير متاحة")
         return buildControlPlaneSnapshot(
@@ -124,7 +194,8 @@ object TvProvisioningClient {
             remoteLogoutRequested = device.optBoolean("remoteLogoutRequested", false),
             updateChannel = device.optString("updateChannel", "stable"),
             remoteConfig = parseRemoteConfig(data.optJSONObject("remoteConfig")),
-            featureFlags = parseFeatureFlags(data.optJSONObject("featureFlags"))
+            featureFlags = parseFeatureFlags(data.optJSONObject("featureFlags")),
+            smartFavorites = parseSmartFavorites(data.optJSONArray("smartFavorites"))
         )
     }
 
@@ -134,15 +205,40 @@ object TvProvisioningClient {
         remoteLogoutRequested: Boolean,
         updateChannel: String = "stable",
         remoteConfig: Map<String, RemoteConfigValue>,
-        featureFlags: Map<String, RemoteFeatureFlag>
+        featureFlags: Map<String, RemoteFeatureFlag>,
+        smartFavorites: List<RemoteSmartFavoriteGroup> = emptyList()
     ): DeviceControlPlaneSnapshot = DeviceControlPlaneSnapshot(
         tvId = tvId,
         deviceStatus = deviceStatus,
         remoteLogoutRequested = remoteLogoutRequested,
         updateChannel = updateChannel,
         remoteConfig = remoteConfig,
-        featureFlags = featureFlags
+        featureFlags = featureFlags,
+        smartFavorites = smartFavorites
     )
+
+    internal fun parseSmartFavorites(source: org.json.JSONArray?): List<RemoteSmartFavoriteGroup> {
+        if (source == null) return emptyList()
+        return buildList {
+            for (index in 0 until source.length()) {
+                val item = source.optJSONObject(index) ?: continue
+                val id = item.optString("id").trim()
+                val name = item.optString("name").trim()
+                if (id.isBlank() || name.isBlank()) continue
+                val entries = item.optJSONArray("entries")?.let { values -> buildList {
+                    for (entryIndex in 0 until values.length()) {
+                        val entry = values.optJSONObject(entryIndex) ?: continue
+                        val type = entry.optString("contentType").trim()
+                        val key = entry.optString("contentKey").trim()
+                        val title = entry.optString("title").trim()
+                        if (type !in setOf("live", "movie", "series") || key.isBlank() || title.isBlank()) continue
+                        add(RemoteSmartFavoriteEntry(type, key, title, entry.optString("posterUrl").ifBlank { null }, entry.optInt("sortOrder", 0)))
+                    }
+                } }.orEmpty()
+                add(RemoteSmartFavoriteGroup(id, name, item.optString("color", "#dc143c"), item.optInt("sortOrder", index), entries))
+            }
+        }
+    }
 
     internal fun parseRemoteConfig(source: JSONObject?): Map<String, RemoteConfigValue> {
         if (source == null) return emptyMap()

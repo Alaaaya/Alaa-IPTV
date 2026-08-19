@@ -267,6 +267,12 @@ class SettingsActivity : AppCompatActivity() {
         if (prefs.isFeatureEnabled(FeatureCatalog.IN_APP_UPDATES)) action("فحص تحديث Alaa Player") {
             lifecycleScope.launch { UpdateChecker(this@SettingsActivity).checkForUpdate(showToast = true) }
         }
+        if (prefs.isFeatureEnabled(FeatureCatalog.PHONE_QR_PAIRING)) action("ربط الهاتف عبر QR") {
+            startActivity(Intent(this, PhoneLinkActivity::class.java))
+        }
+        if (prefs.isFeatureEnabled(FeatureCatalog.SMART_FAVORITES)) action("إدارة مجموعات المفضلة الذكية") {
+            showSmartFavoriteGroups()
+        }
     }
 
     private fun runAutoCacheCleanIfNeeded() {
@@ -315,6 +321,22 @@ class SettingsActivity : AppCompatActivity() {
             .setTitle("دليل اختصارات الريموت")
             .setMessage("الأسهم: تنقل بين الفئات والمحتوى.\nOK: فتح أو تشغيل.\nضغطة مطولة على قناة/محتوى: تفاصيل وخيارات إضافية.\nMENU في المكتبة: فلاتر النوع عند تفعيلها.\nضغطة مطولة على زر المسارات داخل المشغل: مؤقت النوم عند تفعيله.")
             .setPositiveButton("حسناً", null)
+            .show()
+    }
+
+    private fun showSmartFavoriteGroups() {
+        val input = EditText(this).apply { hint = "اسم مجموعة جديدة، مثل: رياضة أو عائلية" }
+        val existing = prefs.getSmartFavoriteGroups()
+        AlertDialog.Builder(this)
+            .setTitle("مجموعات المفضلة الذكية")
+            .setMessage(if (existing.isEmpty()) "لا توجد مجموعات بعد. أنشئ أول مجموعة لتنظيم القنوات المفضلة." else existing.joinToString("\n") { "• ${it.name}: ${it.itemKeys.size} عنصر" })
+            .setView(input)
+            .setPositiveButton("إضافة مجموعة") { _, _ ->
+                runCatching { prefs.createSmartFavoriteGroup(input.text.toString()) }
+                    .onSuccess { Toast.makeText(this, "تمت إضافة مجموعة ${it.name}", Toast.LENGTH_SHORT).show() }
+                    .onFailure { Toast.makeText(this, it.message ?: "تعذر إضافة المجموعة", Toast.LENGTH_SHORT).show() }
+            }
+            .setNegativeButton("إغلاق", null)
             .show()
     }
 

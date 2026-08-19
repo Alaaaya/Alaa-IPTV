@@ -13,8 +13,8 @@ android {
         applicationId = "com.alaa.iptv"
         minSdk = 21
         targetSdk = 34
-        versionCode = 59
-        versionName = "2.7.22"
+        versionCode = 60
+        versionName = "2.7.23"
         buildConfigField(
             "String",
             "PROVISIONING_API_URL",
@@ -62,6 +62,7 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.11.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+    implementation("com.google.zxing:core:3.5.3")
 
     // CardView
     implementation("androidx.cardview:cardview:1.0.0")
