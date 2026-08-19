@@ -75,6 +75,7 @@ class AccountManagementActivity : AppCompatActivity() {
             setOnClickListener { finish() }
         })
         setContentView(root)
+        com.alaa.iptv.ui.common.PremiumNeonFocus.install(root)
         render()
     }
 

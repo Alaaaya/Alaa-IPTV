@@ -32,6 +32,7 @@ class SeriesDetailsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivitySeriesDetailsBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        com.alaa.iptv.ui.common.PremiumNeonFocus.install(binding.root)
 
         series = readSeriesExtra()
             ?: run {

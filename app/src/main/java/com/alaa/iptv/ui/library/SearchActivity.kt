@@ -83,6 +83,7 @@ class SearchActivity : AppCompatActivity() {
         })
         root.addView(Button(this).apply { text = "← رجوع"; setOnClickListener { finish() } })
         setContentView(root)
+        com.alaa.iptv.ui.common.PremiumNeonFocus.install(root)
         loadSearchIndex()
     }
 

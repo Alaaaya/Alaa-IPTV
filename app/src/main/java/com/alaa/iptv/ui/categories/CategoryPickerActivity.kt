@@ -24,6 +24,7 @@ class CategoryPickerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityCategoryPickerBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        com.alaa.iptv.ui.common.PremiumNeonFocus.install(binding.root)
 
         prefs = AppPreferences(this)
         categories = intent.parcelableCategories()

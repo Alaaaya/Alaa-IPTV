@@ -43,6 +43,7 @@ class SeriesActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivitySeriesBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        com.alaa.iptv.ui.common.PremiumNeonFocus.install(binding.root)
 
         prefs = AppPreferences(this)
         repository = MediaRepository(prefs, applicationContext)
