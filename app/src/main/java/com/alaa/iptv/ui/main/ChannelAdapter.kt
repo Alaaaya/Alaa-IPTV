@@ -1,10 +1,12 @@
 package com.alaa.iptv.ui.main
 
 import android.graphics.Color
+import android.provider.Settings
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.DecelerateInterpolator
 import androidx.recyclerview.widget.RecyclerView
 import com.alaa.iptv.R
 import com.alaa.iptv.data.models.Channel
@@ -47,7 +49,7 @@ class ChannelAdapter(
             }
 
             binding.root.setOnFocusChangeListener { _, hasFocus ->
-                updateUI(hasFocus)
+                updateUI(hasFocus, animate = true)
                 if (hasFocus) {
                     val position = bindingAdapterPosition
                     if (position != RecyclerView.NO_POSITION) {
@@ -112,7 +114,7 @@ class ChannelAdapter(
                 binding.channelIcon.setImageResource(R.drawable.ic_logo)
             }
 
-            updateUI(isSelected)
+            updateUI(isSelected, animate = false)
         }
 
         private fun renderFavorite(isFavorite: Boolean) {
@@ -122,7 +124,7 @@ class ChannelAdapter(
             )
         }
 
-        private fun updateUI(hasFocus: Boolean) {
+        private fun updateUI(hasFocus: Boolean, animate: Boolean) {
             if (hasFocus) {
                 if (DisplayTheme.isNeonIptv(displayTheme)) {
                     binding.root.setBackgroundResource(R.drawable.bg_alaa_live_channel_focus)
@@ -159,6 +161,50 @@ class ChannelAdapter(
                 }
             }
             renderFavorite(boundChannel?.isFavorite == true)
+            if (animate) {
+                animateFocusTransition(hasFocus)
+            } else {
+                binding.root.animate().cancel()
+                binding.root.scaleX = 1f
+                binding.root.scaleY = 1f
+                binding.root.alpha = 1f
+            }
+        }
+
+        private fun animateFocusTransition(hasFocus: Boolean) {
+            val animatorScale = runCatching {
+                Settings.Global.getFloat(
+                    binding.root.context.contentResolver,
+                    Settings.Global.ANIMATOR_DURATION_SCALE,
+                    1f
+                )
+            }.getOrDefault(1f)
+            val duration = ChannelFocusMotionPolicy.durationMs(hasFocus, animatorScale)
+            val targetScale = if (hasFocus) ChannelFocusMotionPolicy.FOCUSED_SCALE else 1f
+            val targetAlpha = if (hasFocus) {
+                ChannelFocusMotionPolicy.FOCUSED_ALPHA
+            } else {
+                ChannelFocusMotionPolicy.UNFOCUSED_ALPHA
+            }
+
+            binding.root.animate().cancel()
+            if (duration == 0L) {
+                binding.root.scaleX = targetScale
+                binding.root.scaleY = targetScale
+                binding.root.alpha = targetAlpha
+                return
+            }
+            if (hasFocus) {
+                binding.root.scaleX = 0.992f
+                binding.root.scaleY = 0.992f
+            }
+            binding.root.animate()
+                .scaleX(targetScale)
+                .scaleY(targetScale)
+                .alpha(targetAlpha)
+                .setDuration(duration)
+                .setInterpolator(DecelerateInterpolator())
+                .start()
         }
     }
 
