@@ -124,7 +124,12 @@ class ChannelAdapter(
 
         private fun updateUI(hasFocus: Boolean) {
             if (hasFocus) {
-                if (DisplayTheme.hasCustomTheme(displayTheme)) {
+                if (DisplayTheme.isNeonIptv(displayTheme)) {
+                    binding.root.setBackgroundResource(R.drawable.bg_alaa_live_channel_focus)
+                    binding.channelName.setTextColor(Color.WHITE)
+                    binding.channelNumber.setTextColor(Color.WHITE)
+                    binding.qualityTag.setTextColor(Color.WHITE)
+                } else if (DisplayTheme.hasCustomTheme(displayTheme)) {
                     binding.root.background = DisplayTheme.focusBackground(displayTheme)
                     binding.channelName.setTextColor(DisplayTheme.focusTextColor(displayTheme))
                     binding.channelNumber.setTextColor(DisplayTheme.focusTextColor(displayTheme))
@@ -136,7 +141,11 @@ class ChannelAdapter(
                     binding.qualityTag.setTextColor(Color.WHITE)
                 }
             } else {
-                if (DisplayTheme.hasCustomTheme(displayTheme)) {
+                if (DisplayTheme.isNeonIptv(displayTheme)) {
+                    binding.root.background = DisplayTheme.panelBackground(displayTheme)
+                    binding.channelNumber.setTextColor(DisplayTheme.focusTextColor(displayTheme))
+                    binding.qualityTag.setTextColor(DisplayTheme.metadataColor(displayTheme))
+                } else if (DisplayTheme.hasCustomTheme(displayTheme)) {
                     binding.root.background = DisplayTheme.panelBackground(displayTheme)
                     binding.channelNumber.setTextColor(DisplayTheme.focusTextColor(displayTheme))
                     binding.qualityTag.setTextColor(DisplayTheme.metadataColor(displayTheme))

@@ -84,7 +84,9 @@ class LiveCategoryAdapter(
         private fun render(category: Category) {
             val highlighted = binding.root.hasFocus() || category.categoryId == selectedCategoryId
             if (DisplayTheme.hasCustomTheme(displayTheme)) {
-                binding.root.background = if (highlighted) {
+                binding.root.background = if (DisplayTheme.isNeonIptv(displayTheme) && highlighted) {
+                    binding.root.context.getDrawable(R.drawable.bg_live_category_selected)
+                } else if (highlighted) {
                     DisplayTheme.focusBackground(displayTheme)
                 } else {
                     DisplayTheme.panelBackground(displayTheme)

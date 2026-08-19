@@ -396,7 +396,7 @@ object DisplayTheme {
 
     /** صف القناة نفسه يتبدل من مسار عريض إلى بطاقات كثيفة أو صف كونسول مدمج. */
     fun channelRowSpec(theme: String): ChannelRowSpec = when (theme) {
-        AppPreferences.THEME_ALAA_NEON_IPTV -> ChannelRowSpec(68, 16, 16f, 12f, true, true, 54, 34)
+        AppPreferences.THEME_ALAA_NEON_IPTV -> ChannelRowSpec(54, 12, 14f, 12f, true, true, 44, 28)
         AppPreferences.THEME_NEON_ARCADE -> ChannelRowSpec(72, 14, 16f, 13f, true, true, 54, 34)
         AppPreferences.THEME_CINEMA_SPOTLIGHT -> ChannelRowSpec(84, 18, 18f, 13f, false, false, 70, 42)
         AppPreferences.THEME_SAPPHIRE_HORIZON -> ChannelRowSpec(60, 12, 15f, 12f, true, true, 48, 30)
@@ -407,12 +407,12 @@ object DisplayTheme {
         AppPreferences.THEME_MONO_STUDIO -> ChannelRowSpec(44, 8, 13f, 11f, true, false, 34, 22)
         AppPreferences.THEME_OCEAN_WAVE -> ChannelRowSpec(68, 16, 16f, 12f, false, true, 56, 34)
         AppPreferences.THEME_ROYAL_VELVET -> ChannelRowSpec(78, 18, 17f, 13f, true, true, 62, 38)
-        else -> ChannelRowSpec(45, 10, 14f, 12f, true, true, 40, 24)
+        else -> ChannelRowSpec(52, 10, 14f, 12f, true, true, 44, 28)
     }
 
     /** الفئات إما قائمة جانبية أو مصفوفة جانبية أو مسار أعلى مستقل. */
     fun liveCategorySpec(theme: String): LiveCategorySpec = when (theme) {
-        AppPreferences.THEME_ALAA_NEON_IPTV -> LiveCategorySpec(LiveCategoryPlacement.SIDE_LIST, 0.27f, 1, 66, 15f, "", true)
+        AppPreferences.THEME_ALAA_NEON_IPTV -> LiveCategorySpec(LiveCategoryPlacement.SIDE_LIST, 0.46f, 1, 54, 14f, "", true)
         AppPreferences.THEME_NEON_ARCADE -> LiveCategorySpec(LiveCategoryPlacement.TOP_RAIL, 0.34f, 1, 72, 15f, "", false)
         AppPreferences.THEME_CINEMA_SPOTLIGHT -> LiveCategorySpec(LiveCategoryPlacement.SIDE_LIST, 0.25f, 1, 72, 17f, "", true)
         AppPreferences.THEME_SAPPHIRE_HORIZON -> LiveCategorySpec(LiveCategoryPlacement.SIDE_GRID, 0.38f, 2, 70, 14f, "", true)
@@ -423,7 +423,7 @@ object DisplayTheme {
         AppPreferences.THEME_MONO_STUDIO -> LiveCategorySpec(LiveCategoryPlacement.SIDE_LIST, 0.20f, 1, 48, 12f, "# ", true)
         AppPreferences.THEME_OCEAN_WAVE -> LiveCategorySpec(LiveCategoryPlacement.SIDE_GRID, 0.40f, 2, 70, 14f, "", false)
         AppPreferences.THEME_ROYAL_VELVET -> LiveCategorySpec(LiveCategoryPlacement.SIDE_LIST, 0.40f, 1, 78, 16f, "", true)
-        else -> LiveCategorySpec(LiveCategoryPlacement.SIDE_LIST, 0.34f, 1, 52, 14f, "", true)
+        else -> LiveCategorySpec(LiveCategoryPlacement.SIDE_LIST, 0.44f, 1, 52, 14f, "", true)
     }
 
     /** يغير كثافة مكتبة الأفلام والمسلسلات لكل هوية بصرية. */
