@@ -6,7 +6,7 @@ import org.junit.Test
 
 class PlaybackUrlPolicyTest {
     @Test
-    fun `accepts complete HTTP and HTTPS playback URLs`() {
+    fun `accepts complete HTTP and HTTPS playback URLs for live movies and series`() {
         assertEquals(
             "https://stream.example.test/live/user/pass/1.ts",
             PlaybackUrlPolicy.normalizedHttpUrlOrNull("  https://stream.example.test/live/user/pass/1.ts  ")
@@ -18,6 +18,10 @@ class PlaybackUrlPolicyTest {
         assertEquals(
             "https://stream.example.test:8443/live/user/pass/3.ts?token=abc",
             PlaybackUrlPolicy.normalizedHttpUrlOrNull("https://stream.example.test:8443/live/user/pass/3.ts?token=abc")
+        )
+        assertEquals(
+            "https://stream.example.test/series/user/pass/4.mkv",
+            PlaybackUrlPolicy.normalizedHttpUrlOrNull("https://stream.example.test/series/user/pass/4.mkv")
         )
     }
 
