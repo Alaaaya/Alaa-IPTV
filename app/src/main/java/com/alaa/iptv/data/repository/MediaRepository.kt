@@ -44,7 +44,8 @@ class MediaRepository(
         private data class M3UCacheEntry(
             val sourceKey: String,
             val savedAt: Long,
-            val channels: List<Channel>
+            val channels: List<Channel>,
+            val channelsByCategory: Map<String, List<Channel>>
         )
 
         private var cachedM3UPlaylist: M3UCacheEntry? = null
@@ -253,9 +254,10 @@ class MediaRepository(
 
             try {
                 if (isM3U()) {
-                    return@withContext loadM3U(prefs.serverUrl).map { channels ->
+                    return@withContext loadM3USnapshot(prefs.serverUrl).map { snapshot ->
+                        val channels = snapshot.channels
                         val scoped = effectiveCategory?.let { selectedId ->
-                            channels.filter { it.categoryId == selectedId }
+                            snapshot.channelsByCategory[selectedId].orEmpty()
                         } ?: channels
                         val bounds = ContentPagingPolicy.bounds(scoped.size, pageIndex, LIVE_PAGE_SIZE)
                         PagedContent(
@@ -344,7 +346,9 @@ class MediaRepository(
             ensureContentAccess().exceptionOrNull()?.let { return@withContext Result.failure(it) }
 
             if (isM3U()) {
-                return@withContext loadM3U(prefs.serverUrl).map(M3UCategoryMapper::categories)
+                return@withContext loadM3USnapshot(prefs.serverUrl).map { snapshot ->
+                    M3UCategoryMapper.categories(snapshot.channels)
+                }
             }
 
             val cacheKey = sourceCacheKey()
@@ -682,14 +686,20 @@ class MediaRepository(
     // ================= LOAD M3U =================
 
     suspend fun loadM3U(url: String): Result<List<Channel>> =
+        loadM3USnapshot(url).map { it.channels }
+
+    /**
+     * يحلل M3U مرة واحدة في خيط IO ويحفظ فهرس الفئات بنفس مراجع القنوات،
+     * لذلك لا تنفذ الشاشة فلترة O(n) عند كل انتقال بين الفئات.
+     */
+    private suspend fun loadM3USnapshot(url: String): Result<M3UCacheEntry> =
         withContext(Dispatchers.IO) {
             ensureContentAccess().exceptionOrNull()?.let { return@withContext Result.failure(it) }
 
             val sourceKey = sourceCacheKey()
             synchronized(cacheLock) {
-                cachedM3UPlaylist
-                    ?.takeIf { it.sourceKey == sourceKey && System.currentTimeMillis() - it.savedAt < CACHE_DURATION }
-                    ?.channels
+                    cachedM3UPlaylist
+                        ?.takeIf { it.sourceKey == sourceKey && System.currentTimeMillis() - it.savedAt < CACHE_DURATION }
             }?.let { cached -> return@withContext Result.success(cached) }
 
             try {
@@ -735,11 +745,16 @@ class MediaRepository(
                     }
                 }
 
-                synchronized(cacheLock) {
-                    cachedM3UPlaylist = M3UCacheEntry(sourceKey, System.currentTimeMillis(), channels)
-                }
+                val index = channels.groupBy { it.categoryId?.ifBlank { "Uncategorized" } ?: "Uncategorized" }
+                val snapshot = M3UCacheEntry(
+                    sourceKey = sourceKey,
+                    savedAt = System.currentTimeMillis(),
+                    channels = channels,
+                    channelsByCategory = index
+                )
+                synchronized(cacheLock) { cachedM3UPlaylist = snapshot }
 
-                Result.success(channels)
+                Result.success(snapshot)
 
             } catch (cancelled: CancellationException) {
                 throw cancelled

@@ -90,6 +90,32 @@ class MediaRepositoryDirectPagingTest {
     }
 
     @Test
+    fun `M3U repository returns only the indexed selected category without mixing channels`() = runBlocking {
+        val playlist = File.createTempFile("alaa-m3u-index", ".m3u").apply {
+            writeText(m3uPlaylist(140, "Arabic") + "\n" + m3uPlaylist(75, "Sports"))
+            deleteOnExit()
+        }
+        val repository = MediaRepository(
+            prefs = session(useM3U = true, serverUrl = playlist.toURI().toString()),
+            context = mock(Context::class.java)
+        )
+
+        try {
+            val sports = repository.getLiveContentPage(categoryId = "Sports", page = 0).getOrThrow()
+            val arabic = repository.getLiveContentPage(categoryId = "Arabic", page = 1).getOrThrow()
+
+            assertEquals(75, sports.totalCount)
+            assertEquals(75, sports.items.size)
+            assertTrue(sports.items.all { it.categoryId == "Sports" })
+            assertEquals(140, arabic.totalCount)
+            assertEquals(40, arabic.items.size)
+            assertTrue(arabic.items.all { it.categoryId == "Arabic" })
+        } finally {
+            repository.clearCache()
+        }
+    }
+
+    @Test
     fun `M3U repository ignores orphan metadata without a playable stream URL`() = runBlocking {
         val playlist = File.createTempFile("alaa-m3u-orphan", ".m3u").apply {
             writeText(
