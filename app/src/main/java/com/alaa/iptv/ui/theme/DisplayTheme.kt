@@ -86,6 +86,7 @@ object DisplayTheme {
 
     private fun palette(theme: String): Palette? = when (theme) {
         AppPreferences.THEME_ALAA_NEON_IPTV -> Palette("#050711", "#0A1020", "#1A243BCC", "#FF3345", "#FFFFFF", "#B7C3E8", 18f, "#431624", "#FF6A78", "#596CFF")
+        AppPreferences.THEME_ALAA_FIGMA -> Palette("#05070D", "#0A101D", "#121B2C", "#FF2545", "#FFFFFF", "#9EB3D6", 14f, "#37121D", "#FF5B70", "#2C4D7D")
         AppPreferences.THEME_MIDNIGHT_GOLD -> Palette("#0A1426", "#101D31", "#1B2A40", "#D8CA28", "#0A1426", "#2497DE", 7f)
         AppPreferences.THEME_CRIMSON_CLASSIC -> Palette("#111319", "#191D25", "#242A35", "#E53935", "#FFFFFF", "#5EB5F7", 10f)
         AppPreferences.THEME_MODERN_GRID -> Palette("#110D22", "#1B1433", "#282047", "#8B5CF6", "#FFFFFF", "#22D3EE", 18f)
@@ -108,6 +109,7 @@ object DisplayTheme {
     fun applyDashboard(binding: ActivityDashboardBinding, prefs: AppPreferences) {
         val palette = palette(prefs.displayTheme) ?: return
         val isNeonIptv = isNeonIptv(prefs.displayTheme)
+        val isFigmaAlaa = prefs.displayTheme == AppPreferences.THEME_ALAA_FIGMA
         val density = binding.root.resources.displayMetrics.density
         binding.root.setBackgroundColor(Color.parseColor(palette.background))
         binding.sidebarContainer.background = if (isNeonIptv) {
@@ -125,10 +127,10 @@ object DisplayTheme {
         binding.heroWatchNow.elevation = if (isNeonIptv) 14f else binding.heroWatchNow.elevation
         binding.categoriesViewAll.setTextColor(Color.parseColor(palette.accent))
         binding.continueWatchingViewAll.setTextColor(Color.parseColor(palette.accent))
-        binding.heroIndicators.visibility = if (isNeonIptv) View.VISIBLE else View.GONE
-        binding.notificationDot.visibility = if (isNeonIptv) View.VISIBLE else View.GONE
-        binding.heroLiveBadge.visibility = if (isNeonIptv) View.VISIBLE else View.GONE
-        if (isNeonIptv) {
+        binding.heroIndicators.visibility = if (isNeonIptv || isFigmaAlaa) View.VISIBLE else View.GONE
+        binding.notificationDot.visibility = if (isNeonIptv || isFigmaAlaa) View.VISIBLE else View.GONE
+        binding.heroLiveBadge.visibility = if (isNeonIptv || isFigmaAlaa) View.VISIBLE else View.GONE
+        if (isNeonIptv || isFigmaAlaa) {
             binding.topSearchLabel.visibility = View.VISIBLE
             binding.topSearchLabel.text = binding.root.context.getString(R.string.search_placeholder)
             binding.topSearchGroup.background = rounded(palette.panel, 28f, palette.panelStroke, 1)
@@ -143,14 +145,14 @@ object DisplayTheme {
             }
             binding.topClockGroup.visibility = View.GONE
             binding.sidebarContainer.layoutParams = binding.sidebarContainer.layoutParams.apply {
-                width = (300 * density).toInt()
+                width = ((if (isFigmaAlaa) 260 else 300) * density).toInt()
             }
             binding.heroCard.layoutParams = binding.heroCard.layoutParams.apply {
-                height = (292 * density).toInt()
+                height = ((if (isFigmaAlaa) 278 else 292) * density).toInt()
             }
             binding.heroCard.radius = 22f * density
             binding.heroCard.cardElevation = 10f
-            binding.heroTitle.textSize = 46f
+            binding.heroTitle.textSize = if (isFigmaAlaa) 40f else 46f
             binding.heroSubtitle.textSize = 18f
             binding.sidebarFooter.background = rounded(palette.panel, 14f, palette.panelStroke, 1)
             for (index in 0 until binding.bottomInfoGrid.childCount) {
@@ -166,6 +168,7 @@ object DisplayTheme {
         }
         binding.heroImage.alpha = when (prefs.displayTheme) {
             AppPreferences.THEME_ALAA_NEON_IPTV -> 0.96f
+            AppPreferences.THEME_ALAA_FIGMA -> 0.90f
             AppPreferences.THEME_CINEMA_SPOTLIGHT -> 0.92f
             AppPreferences.THEME_MONO_STUDIO -> 0.66f
             AppPreferences.THEME_NEON_ARCADE -> 0.78f
@@ -338,6 +341,7 @@ object DisplayTheme {
 
     fun categoryCardStyle(theme: String): CategoryCardStyle = when (theme) {
         AppPreferences.THEME_ALAA_NEON_IPTV -> CategoryCardStyle(1.08f, 1.15f, 24f, 1.45f, 0.80f)
+        AppPreferences.THEME_ALAA_FIGMA -> CategoryCardStyle(1.045f, 1.08f, 15f, 0.92f, 0.88f)
         AppPreferences.THEME_NEON_ARCADE -> CategoryCardStyle(1.10f, 1.16f, 20f, 1.35f, 0.75f)
         AppPreferences.THEME_CINEMA_SPOTLIGHT -> CategoryCardStyle(1.025f, 1.02f, 14f, 0.55f, 1.0f)
         AppPreferences.THEME_SAPPHIRE_HORIZON -> CategoryCardStyle(1.055f, 1.10f, 16f, 1.10f, 0.86f)
@@ -353,6 +357,7 @@ object DisplayTheme {
 
     fun dashboardCategoryGrid(theme: String): CategoryGridStyle = when (theme) {
         AppPreferences.THEME_ALAA_NEON_IPTV -> CategoryGridStyle(1, RecyclerView.HORIZONTAL)
+        AppPreferences.THEME_ALAA_FIGMA -> CategoryGridStyle(1, RecyclerView.HORIZONTAL)
         AppPreferences.THEME_NEON_ARCADE -> CategoryGridStyle(2, RecyclerView.HORIZONTAL)
         AppPreferences.THEME_CINEMA_SPOTLIGHT -> CategoryGridStyle(1, RecyclerView.HORIZONTAL)
         AppPreferences.THEME_SAPPHIRE_HORIZON -> CategoryGridStyle(2, RecyclerView.HORIZONTAL)
@@ -369,6 +374,7 @@ object DisplayTheme {
     /** أبعاد ومعلومات البطاقة متغيرة، لذلك لا تشترك التصاميم في مظهر فئات واحد. */
     fun dashboardCardSpec(theme: String): DashboardCardSpec = when (theme) {
         AppPreferences.THEME_ALAA_NEON_IPTV -> DashboardCardSpec(194, 118, 14f, 18f, true, 1.10f)
+        AppPreferences.THEME_ALAA_FIGMA -> DashboardCardSpec(172, 96, 13f, 12f, true, 1.0f)
         AppPreferences.THEME_NEON_ARCADE -> DashboardCardSpec(214, 108, 13f, 22f, false, 1.18f)
         AppPreferences.THEME_CINEMA_SPOTLIGHT -> DashboardCardSpec(292, 152, 17f, 28f, false, 0.92f)
         AppPreferences.THEME_SAPPHIRE_HORIZON -> DashboardCardSpec(178, 150, 14f, 14f, true, 1.08f)
@@ -397,6 +403,7 @@ object DisplayTheme {
     /** صف القناة نفسه يتبدل من مسار عريض إلى بطاقات كثيفة أو صف كونسول مدمج. */
     fun channelRowSpec(theme: String): ChannelRowSpec = when (theme) {
         AppPreferences.THEME_ALAA_NEON_IPTV -> ChannelRowSpec(54, 12, 14f, 12f, true, true, 44, 28)
+        AppPreferences.THEME_ALAA_FIGMA -> ChannelRowSpec(50, 12, 14f, 12f, true, true, 42, 27)
         AppPreferences.THEME_NEON_ARCADE -> ChannelRowSpec(72, 14, 16f, 13f, true, true, 54, 34)
         AppPreferences.THEME_CINEMA_SPOTLIGHT -> ChannelRowSpec(84, 18, 18f, 13f, false, false, 70, 42)
         AppPreferences.THEME_SAPPHIRE_HORIZON -> ChannelRowSpec(60, 12, 15f, 12f, true, true, 48, 30)
@@ -413,6 +420,7 @@ object DisplayTheme {
     /** الفئات إما قائمة جانبية أو مصفوفة جانبية أو مسار أعلى مستقل. */
     fun liveCategorySpec(theme: String): LiveCategorySpec = when (theme) {
         AppPreferences.THEME_ALAA_NEON_IPTV -> LiveCategorySpec(LiveCategoryPlacement.SIDE_LIST, 0.46f, 1, 54, 14f, "", true)
+        AppPreferences.THEME_ALAA_FIGMA -> LiveCategorySpec(LiveCategoryPlacement.SIDE_LIST, 0.32f, 1, 52, 14f, "", true)
         AppPreferences.THEME_NEON_ARCADE -> LiveCategorySpec(LiveCategoryPlacement.TOP_RAIL, 0.34f, 1, 72, 15f, "", false)
         AppPreferences.THEME_CINEMA_SPOTLIGHT -> LiveCategorySpec(LiveCategoryPlacement.SIDE_LIST, 0.25f, 1, 72, 17f, "", true)
         AppPreferences.THEME_SAPPHIRE_HORIZON -> LiveCategorySpec(LiveCategoryPlacement.SIDE_GRID, 0.38f, 2, 70, 14f, "", true)
@@ -434,6 +442,7 @@ object DisplayTheme {
 
     fun mediaGridSpan(theme: String): Int = when (theme) {
         AppPreferences.THEME_ALAA_NEON_IPTV -> 5
+        AppPreferences.THEME_ALAA_FIGMA -> 5
         AppPreferences.THEME_NEON_ARCADE -> 6
         AppPreferences.THEME_CINEMA_SPOTLIGHT -> 3
         AppPreferences.THEME_SAPPHIRE_HORIZON -> 5
