@@ -128,14 +128,22 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun initializePlayer(url: String) {
+        val playableUrl = PlaybackUrlPolicy.normalizedHttpUrlOrNull(url)
+        if (playableUrl == null) {
+            Log.w(TAG, "Rejected invalid or empty playback URL")
+            showLoading(false)
+            showError("رابط البث غير صالح. ارجع واختر محتوى آخر")
+            return
+        }
+
         showLoading(true)
         showError(null)
-        attemptedLiveUrls += url
-
-        Log.d(TAG, "▶️ Initializing player with URL type: ${streamType}")
-        Log.d(TAG, "▶️ URL protocol: ${Uri.parse(url).scheme}")
+        attemptedLiveUrls += playableUrl
 
         try {
+            val uri = Uri.parse(playableUrl)
+            Log.d(TAG, "▶️ Initializing player with URL type: ${streamType}")
+            Log.d(TAG, "▶️ URL protocol: ${uri.scheme}")
             val shouldAttachListener = player == null
             if (shouldAttachListener) {
                 val selector = DefaultTrackSelector(this)
@@ -171,7 +179,6 @@ class PlayerActivity : AppCompatActivity() {
                 }
             }
 
-            val uri = Uri.parse(url)
             val mediaItem = MediaItem.fromUri(uri)
             if (streamType.equals("live", ignoreCase = true) && prefs.isFeatureEnabled(FeatureCatalog.LIVE_AUDIO_ONLY)) {
                 trackSelector?.let { currentSelector ->
@@ -191,15 +198,15 @@ class PlayerActivity : AppCompatActivity() {
                 .setReadTimeoutMs(30_000)
 
             val mediaSource = when {
-                url.endsWith(".m3u8", ignoreCase = true) || 
-                url.contains(".m3u8", ignoreCase = true) -> {
+                playableUrl.endsWith(".m3u8", ignoreCase = true) ||
+                playableUrl.contains(".m3u8", ignoreCase = true) -> {
                     Log.d(TAG, "📺 Using HLS media source")
                     HlsMediaSource.Factory(httpDataSourceFactory)
                         .createMediaSource(mediaItem)
                 }
                 else -> {
                     Log.d(TAG, "📺 Using Progressive media source")
-                    val progressiveItem = if (url.substringBefore('?').endsWith(".ts", ignoreCase = true)) {
+                    val progressiveItem = if (playableUrl.substringBefore('?').endsWith(".ts", ignoreCase = true)) {
                         mediaItem.buildUpon().setMimeType(MimeTypes.VIDEO_MP2T).build()
                     } else {
                         mediaItem
@@ -209,7 +216,8 @@ class PlayerActivity : AppCompatActivity() {
                 }
             }
 
-            player?.apply {
+            val activePlayer = requireNotNull(player) { "Player creation failed" }
+            activePlayer.apply {
                 // سجّل المستمع قبل prepare حتى لا تضيع أخطاء التهيئة الأولى.
                 if (shouldAttachListener) addListener(playerListener)
                 setMediaSource(mediaSource)

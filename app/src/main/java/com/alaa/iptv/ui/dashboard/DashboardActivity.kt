@@ -23,6 +23,7 @@ import com.alaa.iptv.ui.main.SeriesActivity
 import com.alaa.iptv.ui.library.LibraryActivity
 import com.alaa.iptv.ui.library.SearchActivity
 import com.alaa.iptv.ui.player.PlayerActivity
+import com.alaa.iptv.ui.player.PlaybackUrlPolicy
 import com.alaa.iptv.ui.settings.SettingsActivity
 import com.alaa.iptv.ui.login.LoginActivity
 import com.alaa.iptv.ui.theme.DisplayTheme
@@ -523,13 +524,25 @@ class DashboardActivity : AppCompatActivity() {
     }
 
     private fun playContent(item: ContinueWatchingItem) {
-        val url = item.channel.directSource ?: item.channel.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password)
-        if (url.isNullOrBlank()) return
-        startActivity(Intent(this, PlayerActivity::class.java)
-            .putExtra("STREAM_URL", url)
-            .putExtra("CHANNEL_NAME", item.channel.name)
-            .putExtra("STREAM_TYPE", item.channel.streamType)
-            .putExtra(PlayerActivity.EXTRA_RESUME_POSITION_MS, item.resumePositionMs))
+        val rawUrl = item.channel.directSource
+            ?: item.channel.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password)
+        val url = PlaybackUrlPolicy.normalizedHttpUrlOrNull(rawUrl)
+        if (url == null) {
+            Log.w(TAG, "Skipping playback because the continue-watching item has no valid HTTP(S) URL")
+            showToast("تعذر تشغيل هذا المحتوى: رابط البث غير صالح")
+            return
+        }
+
+        runCatching {
+            startActivity(Intent(this, PlayerActivity::class.java)
+                .putExtra("STREAM_URL", url)
+                .putExtra("CHANNEL_NAME", item.channel.name)
+                .putExtra("STREAM_TYPE", item.channel.streamType)
+                .putExtra(PlayerActivity.EXTRA_RESUME_POSITION_MS, item.resumePositionMs))
+        }.onFailure { error ->
+            Log.e(TAG, "Unable to open PlayerActivity", error)
+            showToast("تعذر فتح المشغل. حاول مجدداً")
+        }
     }
 
     override fun onKeyDown(keyCode: Int, event: android.view.KeyEvent?): Boolean {
