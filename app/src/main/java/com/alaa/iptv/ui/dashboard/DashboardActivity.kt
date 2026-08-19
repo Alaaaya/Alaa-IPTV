@@ -561,25 +561,37 @@ class DashboardActivity : AppCompatActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: android.view.KeyEvent?): Boolean {
-        if (keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN && binding.heroWatchNow.hasFocus()) {
-            focusFirstCategory()
-            return true
-        }
-        if (keyCode == android.view.KeyEvent.KEYCODE_DPAD_UP && binding.categoriesRecyclerView.hasFocus()) {
-            binding.heroWatchNow.requestFocus()
-            binding.dashboardScrollView.smoothScrollTo(0, 0)
-            return true
-        }
-        if (keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN && binding.categoriesRecyclerView.hasFocus()) {
-            focusFirstContinueWatching()
-            return true
-        }
-        if (keyCode == android.view.KeyEvent.KEYCODE_DPAD_UP && binding.continueWatchingRecyclerView.hasFocus()) {
-            focusFirstCategory()
-            return true
-        }
-        if (keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN && binding.continueWatchingRecyclerView.hasFocus()) {
-            return true
+        val isDown = keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN
+        val isUp = keyCode == android.view.KeyEvent.KEYCODE_DPAD_UP
+        if (isDown || isUp) {
+            val zone = when {
+                binding.heroWatchNow.hasFocus() -> DashboardFocusPolicy.Zone.HERO
+                binding.categoriesRecyclerView.hasFocus() -> DashboardFocusPolicy.Zone.CATEGORIES
+                binding.continueWatchingRecyclerView.hasFocus() -> DashboardFocusPolicy.Zone.CONTINUE_WATCHING
+                else -> DashboardFocusPolicy.Zone.OTHER
+            }
+            val destination = DashboardFocusPolicy.verticalDestination(
+                zone = zone,
+                moveDown = isDown,
+                hasContinueWatching = (binding.continueWatchingRecyclerView.adapter?.itemCount ?: 0) > 0
+            )
+            when (destination) {
+                DashboardFocusPolicy.Destination.HERO -> {
+                    binding.heroWatchNow.requestFocus()
+                    binding.dashboardScrollView.smoothScrollTo(0, 0)
+                    return true
+                }
+                DashboardFocusPolicy.Destination.CATEGORIES -> {
+                    focusFirstCategory()
+                    return true
+                }
+                DashboardFocusPolicy.Destination.CONTINUE_WATCHING -> {
+                    focusFirstContinueWatching()
+                    return true
+                }
+                DashboardFocusPolicy.Destination.BLOCK -> return true
+                DashboardFocusPolicy.Destination.DEFAULT -> Unit
+            }
         }
         return super.onKeyDown(keyCode, event)
     }
