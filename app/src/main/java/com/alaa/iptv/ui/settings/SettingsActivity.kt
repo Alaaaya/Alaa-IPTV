@@ -41,6 +41,7 @@ class SettingsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivitySettingsBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        com.alaa.iptv.ui.common.PremiumNeonFocus.install(binding.root)
 
         prefs = AppPreferences(this)
         binding.tvIdValue.text = prefs.getOrCreateTvId()

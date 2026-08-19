@@ -78,6 +78,7 @@ class PlayerActivity : AppCompatActivity() {
         playerOpenedAtMs = SystemClock.elapsedRealtime()
         binding = ActivityPlayerBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        com.alaa.iptv.ui.common.PremiumNeonFocus.install(binding.root)
         prefs = AppPreferences(this)
         DisplayTheme.applyPlayer(binding, prefs)
         DisplayTheme.applyViewingPreferences(binding.root, prefs)
