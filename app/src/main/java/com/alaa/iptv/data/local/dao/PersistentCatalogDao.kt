@@ -42,4 +42,13 @@ interface PersistentCatalogDao {
 
     @Query("DELETE FROM catalog_sync_state WHERE accountKey = :accountKey")
     suspend fun clearSyncState(accountKey: String)
+
+    @Query("DELETE FROM catalog_channels WHERE accountKey IN (SELECT accountKey FROM catalog_sync_state WHERE lastSuccessfulSyncAt < :cutoff)")
+    suspend fun clearStaleAccountChannels(cutoff: Long)
+
+    @Query("DELETE FROM catalog_categories WHERE accountKey IN (SELECT accountKey FROM catalog_sync_state WHERE lastSuccessfulSyncAt < :cutoff)")
+    suspend fun clearStaleAccountCategories(cutoff: Long)
+
+    @Query("DELETE FROM catalog_sync_state WHERE lastSuccessfulSyncAt < :cutoff")
+    suspend fun clearStaleSyncStates(cutoff: Long)
 }
