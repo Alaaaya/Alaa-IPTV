@@ -5,6 +5,7 @@ import android.util.Log
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.alaa.iptv.BuildConfig
+import com.alaa.iptv.data.local.PersistentLiveCatalog
 import com.alaa.iptv.data.models.*
 import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.data.remote.TvProvisioningClient
@@ -92,6 +93,10 @@ class MediaRepository(
             .cache(Cache(File(context.cacheDir, "http_cache"), 25L * 1024 * 1024))
             .build()
     }
+
+    private fun persistentLiveCatalogOrNull(): PersistentLiveCatalog? = runCatching {
+        if (responseOverride == null) PersistentLiveCatalog(context, sourceCacheKey()) else null
+    }.getOrNull()
 
     // ================= CACHE =================
 
@@ -234,6 +239,15 @@ class MediaRepository(
     suspend fun getLiveStreams(categoryId: String?, page: Int = 0): Result<List<Channel>> =
         getLiveContentPage(categoryId, page).map { it.items }
 
+    suspend fun getPersistedLiveCategories(): List<Category> = withContext(Dispatchers.IO) {
+        persistentLiveCatalogOrNull()?.categories().orEmpty()
+    }
+
+    suspend fun getPersistedLiveContentPage(categoryId: String, page: Int): PagedContent<Channel>? =
+        withContext(Dispatchers.IO) {
+            persistentLiveCatalogOrNull()?.page(categoryId, page.coerceAtLeast(0), LIVE_PAGE_SIZE)
+        }
+
     /**
      * تعيد الصفحة المطلوبة مع العدد الحقيقي للعناصر في الفئة من الاستجابة نفسها.
      * لا تُحمّل فئات أخرى ولا تنشئ طلباً إضافياً لغرض العد فقط.
@@ -259,6 +273,9 @@ class MediaRepository(
                         val scoped = effectiveCategory?.let { selectedId ->
                             snapshot.channelsByCategory[selectedId].orEmpty()
                         } ?: channels
+                        effectiveCategory?.let { selectedId ->
+                            persistentLiveCatalogOrNull()?.replaceCategoryChannels(selectedId, scoped)
+                        }
                         val bounds = ContentPagingPolicy.bounds(scoped.size, pageIndex, LIVE_PAGE_SIZE)
                         PagedContent(
                             items = scoped.subList(bounds.startIndex, bounds.endIndex),
@@ -286,8 +303,7 @@ class MediaRepository(
                 }
                 val channels = mutableListOf<Channel>()
                 val bounds = ContentPagingPolicy.bounds(scopedObjects.size, pageIndex, LIVE_PAGE_SIZE)
-                for (i in bounds.startIndex until bounds.endIndex) {
-                    val obj = scopedObjects[i]
+                for (obj in scopedObjects) {
                     val id = obj.stringValue("stream_id")
                     if (id.isBlank()) continue
                     val providerSource = obj.stringValue("direct_source")
@@ -321,9 +337,13 @@ class MediaRepository(
                     )
                 }
 
+                effectiveCategory?.let { selectedId ->
+                    persistentLiveCatalogOrNull()?.replaceCategoryChannels(selectedId, channels)
+                }
+
                 // حفظ في الكاش مع إجمالي الفئة بعد التحقق الدفاعي من استجابة المصدر.
                 val contentPage = PagedContent(
-                    items = channels,
+                    items = channels.subList(bounds.startIndex, bounds.endIndex),
                     totalCount = scopedObjects.size,
                     hasMore = bounds.hasMore
                 )
@@ -347,7 +367,9 @@ class MediaRepository(
 
             if (isM3U()) {
                 return@withContext loadM3USnapshot(prefs.serverUrl).map { snapshot ->
-                    M3UCategoryMapper.categories(snapshot.channels)
+                    M3UCategoryMapper.categories(snapshot.channels).also { categories ->
+                        persistentLiveCatalogOrNull()?.replaceCategories(categories)
+                    }
                 }
             }
 

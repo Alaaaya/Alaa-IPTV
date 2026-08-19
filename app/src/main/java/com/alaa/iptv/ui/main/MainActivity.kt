@@ -154,9 +154,17 @@ class MainActivity : AppCompatActivity() {
     private fun loadLiveCategories() {
         lifecycleScope.launch {
             try {
+                val persistedCategories = repository.getPersistedLiveCategories()
+                if (persistedCategories.isNotEmpty()) {
+                    liveCategories = persistedCategories
+                    liveCategoryAdapter.submit(liveCategories, prefs.lastLiveCategoryId)
+                    val cachedSelected = liveCategories.firstOrNull { it.categoryId == prefs.lastLiveCategoryId }
+                        ?: liveCategories.firstOrNull()
+                    if (cachedSelected != null) selectLiveCategory(cachedSelected)
+                }
                 val categoriesResult = repository.getLiveCategories()
                 if (categoriesResult.isFailure) {
-                    showContentError(categoriesResult.exceptionOrNull())
+                    if (persistedCategories.isEmpty()) showContentError(categoriesResult.exceptionOrNull())
                     return@launch
                 }
                 liveCategories = categoriesResult.getOrDefault(emptyList())
@@ -227,6 +235,21 @@ class MainActivity : AppCompatActivity() {
         if (!append) binding.channelCountText.text = "جارٍ تحميل قنوات الفئة…"
         channelLoadJob = lifecycleScope.launch {
             try {
+                if (!append) {
+                    repository.getPersistedLiveContentPage(categoryId, page)?.let { cachedPage ->
+                        if (requestId == channelLoadRequestId && selectedLiveCategory?.categoryId == categoryId) {
+                            val namedCached = cachedPage.items.map { it.copy(categoryName = selectedLiveCategory?.categoryName) }
+                            allChannels = decorateChannels(namedCached)
+                            currentLivePage = page
+                            selectedLiveCategoryTotal = cachedPage.totalCount
+                            hasMoreLivePages = cachedPage.hasMore
+                            updateLiveCategoryCount(categoryId, selectedLiveCategoryTotal)
+                            binding.channelCountText.text = liveCountText()
+                            updateChannelList()
+                            binding.previewSubtitle.text = "عرض محفوظ محلياً — جارٍ التحديث"
+                        }
+                    }
+                }
                 val result = repository.getLiveContentPage(categoryId, page)
 
                 // لا تسمح لطلب فئة سابقة أو صفحة قديمة بتبديل محتوى الفئة التي اختارها المستخدم لاحقاً.

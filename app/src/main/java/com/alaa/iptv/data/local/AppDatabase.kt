@@ -9,10 +9,6 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.alaa.iptv.data.local.dao.*
 import com.alaa.iptv.data.local.entity.*
 
-/**
- * Room database for IPTV app
- * Version 2: Added EPG support
- */
 @Database(
     entities = [
         ChannelEntity::class,
@@ -22,13 +18,15 @@ import com.alaa.iptv.data.local.entity.*
         EpisodeEntity::class,
         FavoriteEntity::class,
         RecentEntity::class,
-        EpgProgramEntity::class
+        EpgProgramEntity::class,
+        CatalogChannelEntity::class,
+        CatalogCategoryEntity::class,
+        CatalogSyncStateEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
-    
     abstract fun channelDao(): ChannelDao
     abstract fun categoryDao(): CategoryDao
     abstract fun movieDao(): MovieDao
@@ -37,17 +35,14 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun favoriteDao(): FavoriteDao
     abstract fun recentDao(): RecentDao
     abstract fun epgDao(): EpgDao
-    
+    abstract fun persistentCatalogDao(): PersistentCatalogDao
+
     companion object {
-        @Volatile
-        private var INSTANCE: AppDatabase? = null
-        
+        @Volatile private var INSTANCE: AppDatabase? = null
         private const val DATABASE_NAME = "alaa_iptv_database"
-        
-        // تعريف عمليات الترحيل الآمنة (Migrations) للحفاظ على بيانات المستخدم
+
         private val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                // ترحيل آمن لجداول EPG أو تحديث الهيكل دون حذف البيانات القديمة
                 db.execSQL("CREATE TABLE IF NOT EXISTS `epg_programs` (`id` TEXT NOT NULL, `channelId` TEXT NOT NULL, `title` TEXT NOT NULL, `description` TEXT, `startTime` INTEGER NOT NULL, `endTime` INTEGER NOT NULL, `category` TEXT, `icon` TEXT, `lastUpdated` INTEGER NOT NULL, PRIMARY KEY(`id`))")
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_epg_programs_channelId` ON `epg_programs` (`channelId`)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_epg_programs_startTime` ON `epg_programs` (`startTime`)")
@@ -55,28 +50,21 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
-        fun getInstance(context: Context): AppDatabase {
-            return INSTANCE ?: synchronized(this) {
-                val instance = Room.databaseBuilder(
-                    context.applicationContext,
-                    AppDatabase::class.java,
-                    DATABASE_NAME
-                )
-                    .addMigrations(MIGRATION_1_2)
-                    // إزالة fallbackToDestructiveMigration لمنع حذف بيانات المفضلة والسجل عند التحديث
-                    .build()
-                
-                INSTANCE = instance
-                instance
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE IF NOT EXISTS `catalog_channels` (`accountKey` TEXT NOT NULL, `streamId` TEXT NOT NULL, `name` TEXT NOT NULL, `categoryId` TEXT NOT NULL, `categoryName` TEXT, `num` TEXT NOT NULL, `streamIcon` TEXT, `directSource` TEXT, `position` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`accountKey`, `streamId`))")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_catalog_channels_accountKey_categoryId` ON `catalog_channels` (`accountKey`, `categoryId`)")
+                db.execSQL("CREATE TABLE IF NOT EXISTS `catalog_categories` (`accountKey` TEXT NOT NULL, `categoryId` TEXT NOT NULL, `categoryName` TEXT NOT NULL, `position` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`accountKey`, `categoryId`))")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_catalog_categories_accountKey` ON `catalog_categories` (`accountKey`)")
+                db.execSQL("CREATE TABLE IF NOT EXISTS `catalog_sync_state` (`accountKey` TEXT NOT NULL, `lastSuccessfulSyncAt` INTEGER NOT NULL, `sourceVersion` TEXT, PRIMARY KEY(`accountKey`))")
             }
         }
-        
-        // Future migrations will be added here
-        // Example:
-        // val MIGRATION_1_2 = object : Migration(1, 2) {
-        //     override fun migrate(database: SupportSQLiteDatabase) {
-        //         // Migration code
-        //     }
-        // }
+
+        fun getInstance(context: Context): AppDatabase = INSTANCE ?: synchronized(this) {
+            Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, DATABASE_NAME)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                .build()
+                .also { INSTANCE = it }
+        }
     }
 }
