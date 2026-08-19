@@ -3,34 +3,52 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/episodeCard"
     android:layout_width="match_parent"
-    android:layout_height="76dp"
-    android:layout_marginHorizontal="5dp"
+    android:layout_height="88dp"
+    android:layout_marginHorizontal="6dp"
     android:layout_marginVertical="5dp"
-    android:focusable="true"
     android:clickable="true"
-    app:cardBackgroundColor="@color/glass_white_10"
-    app:cardCornerRadius="12dp"
+    android:focusable="true"
+    app:cardBackgroundColor="#10131D"
+    app:cardCornerRadius="10dp"
     app:cardElevation="0dp">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:padding="10dp">
+        android:padding="8dp">
 
         <TextView
             android:id="@+id/episodeNumber"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/bg_button_red"
+            android:layout_width="34dp"
+            android:layout_height="match_parent"
             android:gravity="center"
-            android:minWidth="34dp"
-            android:paddingHorizontal="6dp"
-            android:paddingVertical="5dp"
             android:textColor="@color/white"
-            android:textSize="12sp"
-            android:textStyle="bold" />
+            android:textSize="17sp" />
+
+        <FrameLayout
+            android:layout_width="92dp"
+            android:layout_height="64dp"
+            android:layout_marginStart="5dp">
+
+            <ImageView
+                android:id="@+id/episodeImage"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription="@null"
+                android:scaleType="centerCrop" />
+
+            <TextView
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_episode_play_overlay"
+                android:gravity="center"
+                android:text="▶"
+                android:textColor="@color/white"
+                android:textSize="12sp" />
+        </FrameLayout>
 
         <LinearLayout
             android:layout_width="0dp"
@@ -53,7 +71,7 @@
                 android:id="@+id/episodeMeta"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
+                android:layout_marginTop="3dp"
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:textColor="@color/text_gray_light"
@@ -61,9 +79,9 @@
         </LinearLayout>
 
         <TextView
+            android:id="@+id/episodeCompletedBadge"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/episodeCompletedBadge"
             android:layout_marginEnd="8dp"
             android:background="@drawable/bg_button_red"
             android:paddingHorizontal="6dp"
@@ -75,11 +93,12 @@
             android:visibility="gone" />
 
         <TextView
+            android:id="@+id/episodeDuration"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="▶"
-            android:textColor="@color/alaa_accent_red"
-            android:textSize="16sp" />
+            android:layout_marginEnd="4dp"
+            android:textColor="@color/text_gray_light"
+            android:textSize="11sp" />
     </LinearLayout>
 
 </androidx.cardview.widget.CardView>

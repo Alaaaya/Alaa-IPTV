@@ -202,22 +202,10 @@ class MoviesActivity : AppCompatActivity() {
     }
 
     private fun showMovieDetails(movie: Movie) {
-        val details = listOfNotNull(
-            movie.year?.takeIf { it.isNotBlank() }?.let { "السنة: $it" },
-            movie.rating?.takeIf { it.isNotBlank() }?.let { "التقييم: ★ $it" },
-            movie.genre?.takeIf { it.isNotBlank() }?.let { "النوع: $it" },
-            movie.duration?.takeIf { it.isNotBlank() }?.let { "المدة: $it" },
-            movie.director?.takeIf { it.isNotBlank() }?.let { "الإخراج: $it" },
-            movie.cast?.takeIf { it.isNotBlank() }?.let { "الطاقم: $it" },
-            movie.plot?.takeIf { it.isNotBlank() }
-        ).joinToString("\n\n")
-        AlertDialog.Builder(this)
-            .setTitle(movie.name)
-            .setMessage(details.ifBlank { "لا تتوفر تفاصيل إضافية لهذا الفيلم من المصدر." })
-            .setPositiveButton("تشغيل") { _, _ -> playMovie(movie) }
-            .setNeutralButton("خيارات") { _, _ -> showMovieExtras(movie) }
-            .setNegativeButton("إغلاق", null)
-            .show()
+        startActivity(
+            Intent(this, MovieDetailsActivity::class.java)
+                .putExtra(MovieDetailsActivity.EXTRA_MOVIE, movie)
+        )
     }
 
     private fun showMovieExtras(movie: Movie) {
