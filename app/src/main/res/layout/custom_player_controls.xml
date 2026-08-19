@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -15,11 +16,13 @@
         android:textSize="16sp"
         android:layout_marginBottom="8dp" />
 
-    <SeekBar
+    <!-- يجب أن يكون exo_progress من نوع TimeBar. استخدام SeekBar هنا يسبب
+         ClassCastException داخل Media3 عند إنشاء PlayerView. -->
+    <androidx.media3.ui.DefaultTimeBar
         android:id="@+id/exo_progress"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:progressTint="@color/accent_blue"
-        android:thumbTint="@color/accent_blue" />
+        app:played_color="@color/accent_blue"
+        app:scrubber_color="@color/accent_blue" />
 
 </LinearLayout>
