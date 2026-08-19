@@ -55,6 +55,10 @@ class MainActivity : AppCompatActivity() {
     private var moveSnapshot: List<Channel> = emptyList()
     private var typedChannelNumber = ""
     private var typedChannelNumberResetJob: Job? = null
+    private var channelLoadJob: Job? = null
+    private var channelLoadRequestId = 0L
+    private data class ChannelLoadRequest(val categoryId: String, val page: Int, val append: Boolean)
+    private var failedChannelLoad: ChannelLoadRequest? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -86,7 +90,12 @@ class MainActivity : AppCompatActivity() {
         setupChannelsList()
         setupLiveCategoriesList()
         binding.filterAll.setOnClickListener { focusSelectedCategory() }
-        binding.channelCounterFooter.setOnClickListener { loadMoreChannels() }
+        binding.channelCounterFooter.setOnClickListener {
+            failedChannelLoad?.let { request ->
+                failedChannelLoad = null
+                loadContent(request.categoryId, request.page, request.append)
+            } ?: loadMoreChannels()
+        }
         lifecycleScope.launch {
             if (ControlPlaneActivityGuard.refreshAndEnforce(this@MainActivity, prefs, force = true)) {
                 if (currentMode == MODE_FAVORITES) loadFavoriteChannels() else loadLiveCategories()
@@ -187,6 +196,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun selectLiveCategory(category: Category) {
+        channelLoadJob?.cancel()
+        channelLoadRequestId += 1
         prefs.lastLiveCategoryId = category.categoryId
         selectedLiveCategory = category
         currentLivePage = 0
@@ -209,9 +220,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadContent(categoryId: String, page: Int, append: Boolean) {
-        lifecycleScope.launch {
+        channelLoadJob?.cancel()
+        val requestId = ++channelLoadRequestId
+        failedChannelLoad = null
+        binding.channelCounterFooter.text = "جارٍ تحميل القنوات…"
+        if (!append) binding.channelCountText.text = "جارٍ تحميل قنوات الفئة…"
+        channelLoadJob = lifecycleScope.launch {
             try {
                 val result = repository.getLiveContentPage(categoryId, page)
+
+                // لا تسمح لطلب فئة سابقة أو صفحة قديمة بتبديل محتوى الفئة التي اختارها المستخدم لاحقاً.
+                if (requestId != channelLoadRequestId || selectedLiveCategory?.categoryId != categoryId) return@launch
 
                 result.onSuccess { contentPage ->
                     val loadedChannels = contentPage.items
@@ -230,21 +249,41 @@ class MainActivity : AppCompatActivity() {
                     updateLiveCategoryCount(categoryId, selectedLiveCategoryTotal)
                     binding.channelCountText.text = liveCountText()
                     updateChannelList(if (append) allChannels.firstOrNull() else null)
-                }.onFailure(::showContentError)
+                }.onFailure { error ->
+                    if (requestId == channelLoadRequestId && selectedLiveCategory?.categoryId == categoryId) {
+                        failedChannelLoad = ChannelLoadRequest(categoryId, page, append)
+                        showContentError(error, keepExistingChannels = append)
+                    }
+                }
             } catch (e: Exception) {
-                showContentError(e)
+                if (requestId == channelLoadRequestId && selectedLiveCategory?.categoryId == categoryId) {
+                    failedChannelLoad = ChannelLoadRequest(categoryId, page, append)
+                    showContentError(e, keepExistingChannels = append)
+                }
             }
         }
     }
 
-    private fun showContentError(error: Throwable?) {
+    override fun onDestroy() {
+        channelLoadJob?.cancel()
+        typedChannelNumberResetJob?.cancel()
+        super.onDestroy()
+    }
+
+    private fun showContentError(error: Throwable?, keepExistingChannels: Boolean = false) {
         Log.e(TAG, "Unable to load content", error)
-        allChannels = emptyList()
-        binding.previewTitle.text = "تعذر تحميل القنوات"
-        binding.previewSubtitle.text = error?.message ?: "تحقق من اتصال الإنترنت والسيرفر"
-        binding.channelCountText.text = "تعذر احتساب القنوات"
-        binding.channelCounterFooter.text = "0 / 0"
-        channelAdapter.updateChannels(emptyList())
+        if (keepExistingChannels && allChannels.isNotEmpty()) {
+            binding.previewSubtitle.text = "تعذر تحميل المزيد — اضغط هنا لإعادة المحاولة"
+            binding.channelCountText.text = liveCountText()
+            binding.channelCounterFooter.text = "تعذر تحميل الصفحة التالية — اضغط لإعادة المحاولة"
+        } else {
+            allChannels = emptyList()
+            binding.previewTitle.text = "تعذر تحميل القنوات"
+            binding.previewSubtitle.text = error?.message ?: "تحقق من اتصال الإنترنت والسيرفر ثم اضغط لإعادة المحاولة"
+            binding.channelCountText.text = "تعذر احتساب القنوات"
+            binding.channelCounterFooter.text = "تعذر التحميل — اضغط لإعادة المحاولة"
+            channelAdapter.updateChannels(emptyList())
+        }
     }
 
     private fun decorateChannels(channels: List<Channel>): List<Channel> {
