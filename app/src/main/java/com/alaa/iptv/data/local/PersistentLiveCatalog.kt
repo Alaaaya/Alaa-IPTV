@@ -13,6 +13,10 @@ import com.alaa.iptv.data.repository.ContentPagingPolicy
  * فهرس Live دائم لكل اشتراك. لا يستقبل إلا بصمة المصدر، لذلك لا يخزن بيانات الاعتماد الخام.
  */
 class PersistentLiveCatalog(context: Context, private val accountKey: String) {
+    private companion object {
+        const val MAX_STALE_CATALOG_AGE_MS = 30L * 24L * 60L * 60L * 1000L
+    }
+
     private val dao = AppDatabase.getInstance(context.applicationContext).persistentCatalogDao()
 
     suspend fun categories(): List<Category> = dao.categories(accountKey).map {
@@ -47,6 +51,8 @@ class PersistentLiveCatalog(context: Context, private val accountKey: String) {
         dao.upsertCategories(items.mapIndexed { index, category ->
             CatalogCategoryEntity(accountKey, category.categoryId, category.categoryName, index, now)
         })
+        dao.upsertSyncState(CatalogSyncStateEntity(accountKey, now, null))
+        pruneStaleAccounts(now)
     }
 
     suspend fun replaceCategoryChannels(categoryId: String, channels: List<Channel>) {
@@ -67,7 +73,15 @@ class PersistentLiveCatalog(context: Context, private val accountKey: String) {
             )
         })
         dao.upsertSyncState(CatalogSyncStateEntity(accountKey, now, null))
+        pruneStaleAccounts(now)
     }
 
     suspend fun lastSuccessfulSyncAt(): Long? = dao.syncState(accountKey)?.lastSuccessfulSyncAt
+
+    private suspend fun pruneStaleAccounts(now: Long) {
+        val cutoff = now - MAX_STALE_CATALOG_AGE_MS
+        dao.clearStaleAccountChannels(cutoff)
+        dao.clearStaleAccountCategories(cutoff)
+        dao.clearStaleSyncStates(cutoff)
+    }
 }
