@@ -15,6 +15,10 @@ class PlaybackUrlPolicyTest {
             "http://stream.example.test/movie/user/pass/2.mp4",
             PlaybackUrlPolicy.normalizedHttpUrlOrNull("http://stream.example.test/movie/user/pass/2.mp4")
         )
+        assertEquals(
+            "https://stream.example.test:8443/live/user/pass/3.ts?token=abc",
+            PlaybackUrlPolicy.normalizedHttpUrlOrNull("https://stream.example.test:8443/live/user/pass/3.ts?token=abc")
+        )
     }
 
     @Test
