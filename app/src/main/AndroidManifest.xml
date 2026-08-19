@@ -18,7 +18,8 @@
     <application
         android:allowBackup="false"
         android:supportsRtl="false"
-        android:icon="@drawable/ic_alaa_player_mark"
+        android:icon="@drawable/ic_alaa_player_launcher"
+        android:roundIcon="@drawable/ic_alaa_player_launcher"
         android:label="@string/app_name"
         android:banner="@drawable/app_banner"
         android:theme="@style/AppTheme"
