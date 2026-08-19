@@ -67,7 +67,7 @@ class LiveCategoryAdapter(
             val spec = DisplayTheme.liveCategorySpec(displayTheme)
             val suffix = if (spec.labelPrefix == "[ ") " ]" else ""
             binding.categoryName.text = "${spec.labelPrefix}${category.categoryName}$suffix"
-            binding.categoryName.textSize = maxOf(18f, spec.textSizeSp)
+            binding.categoryName.textSize = LiveCategoryLayoutPolicy.compactNameSizeSp(spec.textSizeSp)
             binding.categoryNumber.text = (bindingAdapterPosition + 1).toString()
             binding.categoryCount.text = if (category.channelCount > 0) {
                 "${category.channelCount} عنصر في هذه الفئة"
@@ -76,7 +76,7 @@ class LiveCategoryAdapter(
             }
             val density = binding.root.resources.displayMetrics.density
             binding.root.layoutParams = binding.root.layoutParams.apply {
-                height = (maxOf(66, spec.itemHeightDp) * density).toInt()
+                height = (LiveCategoryLayoutPolicy.compactItemHeightDp(spec.itemHeightDp) * density).toInt()
             }
             render(category)
         }
