@@ -1,6 +1,7 @@
 package com.alaa.iptv.ui.dashboard
 
 import android.graphics.Color
+import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
@@ -8,6 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.alaa.iptv.R
 import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.databinding.ItemSidebarBinding
+import com.alaa.iptv.ui.common.OnePressActivationPolicy
 import com.alaa.iptv.ui.theme.DisplayTheme
 
 class SidebarAdapter(
@@ -36,6 +38,12 @@ class SidebarAdapter(
                     notifyDataSetChanged()
                     onItemClick(items[pos])
                 }
+            }
+            binding.root.setOnKeyListener { _, keyCode, event ->
+                if (OnePressActivationPolicy.shouldActivate(keyCode, event.action)) {
+                    binding.root.performClick()
+                    true
+                } else false
             }
         }
 

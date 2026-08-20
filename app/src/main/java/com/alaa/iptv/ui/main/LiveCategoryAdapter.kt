@@ -10,6 +10,7 @@ import com.alaa.iptv.R
 import com.alaa.iptv.data.models.Category
 import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.databinding.ItemLiveCategoryBinding
+import com.alaa.iptv.ui.common.OnePressActivationPolicy
 import com.alaa.iptv.ui.navigation.FocusBoundaryPolicy
 import com.alaa.iptv.ui.theme.DisplayTheme
 
@@ -51,6 +52,10 @@ class LiveCategoryAdapter(
             }
             binding.root.setOnKeyListener { _, keyCode, event ->
                 if (event.action != KeyEvent.ACTION_DOWN) return@setOnKeyListener false
+                if (OnePressActivationPolicy.shouldActivate(keyCode, event.action)) {
+                    binding.root.performClick()
+                    return@setOnKeyListener true
+                }
                 val spec = DisplayTheme.liveCategorySpec(displayTheme)
                 if (spec.placement == DisplayTheme.LiveCategoryPlacement.TOP_RAIL) return@setOnKeyListener false
                 FocusBoundaryPolicy.blocksVerticalExit(

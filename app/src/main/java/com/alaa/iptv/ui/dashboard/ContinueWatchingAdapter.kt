@@ -1,6 +1,7 @@
 package com.alaa.iptv.ui.dashboard
 
 import android.content.res.ColorStateList
+import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -8,6 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.alaa.iptv.R
 import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.databinding.ItemContinueWatchingBinding
+import com.alaa.iptv.ui.common.OnePressActivationPolicy
 import com.alaa.iptv.ui.theme.DisplayTheme
 import com.bumptech.glide.Glide
 
@@ -46,6 +48,12 @@ class ContinueWatchingAdapter(
                 if (pos != RecyclerView.NO_POSITION) {
                     onItemClick(items[pos])
                 }
+            }
+            binding.root.setOnKeyListener { _, keyCode, event ->
+                if (OnePressActivationPolicy.shouldActivate(keyCode, event.action)) {
+                    binding.root.performClick()
+                    true
+                } else false
             }
         }
 
