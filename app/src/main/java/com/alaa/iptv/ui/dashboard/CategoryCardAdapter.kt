@@ -1,7 +1,6 @@
 package com.alaa.iptv.ui.dashboard
 
 import android.graphics.Color
-import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -24,22 +23,13 @@ class CategoryCardAdapter(
             binding.root.isFocusableInTouchMode = true
 
             binding.root.setOnFocusChangeListener { _, hasFocus ->
-                val style = DisplayTheme.categoryCardStyle(theme)
                 binding.focusOutline.visibility = if (hasFocus) android.view.View.VISIBLE else android.view.View.GONE
-                binding.iconGlow.alpha = if (style.monochrome) 0f else if (hasFocus) 1.0f else 0.72f
-                if (hasFocus) {
-                    binding.root.scaleX = style.focusScale
-                    binding.root.scaleY = style.focusScale
-                    binding.root.elevation = style.focusedElevation
-                    binding.categoryIcon.scaleX = style.iconScale
-                    binding.categoryIcon.scaleY = style.iconScale
-                } else {
-                    binding.root.scaleX = 1.0f
-                    binding.root.scaleY = 1.0f
-                    binding.root.elevation = 2f
-                    binding.categoryIcon.scaleX = 1.0f
-                    binding.categoryIcon.scaleY = 1.0f
-                }
+                binding.iconGlow.visibility = android.view.View.GONE
+                binding.root.scaleX = 1f
+                binding.root.scaleY = 1f
+                binding.root.elevation = 2f
+                binding.categoryIcon.scaleX = 1f
+                binding.categoryIcon.scaleY = 1f
             }
 
             binding.root.setOnClickListener {
@@ -76,14 +66,9 @@ class CategoryCardAdapter(
             val neonColor = Color.parseColor(item.colorHex)
             val style = DisplayTheme.categoryCardStyle(theme)
             binding.categoryIcon.setColorFilter(if (style.monochrome) Color.WHITE else neonColor)
-            binding.categoryIcon.scaleX = if (isNeonIptv) 1.12f else spec.iconScale
-            binding.categoryIcon.scaleY = if (isNeonIptv) 1.12f else spec.iconScale
-            binding.iconGlow.background = GradientDrawable().apply {
-                shape = GradientDrawable.OVAL
-                val alpha = (70 * style.glowMultiplier).toInt().coerceAtMost(120)
-                setColor(Color.argb(alpha, Color.red(neonColor), Color.green(neonColor), Color.blue(neonColor)))
-                setStroke(2, if (style.monochrome) Color.WHITE else neonColor)
-            }
+            binding.categoryIcon.scaleX = 1f
+            binding.categoryIcon.scaleY = 1f
+            binding.iconGlow.visibility = android.view.View.GONE
             binding.cardBackground.setCardBackgroundColor(Color.TRANSPARENT)
         }
     }

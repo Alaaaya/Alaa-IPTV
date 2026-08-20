@@ -302,7 +302,7 @@ object DisplayTheme {
     fun applyPlayer(binding: ActivityPlayerBinding, prefs: AppPreferences) {
         val palette = palette(prefs.displayTheme) ?: return
         binding.root.setBackgroundColor(Color.parseColor(palette.background))
-        binding.loadingProgress.indeterminateTintList = android.content.res.ColorStateList.valueOf(Color.parseColor(palette.accent))
+        binding.loadingProgress.setTextColor(Color.parseColor(palette.accent))
         binding.trackSelectionButton.background = rounded(palette.panel, palette.radius, palette.focusStroke ?: palette.accent, 1)
     }
 

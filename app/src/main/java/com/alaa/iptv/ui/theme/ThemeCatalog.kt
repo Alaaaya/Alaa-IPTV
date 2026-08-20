@@ -22,7 +22,7 @@ object ThemeCatalog {
         ThemeOption(AppPreferences.THEME_NEON_ARCADE, "Neon Arcade", "سايبربانك داكن مع حدود نيون"),
         ThemeOption(AppPreferences.THEME_CINEMA_SPOTLIGHT, "Cinema Spotlight", "صالة سينما داكنة ببطاقات عريضة"),
         ThemeOption(AppPreferences.THEME_SAPPHIRE_HORIZON, "Sapphire Horizon", "أزرق ملكي ولوحات واسعة"),
-        ThemeOption(AppPreferences.THEME_EMERALD_PULSE, "Emerald Pulse", "أخضر زمردي وحالات تركيز نابضة"),
+        ThemeOption(AppPreferences.THEME_EMERALD_PULSE, "Emerald", "أخضر زمردي بحالات تركيز ثابتة"),
         ThemeOption(AppPreferences.THEME_AMBER_CONSOLE, "Amber Console", "واجهة كونسول كهرمانية عالية التباين"),
         ThemeOption(AppPreferences.THEME_NORDIC_LIGHT, "Nordic Light", "ألواح فاتحة بلمسات جليدية"),
         ThemeOption(AppPreferences.THEME_SUNSET_LOUNGE, "Sunset Lounge", "تدرجات غروب أرجوانية وبرتقالية"),

@@ -20,5 +20,7 @@ class PlayerOverlayLayoutContractTest {
         assertTrue(layout.contains("@+id/playerStatusMessage"))
         assertTrue(layout.contains("@+id/errorText"))
         assertTrue(layout.contains("@+id/loadingProgress"))
+        assertTrue(layout.contains("app:animation_enabled=\"false\""))
+        org.junit.Assert.assertFalse(layout.contains("<ProgressBar"))
     }
 }

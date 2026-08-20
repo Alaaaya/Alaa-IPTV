@@ -100,8 +100,6 @@ class LiveCategoryAdapter(
                 binding.categoryNumber.setBackgroundResource(
                     if (highlighted) R.drawable.bg_category_number_selected else R.drawable.bg_category_number_default
                 )
-                binding.root.scaleX = if (binding.root.hasFocus()) 1.025f else 1f
-                binding.root.scaleY = if (binding.root.hasFocus()) 1.025f else 1f
             } else {
                 binding.root.setBackgroundResource(
                     if (highlighted) R.drawable.bg_live_category_selected else R.drawable.bg_live_category_default

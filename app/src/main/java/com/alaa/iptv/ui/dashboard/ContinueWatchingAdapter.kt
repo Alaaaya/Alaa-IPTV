@@ -18,9 +18,9 @@ class ContinueWatchingAdapter(
 ) : RecyclerView.Adapter<ContinueWatchingAdapter.ViewHolder>() {
 
     fun railHeightDp(): Int = if (DisplayTheme.isNeonIptv(theme)) {
-        ContinueWatchingRailPolicy.railHeightDp(cardHeightDp = 178, focusScale = 1.08f)
+        ContinueWatchingRailPolicy.railHeightDp(cardHeightDp = 178, focusScale = 1f)
     } else {
-        ContinueWatchingRailPolicy.railHeightDp(cardHeightDp = 140, focusScale = 1.05f)
+        ContinueWatchingRailPolicy.railHeightDp(cardHeightDp = 140, focusScale = 1f)
     }
 
     inner class ViewHolder(val binding: ItemContinueWatchingBinding) :
@@ -31,22 +31,13 @@ class ContinueWatchingAdapter(
             binding.root.isFocusableInTouchMode = true
 
             binding.root.setOnFocusChangeListener { _, hasFocus ->
+                binding.root.scaleX = 1f
+                binding.root.scaleY = 1f
+                binding.root.cardElevation = 2f
+                binding.playOverlay.visibility = View.GONE
+                binding.continueFocusOutline.visibility = if (hasFocus) View.VISIBLE else View.GONE
                 if (hasFocus) {
-                    val scale = if (DisplayTheme.isNeonIptv(theme)) 1.08f else 1.05f
-                    binding.root.scaleX = scale
-                    binding.root.scaleY = scale
-                    binding.root.cardElevation = if (DisplayTheme.isNeonIptv(theme)) 18f else 8f
-                    binding.playOverlay.visibility = View.VISIBLE
-                    binding.continueFocusOutline.visibility = if (DisplayTheme.isNeonIptv(theme)) View.VISIBLE else View.GONE
-                } else {
-                    binding.root.scaleX = 1.0f
-                    binding.root.scaleY = 1.0f
-                    binding.root.cardElevation = 2f
-                    binding.playOverlay.visibility = View.GONE
-                    binding.continueFocusOutline.visibility = View.GONE
-                }
-                if (hasFocus) {
-                    (binding.root.parent as? RecyclerView)?.smoothScrollToPosition(bindingAdapterPosition)
+                    (binding.root.parent as? RecyclerView)?.scrollToPosition(bindingAdapterPosition)
                 }
             }
 
