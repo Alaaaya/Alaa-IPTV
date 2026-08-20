@@ -13,6 +13,7 @@ import androidx.media3.ui.DefaultTimeBar
 import androidx.constraintlayout.widget.ConstraintSet
 import androidx.recyclerview.widget.RecyclerView
 import com.alaa.iptv.R
+import com.alaa.iptv.ui.main.SimpleLiveLayoutPolicy
 import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.data.preferences.FeatureCatalog
 import com.alaa.iptv.databinding.ActivityDashboardBinding
@@ -198,13 +199,18 @@ object DisplayTheme {
     fun applyLive(binding: ActivityMainBinding, prefs: AppPreferences) {
         val palette = palette(prefs.displayTheme) ?: return
         binding.root.setBackgroundColor(Color.parseColor(palette.background))
-        binding.channelPanel.background = panelBackground(prefs.displayTheme)
-        binding.previewPanel.background = panelBackground(prefs.displayTheme)
+        val simpleLive = SimpleLiveLayoutPolicy.isEnabled(prefs.displayTheme)
+        binding.channelPanel.setBackgroundColor(Color.parseColor(if (simpleLive) "#050505" else palette.panel))
+        binding.previewPanel.setBackgroundColor(Color.parseColor(if (simpleLive) "#050505" else palette.panel))
         binding.filterAll.background = rounded(palette.accent, palette.radius)
         binding.filterAll.setTextColor(Color.parseColor(palette.accentText))
         binding.channelCounterFooter.setTextColor(Color.parseColor(palette.accent))
         binding.liveCategoriesTitle.setTextColor(Color.parseColor(palette.accent))
-        binding.liveCategoryPanel.background = panelBackground(prefs.displayTheme)
+        binding.liveCategoryPanel.setBackgroundColor(Color.parseColor(if (simpleLive) "#050505" else palette.panel))
+        binding.filterLive.visibility = if (simpleLive) View.GONE else View.VISIBLE
+        binding.filterFav.visibility = if (simpleLive) View.GONE else View.VISIBLE
+        binding.epgLayout.visibility = View.GONE
+        binding.actionButtons.visibility = View.GONE
         applyLiveStructure(binding, liveCategorySpec(prefs.displayTheme))
         binding.previewImage.alpha = when (prefs.displayTheme) {
             AppPreferences.THEME_CINEMA_SPOTLIGHT -> 0.95f
@@ -402,7 +408,7 @@ object DisplayTheme {
 
     /** صف القناة نفسه يتبدل من مسار عريض إلى بطاقات كثيفة أو صف كونسول مدمج. */
     fun channelRowSpec(theme: String): ChannelRowSpec = when (theme) {
-        AppPreferences.THEME_ALAA_NEON_IPTV -> ChannelRowSpec(54, 12, 14f, 12f, true, true, 44, 28)
+        AppPreferences.THEME_ALAA_NEON_IPTV -> ChannelRowSpec(SimpleLiveLayoutPolicy.CHANNEL_ROW_HEIGHT_DP, 10, 14f, 12f, true, true, 38, 24)
         AppPreferences.THEME_ALAA_FIGMA -> ChannelRowSpec(50, 12, 14f, 12f, true, true, 42, 27)
         AppPreferences.THEME_NEON_ARCADE -> ChannelRowSpec(72, 14, 16f, 13f, true, true, 54, 34)
         AppPreferences.THEME_CINEMA_SPOTLIGHT -> ChannelRowSpec(84, 18, 18f, 13f, false, false, 70, 42)
@@ -419,7 +425,7 @@ object DisplayTheme {
 
     /** الفئات إما قائمة جانبية أو مصفوفة جانبية أو مسار أعلى مستقل. */
     fun liveCategorySpec(theme: String): LiveCategorySpec = when (theme) {
-        AppPreferences.THEME_ALAA_NEON_IPTV -> LiveCategorySpec(LiveCategoryPlacement.SIDE_LIST, 0.46f, 1, 54, 14f, "", true)
+        AppPreferences.THEME_ALAA_NEON_IPTV -> LiveCategorySpec(LiveCategoryPlacement.SIDE_LIST, SimpleLiveLayoutPolicy.CATEGORY_SIDE_WIDTH, 1, SimpleLiveLayoutPolicy.CATEGORY_ROW_HEIGHT_DP, 14f, "", true)
         AppPreferences.THEME_ALAA_FIGMA -> LiveCategorySpec(LiveCategoryPlacement.SIDE_LIST, 0.32f, 1, 52, 14f, "", true)
         AppPreferences.THEME_NEON_ARCADE -> LiveCategorySpec(LiveCategoryPlacement.TOP_RAIL, 0.34f, 1, 72, 15f, "", false)
         AppPreferences.THEME_CINEMA_SPOTLIGHT -> LiveCategorySpec(LiveCategoryPlacement.SIDE_LIST, 0.25f, 1, 72, 17f, "", true)

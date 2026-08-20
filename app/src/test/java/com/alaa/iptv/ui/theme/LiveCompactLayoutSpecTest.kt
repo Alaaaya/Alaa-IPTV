@@ -1,6 +1,7 @@
 package com.alaa.iptv.ui.theme
 
 import com.alaa.iptv.data.preferences.AppPreferences
+import com.alaa.iptv.ui.main.SimpleLiveLayoutPolicy
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -10,10 +11,10 @@ class LiveCompactLayoutSpecTest {
         val categories = DisplayTheme.liveCategorySpec(AppPreferences.THEME_ALAA_NEON_IPTV)
         val channels = DisplayTheme.channelRowSpec(AppPreferences.THEME_ALAA_NEON_IPTV)
 
-        assertEquals(0.46f, categories.sideWidthPercent)
-        assertEquals(54, categories.itemHeightDp)
-        assertEquals(54, channels.heightDp)
-        assertEquals(44, channels.logoWidthDp)
+        assertEquals(SimpleLiveLayoutPolicy.CATEGORY_SIDE_WIDTH, categories.sideWidthPercent)
+        assertEquals(SimpleLiveLayoutPolicy.CATEGORY_ROW_HEIGHT_DP, categories.itemHeightDp)
+        assertEquals(SimpleLiveLayoutPolicy.CHANNEL_ROW_HEIGHT_DP, channels.heightDp)
+        assertEquals(38, channels.logoWidthDp)
     }
 
     @Test
