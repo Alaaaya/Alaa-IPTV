@@ -27,6 +27,7 @@ class ChannelAdapter(
         RecyclerView.ViewHolder(binding.root) {
 
         private var boundChannel: Channel? = null
+        private var optionsShownForCurrentPress = false
 
         init {
             binding.root.setOnClickListener {
@@ -42,6 +43,7 @@ class ChannelAdapter(
                 if (position != RecyclerView.NO_POSITION) {
                     setSelectedPosition(position)
                     onChannelLongClick(channels[position])
+                    optionsShownForCurrentPress = true
                 }
                 true
             }
@@ -58,6 +60,14 @@ class ChannelAdapter(
             }
 
             binding.root.setOnKeyListener { _, keyCode, event ->
+                if (ChannelOptionsKeyPolicy.opensOptions(keyCode, event.action, event.repeatCount)) {
+                    if (!optionsShownForCurrentPress) binding.root.performLongClick()
+                    return@setOnKeyListener true
+                }
+                if (ChannelOptionsKeyPolicy.consumesReleaseAfterOptions(keyCode, event.action, optionsShownForCurrentPress)) {
+                    optionsShownForCurrentPress = false
+                    return@setOnKeyListener true
+                }
                 if (event.action != KeyEvent.ACTION_DOWN) return@setOnKeyListener false
                 val position = bindingAdapterPosition
                 when (keyCode) {
