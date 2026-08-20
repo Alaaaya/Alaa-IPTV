@@ -28,6 +28,7 @@ import com.alaa.iptv.ui.settings.SettingsActivity
 import com.alaa.iptv.ui.login.LoginActivity
 import com.alaa.iptv.ui.theme.DisplayTheme
 import com.alaa.iptv.ui.common.ControlPlaneActivityGuard
+import com.alaa.iptv.ui.common.DirectSectionNavigationPolicy
 import com.alaa.iptv.utils.UpdateChecker
 import com.bumptech.glide.Glide
 import kotlinx.coroutines.CancellationException
@@ -134,7 +135,7 @@ class DashboardActivity : AppCompatActivity() {
                 if (prefs.isFeatureEnabled(FeatureCatalog.CONTENT_RELOAD)) reloadContent()
                 else startActivity(Intent(this, SettingsActivity::class.java))
             },
-            SidebarItem(getString(R.string.menu_settings), R.drawable.ic_settings, false) { startActivity(Intent(this, SettingsActivity::class.java)) }
+            SidebarItem(getString(R.string.menu_settings), R.drawable.ic_settings, false) { openSettings() }
         )
         val items = if (prefs.isFeatureEnabled(FeatureCatalog.SIMPLE_MODE)) {
             standardItems.filter { item ->
@@ -504,6 +505,14 @@ class DashboardActivity : AppCompatActivity() {
             else -> Intent(this, MainActivity::class.java).apply { putExtra(MainActivity.EXTRA_MODE, mode) }
         }
         startActivity(intent)
+        overridePendingTransition(0, 0)
+        if (DirectSectionNavigationPolicy.shouldRetireOriginAfterOpen()) finish()
+    }
+
+    private fun openSettings() {
+        startActivity(Intent(this, SettingsActivity::class.java).putExtra(SettingsActivity.EXTRA_RETURN_TO_DASHBOARD, true))
+        overridePendingTransition(0, 0)
+        if (DirectSectionNavigationPolicy.shouldRetireOriginAfterOpen()) finish()
     }
 
     /**
