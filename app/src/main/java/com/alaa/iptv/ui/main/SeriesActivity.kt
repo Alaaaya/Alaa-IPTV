@@ -19,6 +19,7 @@ import com.alaa.iptv.data.preferences.FeatureCatalog
 import com.alaa.iptv.data.preferences.MediaLibraryEntry
 import com.alaa.iptv.data.repository.MediaRepository
 import com.alaa.iptv.databinding.ActivitySeriesBinding
+import com.alaa.iptv.ui.dashboard.DashboardActivity
 import com.alaa.iptv.ui.dashboard.SidebarAdapter
 import com.alaa.iptv.ui.dashboard.SidebarItem
 import com.alaa.iptv.ui.settings.SettingsActivity
@@ -70,7 +71,7 @@ class SeriesActivity : AppCompatActivity() {
 
     private fun setupSidebar() {
         val items = listOf(
-            SidebarItem(getString(R.string.menu_home), R.drawable.ic_logo, false) { finish() },
+            SidebarItem(getString(R.string.menu_home), R.drawable.ic_logo, false) { openDashboard() },
             SidebarItem(getString(R.string.menu_live), R.drawable.ic_live_tv, false) { openMain(MainActivity.MODE_LIVE) },
             SidebarItem(getString(R.string.menu_movies), R.drawable.ic_movies, false) { openMain(MainActivity.MODE_MOVIES) },
             SidebarItem(getString(R.string.menu_series), R.drawable.ic_series, true) { /* Already here */ },
@@ -302,6 +303,13 @@ class SeriesActivity : AppCompatActivity() {
             Intent(this, MainActivity::class.java).apply { putExtra(MainActivity.EXTRA_MODE, mode) }
         }
         startActivity(intent)
+        overridePendingTransition(0, 0)
+        finish()
+    }
+
+    private fun openDashboard() {
+        startActivity(Intent(this, DashboardActivity::class.java))
+        overridePendingTransition(0, 0)
         finish()
     }
 

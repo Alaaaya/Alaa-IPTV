@@ -23,6 +23,7 @@ import com.alaa.iptv.databinding.ActivitySettingsBinding
 import com.alaa.iptv.ui.dashboard.DashboardActivity
 import com.alaa.iptv.ui.theme.ThemeCatalog
 import com.alaa.iptv.ui.common.ControlPlaneActivityGuard
+import com.alaa.iptv.ui.common.DirectSectionNavigationPolicy
 import com.alaa.iptv.utils.ConnectionDiagnostics
 import com.alaa.iptv.utils.UpdateChecker
 import com.bumptech.glide.Glide
@@ -33,6 +34,10 @@ import java.text.DateFormat
 import java.util.Date
 
 class SettingsActivity : AppCompatActivity() {
+    companion object {
+        const val EXTRA_RETURN_TO_DASHBOARD = "return_to_dashboard"
+    }
+
     private lateinit var binding: ActivitySettingsBinding
     private lateinit var prefs: AppPreferences
     private val themeButtons = mutableMapOf<String, RadioButton>()
@@ -67,11 +72,8 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         binding.applyThemeButton.setOnClickListener {
-            startActivity(Intent(this, DashboardActivity::class.java).apply {
-                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK)
-            })
             Toast.makeText(this, "تم تطبيق التصميم. لا تتغير بياناتك أو اشتراكك.", Toast.LENGTH_SHORT).show()
-            finish()
+            recreate()
         }
         binding.manageAccountsButton.setOnClickListener {
             startActivity(Intent(this, AccountManagementActivity::class.java))
@@ -108,7 +110,23 @@ class SettingsActivity : AppCompatActivity() {
                 binding.clearImageCacheButton.isEnabled = true
             }
         }
-        binding.backButton.setOnClickListener { finish() }
+        binding.backButton.setOnClickListener { leaveSettings() }
+    }
+
+    override fun onBackPressed() {
+        if (DirectSectionNavigationPolicy.settingsReturnsToDashboard(intent.getBooleanExtra(EXTRA_RETURN_TO_DASHBOARD, false))) {
+            leaveSettings()
+        } else {
+            super.onBackPressed()
+        }
+    }
+
+    private fun leaveSettings() {
+        if (DirectSectionNavigationPolicy.settingsReturnsToDashboard(intent.getBooleanExtra(EXTRA_RETURN_TO_DASHBOARD, false))) {
+            startActivity(Intent(this, DashboardActivity::class.java))
+            overridePendingTransition(0, 0)
+        }
+        finish()
     }
 
     private fun updateSyncState() {
