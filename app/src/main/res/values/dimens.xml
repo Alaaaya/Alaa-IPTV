@@ -30,8 +30,4 @@
     <dimen name="focus_border_width">2dp</dimen>
     <dimen name="focus_elevation">8dp</dimen>
     
-    <!-- Animations -->
-    <integer name="focus_animation_duration">200</integer>
-    <integer name="tab_switch_duration">150</integer>
-    <integer name="preview_update_duration">300</integer>
 </resources>

@@ -40,7 +40,7 @@ class SeriesAdapter(
                 }
             }
             binding.root.setOnFocusChangeListener { _, hasFocus ->
-                renderFocusState(hasFocus)
+                renderFocusState()
                 if (hasFocus) {
                     val position = bindingAdapterPosition
                     if (position != RecyclerView.NO_POSITION) onSeriesFocused?.invoke(seriesList[position])
@@ -75,18 +75,15 @@ class SeriesAdapter(
                     .error(R.drawable.bg_dark_pattern)
                     .into(binding.moviePoster)
             }
-            renderFocusState(binding.root.hasFocus())
+            renderFocusState()
         }
 
-        private fun renderFocusState(hasFocus: Boolean) {
-            binding.focusGlow.visibility = if (hasFocus) android.view.View.VISIBLE else android.view.View.INVISIBLE
+        private fun renderFocusState() {
+            binding.focusGlow.visibility = android.view.View.GONE
             binding.posterCard.setCardBackgroundColor(Color.parseColor("#1AFFFFFF"))
-            binding.root.animate()
-                .scaleX(if (hasFocus) 1.025f else 1.0f)
-                .scaleY(if (hasFocus) 1.025f else 1.0f)
-                .translationZ(if (hasFocus) 18f else 0f)
-                .setDuration(140L)
-                .start()
+            binding.root.scaleX = 1f
+            binding.root.scaleY = 1f
+            binding.root.translationZ = 0f
         }
 
         private fun setOptionalText(view: android.widget.TextView, value: String?) {

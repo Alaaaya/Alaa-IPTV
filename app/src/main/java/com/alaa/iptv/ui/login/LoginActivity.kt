@@ -76,15 +76,6 @@ class LoginActivity : AppCompatActivity() {
         binding.fetchTvIdButton.setOnClickListener { fetchTvSubscription() }
         binding.tvIdValue.text = prefs.getOrCreateTvId()
         setSourceType(SOURCE_XTREAM)
-        listOf(binding.loginButton, binding.importPlaylistButton, binding.sourceXtreamButton, binding.sourceM3uButton).forEach { button ->
-            button.setOnFocusChangeListener { view, hasFocus ->
-                view.animate()
-                    .scaleX(if (hasFocus) 1.025f else 1f)
-                    .scaleY(if (hasFocus) 1.025f else 1f)
-                    .setDuration(120)
-                    .start()
-            }
-        }
     }
 
     private fun submitLogin() {

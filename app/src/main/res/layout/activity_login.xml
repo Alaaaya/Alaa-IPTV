@@ -366,12 +366,16 @@
                 android:textSize="17sp"
                 android:textStyle="bold" />
 
-            <ProgressBar
+            <TextView
                 android:id="@+id/progressBar"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
-                android:indeterminateTint="@color/alaa_accent_red"
+                android:gravity="center"
+                android:text="جارٍ التحقق…"
+                android:textColor="@color/alaa_accent_red"
+                android:textSize="14sp"
+                android:textStyle="bold"
                 android:visibility="gone" />
 
             <TextView
