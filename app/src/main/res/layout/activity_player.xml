@@ -21,35 +21,87 @@
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:layout_alignParentStart="true"
-        android:layout_margin="24dp"
-        android:background="@drawable/glassmorphism_background"
-        android:padding="12dp"
-        android:textColor="@color/text_primary"
-        android:textSize="20sp"
+        android:layout_margin="28dp"
+        android:background="@drawable/bg_player_live_badge"
+        android:paddingHorizontal="14dp"
+        android:paddingVertical="8dp"
+        android:textColor="@color/white"
+        android:textSize="16sp"
         android:textStyle="bold"
         android:visibility="visible" />
 
-    <ProgressBar
-        android:id="@+id/loadingProgress"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:id="@+id/playerStatusOverlay"
+        android:layout_width="340dp"
         android:layout_height="wrap_content"
         android:layout_centerInParent="true"
-        android:indeterminateTint="@color/accent_blue"
-        android:visibility="gone" />
-
-    <TextView
-        android:id="@+id/errorText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
-        android:textColor="@color/error_color"
-        android:textSize="18sp"
-        android:padding="24dp"
-        android:background="@drawable/glassmorphism_background"
-        android:focusable="true"
-        android:clickable="true"
+        android:background="@drawable/bg_player_status_card"
         android:gravity="center"
-        android:visibility="gone" />
+        android:orientation="vertical"
+        android:padding="28dp"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="ALAA PLAYER"
+            android:textColor="@color/white"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/playerStatusChannel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:ellipsize="end"
+            android:gravity="center"
+            android:maxLines="1"
+            android:textColor="@color/text_primary"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <ProgressBar
+            android:id="@+id/loadingProgress"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:layout_marginTop="18dp"
+            android:indeterminateTint="@color/accent_blue"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/playerStatusTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:gravity="center"
+            android:textColor="@color/text_primary"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/playerStatusMessage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:gravity="center"
+            android:textColor="#B8C0CC"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/errorText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:background="@drawable/bg_player_control_chip"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:padding="14dp"
+            android:textColor="@color/white"
+            android:textSize="16sp"
+            android:visibility="gone" />
+    </LinearLayout>
 
     <Button
         android:id="@+id/trackSelectionButton"
@@ -58,10 +110,10 @@
         android:layout_alignParentBottom="true"
         android:layout_alignParentEnd="true"
         android:layout_margin="24dp"
-        android:background="@drawable/bg_login_secondary_button"
-        android:contentDescription="اختيار الصوت والترجمة"
+        android:background="@drawable/bg_player_control_chip"
+        android:contentDescription="اختيار الصوت والترجمة والجودة"
         android:focusable="true"
-        android:text="الصوت والترجمة"
+        android:text="الصوت والجودة"
         android:textAllCaps="false"
         android:textColor="@color/white"
         android:textSize="14sp"

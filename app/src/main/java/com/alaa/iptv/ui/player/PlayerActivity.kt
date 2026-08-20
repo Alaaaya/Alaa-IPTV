@@ -9,6 +9,7 @@ import android.util.Log
 import android.util.TypedValue
 import android.view.KeyEvent
 import android.view.View
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -84,7 +85,10 @@ class PlayerActivity : AppCompatActivity() {
         DisplayTheme.applyViewingPreferences(binding.root, prefs)
         binding.root.isSoundEffectsEnabled = prefs.isFeatureEnabled(FeatureCatalog.NAVIGATION_SOUNDS)
         if (prefs.isFeatureEnabled(FeatureCatalog.EYE_COMFORT)) window.attributes = window.attributes.apply { screenBrightness = 0.82f }
-        binding.playerView.post { DisplayTheme.applyPlayerControls(binding.playerView, prefs) }
+        binding.playerView.post {
+            DisplayTheme.applyPlayerControls(binding.playerView, prefs)
+            updatePlayerOverlayMetadata()
+        }
 
         streamUrl = intent.getStringExtra("STREAM_URL")
         channelName = intent.getStringExtra("CHANNEL_NAME")
@@ -309,16 +313,46 @@ class PlayerActivity : AppCompatActivity() {
 
     private fun showLoading(show: Boolean) {
         binding.loadingProgress.visibility = if (show) View.VISIBLE else View.GONE
+        if (show) {
+            binding.playerStatusOverlay.visibility = View.VISIBLE
+            binding.playerStatusTitle.text = "جارٍ تجهيز البث"
+            binding.playerStatusMessage.text = "نضبط الاتصال لتشغيل القناة بسلاسة"
+            binding.errorText.visibility = View.GONE
+            updatePlayerOverlayMetadata()
+        } else if (binding.errorText.visibility != View.VISIBLE) {
+            binding.playerStatusOverlay.visibility = View.GONE
+        }
     }
 
     private fun showError(message: String?) {
         if (message == null) {
             binding.errorText.visibility = View.GONE
+            if (binding.loadingProgress.visibility != View.VISIBLE) {
+                binding.playerStatusOverlay.visibility = View.GONE
+            }
         } else {
+            binding.playerStatusOverlay.visibility = View.VISIBLE
+            binding.playerStatusTitle.text = "تعذر تشغيل البث"
+            binding.playerStatusMessage.text = "تحقق من الاتصال أو جرّب إعادة التشغيل"
+            updatePlayerOverlayMetadata()
             binding.errorText.text = message
             binding.errorText.visibility = View.VISIBLE
             Log.e(TAG, "Error displayed: $message")
         }
+    }
+
+    private fun updatePlayerOverlayMetadata() {
+        val title = channelName?.takeIf { it.isNotBlank() } ?: "Alaa Player"
+        val subtitle = when {
+            streamType.equals("live", ignoreCase = true) -> "بث مباشر  •  استخدم ↑ ↓ لتبديل القنوات"
+            streamType.equals("series", ignoreCase = true) -> "مسلسل  •  الصوت والجودة من زر MENU"
+            else -> "فيلم  •  الصوت والجودة من زر MENU"
+        }
+        binding.playerStatusChannel.text = title
+        binding.playerView.findViewById<TextView?>(R.id.exo_channel_title)?.text = title
+        binding.playerView.findViewById<TextView?>(R.id.exo_stream_subtitle)?.text = subtitle
+        binding.playerView.findViewById<TextView?>(R.id.exo_live_badge)?.visibility =
+            if (streamType.equals("live", ignoreCase = true)) View.VISIBLE else View.GONE
     }
 
     private fun updateTrackSelectionVisibility() {
@@ -430,6 +464,7 @@ class PlayerActivity : AppCompatActivity() {
         streamType = nextChannel.streamType
         binding.channelNameText.text = nextChannel.name
         binding.channelNameText.visibility = View.VISIBLE
+        updatePlayerOverlayMetadata()
         Toast.makeText(this, "${nextChannel.name}  ${channelIndex + 1}/${PlayerChannelNavigator.size()}", Toast.LENGTH_SHORT).show()
         initializePlayer(nextChannel.streamUrl)
     }
@@ -458,6 +493,7 @@ class PlayerActivity : AppCompatActivity() {
         attemptedLiveUrls.clear()
         binding.channelNameText.text = next.name
         binding.channelNameText.visibility = View.VISIBLE
+        updatePlayerOverlayMetadata()
         initializePlayer(next.streamUrl)
     }
 
