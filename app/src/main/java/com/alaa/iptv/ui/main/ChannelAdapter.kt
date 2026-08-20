@@ -1,6 +1,7 @@
 package com.alaa.iptv.ui.main
 
 import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
@@ -105,8 +106,8 @@ class ChannelAdapter(
             renderFavorite(channel.isFavorite)
 
             if (DisplayTheme.hasCustomTheme(displayTheme)) {
-                binding.root.background = DisplayTheme.panelBackground(displayTheme)
-                binding.channelNumber.background = DisplayTheme.focusBackground(displayTheme)
+                binding.root.background = if (SimpleLiveLayoutPolicy.isEnabled(displayTheme)) ColorDrawable(Color.TRANSPARENT) else DisplayTheme.panelBackground(displayTheme)
+                binding.channelNumber.background = if (SimpleLiveLayoutPolicy.isEnabled(displayTheme)) ColorDrawable(Color.TRANSPARENT) else DisplayTheme.focusBackground(displayTheme)
                 binding.channelNumber.setTextColor(DisplayTheme.focusTextColor(displayTheme))
                 binding.qualityTag.background = DisplayTheme.panelBackground(displayTheme)
                 binding.qualityTag.setTextColor(DisplayTheme.metadataColor(displayTheme))
@@ -135,7 +136,7 @@ class ChannelAdapter(
         private fun updateUI(hasFocus: Boolean) {
             if (hasFocus) {
                 if (DisplayTheme.isNeonIptv(displayTheme)) {
-                    binding.root.setBackgroundResource(R.drawable.bg_alaa_live_channel_focus)
+                    binding.root.background = DisplayTheme.focusOutlineBackground(displayTheme)
                     binding.channelName.setTextColor(Color.WHITE)
                     binding.channelNumber.setTextColor(Color.WHITE)
                     binding.qualityTag.setTextColor(Color.WHITE)
@@ -152,7 +153,7 @@ class ChannelAdapter(
                 }
             } else {
                 if (DisplayTheme.isNeonIptv(displayTheme)) {
-                    binding.root.background = DisplayTheme.panelBackground(displayTheme)
+                    binding.root.background = ColorDrawable(Color.TRANSPARENT)
                     binding.channelNumber.setTextColor(DisplayTheme.focusTextColor(displayTheme))
                     binding.qualityTag.setTextColor(DisplayTheme.metadataColor(displayTheme))
                 } else if (DisplayTheme.hasCustomTheme(displayTheme)) {

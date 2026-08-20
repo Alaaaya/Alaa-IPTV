@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0A0E17"
+    android:background="#050505"
     android:layoutDirection="ltr">
 
     <!-- Header Section (Top Right) -->
@@ -42,7 +42,7 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_margin="14dp"
-        android:background="@drawable/bg_info_card"
+        android:background="#050505"
         app:layout_constraintBottom_toTopOf="@+id/bottomGuide"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/headerLayout"
@@ -53,8 +53,8 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_margin="6dp"
-            android:background="#101827"
-            android:padding="6dp"
+            android:background="#050505"
+            android:padding="4dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
@@ -89,7 +89,7 @@
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:padding="10dp"
+            android:padding="6dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@id/liveCategoryPanel"
             app:layout_constraintTop_toTopOf="parent">
@@ -103,7 +103,7 @@
                 android:focusable="true"
                 android:paddingHorizontal="16dp"
                 android:paddingVertical="6dp"
-                android:text="الفئات"
+                android:text="القنوات"
                 android:textColor="@color/white"
                 android:textSize="14sp" />
 
@@ -230,7 +230,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/previewTitle" />
 
-        <!-- EPG Timeline -->
+        <!-- EPG is intentionally unavailable; retained only for binding compatibility. -->
         <LinearLayout
             android:id="@+id/epgLayout"
             android:layout_width="match_parent"
@@ -238,6 +238,7 @@
             android:layout_marginTop="16dp"
             android:gravity="center_vertical"
             android:orientation="horizontal"
+            android:visibility="gone"
             app:layout_constraintTop_toBottomOf="@id/previewSubtitle">
 
             <TextView
@@ -274,6 +275,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="18dp"
             android:orientation="horizontal"
+            android:visibility="gone"
             app:layout_constraintTop_toBottomOf="@id/epgLayout">
 
             <TextView

@@ -1,6 +1,7 @@
 package com.alaa.iptv.ui.main
 
 import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
@@ -74,7 +75,9 @@ class LiveCategoryAdapter(
             binding.categoryName.text = "${spec.labelPrefix}${category.categoryName}$suffix"
             binding.categoryName.textSize = LiveCategoryLayoutPolicy.compactNameSizeSp(spec.textSizeSp)
             binding.categoryNumber.text = (bindingAdapterPosition + 1).toString()
-            binding.categoryCount.text = if (category.channelCount > 0) {
+            binding.categoryCount.text = if (SimpleLiveLayoutPolicy.isEnabled(displayTheme)) {
+                SimpleLiveLayoutPolicy.categoryMeta(category.channelCount)
+            } else if (category.channelCount > 0) {
                 "${category.channelCount} عنصر في هذه الفئة"
             } else {
                 "اضغط لعرض محتوى الفئة"
@@ -89,12 +92,11 @@ class LiveCategoryAdapter(
         private fun render(category: Category) {
             val highlighted = binding.root.hasFocus() || category.categoryId == selectedCategoryId
             if (DisplayTheme.hasCustomTheme(displayTheme)) {
-                binding.root.background = if (DisplayTheme.isNeonIptv(displayTheme) && highlighted) {
-                    binding.root.context.getDrawable(R.drawable.bg_live_category_selected)
-                } else if (highlighted) {
-                    DisplayTheme.focusBackground(displayTheme)
-                } else {
-                    DisplayTheme.panelBackground(displayTheme)
+                binding.root.background = when {
+                    SimpleLiveLayoutPolicy.isEnabled(displayTheme) && highlighted -> DisplayTheme.focusOutlineBackground(displayTheme)
+                    SimpleLiveLayoutPolicy.isEnabled(displayTheme) -> ColorDrawable(Color.TRANSPARENT)
+                    highlighted -> DisplayTheme.focusBackground(displayTheme)
+                    else -> DisplayTheme.panelBackground(displayTheme)
                 }
                 binding.categoryName.setTextColor(
                     if (highlighted) DisplayTheme.focusTextColor(displayTheme) else DisplayTheme.metadataColor(displayTheme)
@@ -102,9 +104,13 @@ class LiveCategoryAdapter(
                 binding.categoryCount.setTextColor(
                     if (highlighted) DisplayTheme.focusTextColor(displayTheme) else DisplayTheme.metadataColor(displayTheme)
                 )
-                binding.categoryNumber.setBackgroundResource(
-                    if (highlighted) R.drawable.bg_category_number_selected else R.drawable.bg_category_number_default
-                )
+                binding.categoryNumber.background = if (SimpleLiveLayoutPolicy.isEnabled(displayTheme)) {
+                    ColorDrawable(Color.TRANSPARENT)
+                } else {
+                    binding.root.context.getDrawable(
+                        if (highlighted) R.drawable.bg_category_number_selected else R.drawable.bg_category_number_default
+                    )
+                }
             } else {
                 binding.root.setBackgroundResource(
                     if (highlighted) R.drawable.bg_live_category_selected else R.drawable.bg_live_category_default
