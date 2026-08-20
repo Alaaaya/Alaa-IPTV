@@ -1,6 +1,7 @@
 package com.alaa.iptv.ui.dashboard
 
 import android.graphics.Color
+import android.view.KeyEvent
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -8,6 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.alaa.iptv.R
 import com.alaa.iptv.ui.theme.DisplayTheme
 import com.alaa.iptv.databinding.ItemCategoryCardBinding
+import com.alaa.iptv.ui.common.OnePressActivationPolicy
 
 class CategoryCardAdapter(
     private val items: List<CategoryItem>,
@@ -37,6 +39,12 @@ class CategoryCardAdapter(
                 if (pos != RecyclerView.NO_POSITION) {
                     onItemClick(items[pos])
                 }
+            }
+            binding.root.setOnKeyListener { _, keyCode, event ->
+                if (OnePressActivationPolicy.shouldActivate(keyCode, event.action)) {
+                    binding.root.performClick()
+                    true
+                } else false
             }
 
         }
