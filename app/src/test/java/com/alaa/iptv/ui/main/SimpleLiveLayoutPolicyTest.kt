@@ -11,7 +11,8 @@ class SimpleLiveLayoutPolicyTest {
     fun `latest Alaa design uses the calm compact live layout`() {
         assertTrue(SimpleLiveLayoutPolicy.isEnabled(AppPreferences.THEME_ALAA_NEON_IPTV))
         assertFalse(SimpleLiveLayoutPolicy.isEnabled(AppPreferences.THEME_ALAA_CLASSIC))
-        assertEquals(0.32f, SimpleLiveLayoutPolicy.CATEGORY_SIDE_WIDTH)
+        assertEquals(0.63f, SimpleLiveLayoutPolicy.CONTENT_PANEL_WIDTH)
+        assertEquals(0.40f, SimpleLiveLayoutPolicy.CATEGORY_SIDE_WIDTH)
         assertEquals(48, SimpleLiveLayoutPolicy.CATEGORY_ROW_HEIGHT_DP)
         assertEquals(48, SimpleLiveLayoutPolicy.CHANNEL_ROW_HEIGHT_DP)
     }
