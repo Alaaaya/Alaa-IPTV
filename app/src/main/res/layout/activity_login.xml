@@ -159,13 +159,27 @@
                 </FrameLayout>
 
                 <Button
-                    android:id="@+id/fetchTvIdButton"
-                    android:layout_width="128dp"
+                    android:id="@+id/refreshPairingCodeButton"
+                    android:layout_width="92dp"
                     android:layout_height="match_parent"
                     android:layout_marginStart="10dp"
                     android:background="@drawable/bg_login_secondary_button"
                     android:nextFocusDown="@id/serverUrlInput"
-                        android:text="جلب اشتراكي"
+                    android:nextFocusRight="@id/fetchTvIdButton"
+                    android:text="تحديث"
+                    android:textAllCaps="false"
+                    android:textColor="@color/white"
+                    android:textSize="13sp" />
+
+                <Button
+                    android:id="@+id/fetchTvIdButton"
+                    android:layout_width="112dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginStart="10dp"
+                    android:background="@drawable/bg_login_secondary_button"
+                    android:nextFocusDown="@id/serverUrlInput"
+                    android:nextFocusLeft="@id/refreshPairingCodeButton"
+                    android:text="جلب اشتراكي"
                     android:textAllCaps="false"
                     android:textColor="@color/white"
                     android:textSize="13sp" />
