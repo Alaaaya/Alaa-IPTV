@@ -66,6 +66,7 @@ class PlayerActivity : AppCompatActivity() {
     private lateinit var prefs: AppPreferences
     private var sleepTimerJob: Job? = null
     private var inactivityReminderJob: Job? = null
+    private var channelListDialog: AlertDialog? = null
 
     private data class TrackOption(
         val type: Int,
@@ -457,16 +458,52 @@ class PlayerActivity : AppCompatActivity() {
             return
         }
 
-        channelIndex = nextIndex
-        streamUrl = nextChannel.streamUrl
+        playChannelAt(nextIndex, nextChannel)
+    }
+
+    private fun playChannelAt(index: Int, channel: PlayableChannel? = PlayerChannelNavigator.channelAt(index)) {
+        val selectedChannel = channel ?: return
+        channelIndex = index
+        streamUrl = selectedChannel.streamUrl
         attemptedLiveUrls.clear()
-        channelName = nextChannel.name
-        streamType = nextChannel.streamType
-        binding.channelNameText.text = nextChannel.name
+        channelName = selectedChannel.name
+        streamType = selectedChannel.streamType
+        binding.channelNameText.text = selectedChannel.name
         binding.channelNameText.visibility = View.VISIBLE
         updatePlayerOverlayMetadata()
-        Toast.makeText(this, "${nextChannel.name}  ${channelIndex + 1}/${PlayerChannelNavigator.size()}", Toast.LENGTH_SHORT).show()
-        initializePlayer(nextChannel.streamUrl)
+        Toast.makeText(this, "${selectedChannel.name}  ${channelIndex + 1}/${PlayerChannelNavigator.size()}", Toast.LENGTH_SHORT).show()
+        initializePlayer(selectedChannel.streamUrl)
+    }
+
+    private fun showChannelList() {
+        if (!streamType.equals("live", ignoreCase = true)) {
+            binding.playerView.showController()
+            return
+        }
+        if (channelListDialog?.isShowing == true) return
+
+        val size = PlayerChannelNavigator.size()
+        if (size == 0) {
+            Toast.makeText(this, "لا توجد قائمة قنوات متاحة لهذه الجلسة", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val labels = Array(size) { index ->
+            val channel = requireNotNull(PlayerChannelNavigator.channelAt(index))
+            "${index + 1}. ${channel.name}"
+        }
+        val selectedIndex = channelIndex.coerceIn(0, size - 1)
+        channelListDialog = AlertDialog.Builder(this)
+            .setTitle("القنوات")
+            .setSingleChoiceItems(labels, selectedIndex) { dialog, index ->
+                dialog.dismiss()
+                PlayerChannelNavigator.channelAt(index)?.let { playChannelAt(index, it) }
+            }
+            .setNegativeButton("إغلاق", null)
+            .create()
+            .also { dialog ->
+                dialog.setOnDismissListener { channelListDialog = null }
+                dialog.show()
+            }
     }
 
     private fun promptNextEpisode(): Boolean {
@@ -509,7 +546,15 @@ class PlayerActivity : AppCompatActivity() {
                 finish()
                 true
             }
-            KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, KeyEvent.KEYCODE_DPAD_CENTER -> {
+            KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_DPAD_LEFT -> {
+                if (PlayerRemoteNavigationPolicy.opensChannelList(keyCode, streamType.equals("live", ignoreCase = true))) {
+                    showChannelList()
+                } else {
+                    binding.playerView.showController()
+                }
+                true
+            }
+            KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
                 player?.let {
                     if (it.isPlaying) {
                         it.pause()
@@ -539,13 +584,17 @@ class PlayerActivity : AppCompatActivity() {
                 showTrackSelection()
                 true
             }
-            KeyEvent.KEYCODE_MEDIA_FAST_FORWARD, KeyEvent.KEYCODE_DPAD_RIGHT -> {
+            KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                if (PlayerRemoteNavigationPolicy.opensPlayerControls(keyCode)) binding.playerView.showController()
+                true
+            }
+            KeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> {
                 if (prefs.isFeatureEnabled(FeatureCatalog.SKIP_CONTROLS)) {
                     player?.seekTo((player?.currentPosition ?: 0) + 10000)
                 }
                 true
             }
-            KeyEvent.KEYCODE_MEDIA_REWIND, KeyEvent.KEYCODE_DPAD_LEFT -> {
+            KeyEvent.KEYCODE_MEDIA_REWIND -> {
                 if (prefs.isFeatureEnabled(FeatureCatalog.SKIP_CONTROLS)) {
                     player?.seekTo(maxOf(0, (player?.currentPosition ?: 0) - 10000))
                 }
@@ -594,6 +643,8 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        channelListDialog?.dismiss()
+        channelListDialog = null
         sleepTimerJob?.cancel()
         inactivityReminderJob?.cancel()
         persistPlaybackState()
