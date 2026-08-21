@@ -17,7 +17,8 @@ object SimpleLiveLayoutPolicy {
         com.alaa.iptv.ui.theme.Asinat2LayoutPolicy.isEnabled(theme) ||
         com.alaa.iptv.ui.theme.AyaLayoutPolicy.isEnabled(theme) ||
         com.alaa.iptv.ui.theme.Aya2LayoutPolicy.isEnabled(theme) ||
-        com.alaa.iptv.ui.theme.Aya3LayoutPolicy.isEnabled(theme)
+        com.alaa.iptv.ui.theme.Aya3LayoutPolicy.isEnabled(theme) ||
+        com.alaa.iptv.ui.theme.Aya5LayoutPolicy.isEnabled(theme)
 
     fun categoryMeta(count: Int): String = if (count > 0) "$count" else ""
 }
