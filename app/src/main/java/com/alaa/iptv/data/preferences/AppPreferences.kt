@@ -96,6 +96,7 @@ class AppPreferences(context: Context) {
         const val THEME_AYA = "aya"
         const val THEME_AYA_2 = "aya_2"
         const val THEME_AYA_3 = "aya_3"
+        const val THEME_AYA_5 = "aya_5"
         const val THEME_MIDNIGHT_GOLD = "midnight_gold"
         const val THEME_CRIMSON_CLASSIC = "crimson_classic"
         const val THEME_MODERN_GRID = "modern_grid"
