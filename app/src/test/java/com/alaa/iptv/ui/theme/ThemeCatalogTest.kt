@@ -7,12 +7,13 @@ import org.junit.Test
 class ThemeCatalogTest {
     @Test
     fun `catalog exposes all existing designs plus the Alaa Neon IPTV choice`() {
-        assertEquals(21, ThemeCatalog.options.size)
-        assertEquals(21, ThemeCatalog.options.map { it.id }.toSet().size)
+        assertEquals(22, ThemeCatalog.options.size)
+        assertEquals(22, ThemeCatalog.options.map { it.id }.toSet().size)
         assertTrue(ThemeCatalog.options.any { it.id == "alaa_neon_iptv" && it.title == "Alaa Player – Neon IPTV" })
         assertTrue(ThemeCatalog.options.any { it.id == "alaa_figma" && it.title == "Alaa — Figma TV" })
         assertTrue(ThemeCatalog.options.any { it.id == "asinat" && it.title == "Asinat" })
         assertTrue(ThemeCatalog.options.any { it.id == "asinat_2" && it.title == "Asinat 2" })
+        assertTrue(ThemeCatalog.options.any { it.id == "aya" && it.title == "Aya" })
         assertTrue(ThemeCatalog.options.any { it.title == "Neon Arcade" })
         assertTrue(ThemeCatalog.options.any { it.title == "Royal Velvet" })
     }
@@ -38,7 +39,7 @@ class ThemeCatalogTest {
 
     @Test
     fun `ten new themes expose distinct structural layouts not only palette changes`() {
-        val newThemeIds = ThemeCatalog.options.drop(11).map { it.id }
+        val newThemeIds = ThemeCatalog.options.drop(12).map { it.id }
         assertEquals(10, newThemeIds.size)
 
         val signatures = newThemeIds.map { id ->
