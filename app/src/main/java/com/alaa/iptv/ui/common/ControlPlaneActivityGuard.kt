@@ -11,6 +11,7 @@ import com.alaa.iptv.BuildConfig
 import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.data.remote.TvProvisioningClient
 import com.alaa.iptv.ui.login.LoginActivity
+import com.alaa.iptv.utils.UpdateArtifactPolicy
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.util.WeakHashMap
@@ -73,14 +74,18 @@ object ControlPlaneActivityGuard {
                 }
                 return@withLock false
             }
-            prefs.isForcedUpdateRequired(BuildConfig.VERSION_NAME) -> {
+            prefs.isForcedUpdateRequired(BuildConfig.VERSION_NAME) &&
+                UpdateArtifactPolicy.isTrustedReleasePageUrl(prefs.forcedUpdateUrl()) -> {
                 val updateUrl = prefs.forcedUpdateUrl()
                 val message = "يتطلب هذا الإصدار تحديث Alaa Player قبل متابعة الاستخدام."
                 showBlockingPolicy(activity, "force-update:$updateUrl", "تحديث مطلوب", message, "تحديث الآن") {
-                    if (updateUrl.isNotBlank()) activity.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(updateUrl)))
+                    activity.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(updateUrl)))
                     activity.finishAffinity()
                 }
                 return@withLock false
+            }
+            prefs.isForcedUpdateRequired(BuildConfig.VERSION_NAME) -> {
+                Log.e(TAG, "Ignoring forced update policy with an untrusted URL")
             }
         }
 

@@ -551,9 +551,9 @@ class DashboardActivity : AppCompatActivity() {
     private fun playContent(item: ContinueWatchingItem) {
         val rawUrl = item.channel.directSource
             ?: item.channel.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password)
-        val url = PlaybackUrlPolicy.normalizedHttpUrlOrNull(rawUrl)
+        val url = PlaybackUrlPolicy.normalizedHttpsUrlOrNull(rawUrl)
         if (url == null) {
-            Log.w(TAG, "Skipping playback because the continue-watching item has no valid HTTP(S) URL")
+            Log.w(TAG, "Skipping playback because the continue-watching item has no valid HTTPS URL")
             showToast("تعذر تشغيل هذا المحتوى: رابط البث غير صالح")
             return
         }

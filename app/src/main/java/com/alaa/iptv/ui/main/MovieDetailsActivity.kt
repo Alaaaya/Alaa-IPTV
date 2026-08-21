@@ -64,7 +64,7 @@ class MovieDetailsActivity : AppCompatActivity() {
     }
 
     private fun playMovie() {
-        val url = PlaybackUrlPolicy.normalizedHttpUrlOrNull(
+        val url = PlaybackUrlPolicy.normalizedHttpsUrlOrNull(
             movie.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password)
         )
         if (url == null) {

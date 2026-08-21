@@ -116,7 +116,7 @@ app/src/main/java/com/alaa/iptv/
 
 ### Prerequisites
 - Android Studio Arctic Fox or newer
-- Android SDK 21 or higher
+- Android SDK 23 (Android 6.0) or higher
 - Android TV device or emulator for testing
 
 ### Installation
@@ -135,12 +135,12 @@ cd Alaa-IPTV
 
 ### Configuration
 
-The app requires an Xtream Codes compatible IPTV provider with:
+The app requires an Xtream Codes compatible IPTV provider with an **HTTPS** endpoint and:
 - Server URL
 - Username
 - Password
 
-Alternatively, you can use M3U playlist URLs.
+Alternatively, you can use HTTPS M3U playlist URLs or import a local M3U file.
 
 ## Usage
 
@@ -202,7 +202,7 @@ The app features a modern glassmorphism design with:
 
 ## Build Configuration
 
-- **Min SDK**: 21 (Android 5.0)
+- **Min SDK**: 23 (Android 6.0)، لضمان تشفير بيانات الاعتماد باستخدام Android Keystore
 - **Target SDK**: 34 (Android 14)
 - **Compile SDK**: 34
 - **Java Version**: 17

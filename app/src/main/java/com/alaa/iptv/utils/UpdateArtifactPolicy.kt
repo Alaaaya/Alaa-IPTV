@@ -6,6 +6,7 @@ import java.net.URI
 object UpdateArtifactPolicy {
     private const val GITHUB_HOST = "github.com"
     private const val RELEASE_PREFIX = "/Alaaaya/Alaa-IPTV/releases/download/"
+    private const val RELEASE_PAGE_PREFIX = "/Alaaaya/Alaa-IPTV/releases"
 
     fun isNewerVersion(latest: String, current: String): Boolean {
         val latestParts = parseVersion(latest) ?: return false
@@ -25,6 +26,14 @@ object UpdateArtifactPolicy {
             parsed.host.equals(GITHUB_HOST, ignoreCase = true) &&
             parsed.path.startsWith(RELEASE_PREFIX) &&
             parsed.path.substringAfterLast('/').matches(Regex("AlaaPlayer-[0-9]+(\\.[0-9]+){1,3}\\.apk"))
+    }.getOrDefault(false)
+
+    /** يمنع سياسة التحديث البعيد من فتح صفحات خارج صفحة إصدارات التطبيق الرسمية. */
+    fun isTrustedReleasePageUrl(url: String): Boolean = runCatching {
+        val parsed = URI(url)
+        parsed.scheme.equals("https", ignoreCase = true) &&
+            parsed.host.equals(GITHUB_HOST, ignoreCase = true) &&
+            (parsed.path == RELEASE_PAGE_PREFIX || parsed.path.startsWith("$RELEASE_PAGE_PREFIX/"))
     }.getOrDefault(false)
 
     fun releaseNotesPreview(notes: String): String = notes.trim().take(600)

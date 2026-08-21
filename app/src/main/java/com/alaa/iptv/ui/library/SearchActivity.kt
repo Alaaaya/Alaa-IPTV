@@ -65,7 +65,7 @@ class SearchActivity : AppCompatActivity() {
             setBackgroundColor(Color.parseColor("#0A1426"))
             setPadding(dp(36), dp(28), dp(36), dp(28))
         }
-        root.addView(TextView(this).apply { text = "البحث الشامل"; setTextColor(Color.WHITE); textSize = 28f })
+        root.addView(TextView(this).apply { text = "البحث في المحتوى المحمّل"; setTextColor(Color.WHITE); textSize = 28f })
         queryInput = EditText(this).apply {
             hint = "اكتب اسم القناة أو الفيلم أو المسلسل"
             setTextColor(Color.WHITE)
@@ -158,7 +158,7 @@ class SearchActivity : AppCompatActivity() {
             searchable = (channels + movies + series)
                 .distinctBy { "${it.channel.streamType}:${it.channel.streamId}" }
             progress.visibility = View.GONE
-            status.text = "جاهز للبحث في ${searchable.size} عنصر متاح حالياً."
+            status.text = "جاهز للبحث في ${searchable.size} عنصر محمّل حالياً. حمّل الفئة المطلوبة لتظهر عناصرها في النتائج."
             prefs.lastSearchQuery.takeIf { it.length >= 2 }?.let { previous ->
                 queryInput.setText(previous)
                 queryInput.setSelection(previous.length)

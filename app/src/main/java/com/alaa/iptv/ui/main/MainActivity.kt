@@ -541,7 +541,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun playChannel(channel: Channel) {
         val rawUrl = channel.directSource ?: channel.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password)
-        val url = PlaybackUrlPolicy.normalizedHttpUrlOrNull(rawUrl)
+        val url = PlaybackUrlPolicy.normalizedHttpsUrlOrNull(rawUrl)
         if (url == null) {
             Toast.makeText(this, "تعذر تشغيل هذه القناة: رابط البث غير صالح", Toast.LENGTH_SHORT).show()
             return
@@ -551,7 +551,7 @@ class MainActivity : AppCompatActivity() {
             allChannels.mapNotNull { item ->
                 if (!item.streamType.equals("live", ignoreCase = true)) return@mapNotNull null
                 val rawItemUrl = item.directSource ?: item.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password)
-                PlaybackUrlPolicy.normalizedHttpUrlOrNull(rawItemUrl)?.let { itemUrl ->
+                PlaybackUrlPolicy.normalizedHttpsUrlOrNull(rawItemUrl)?.let { itemUrl ->
                     PlayableChannel(item.name, itemUrl, item.streamType)
                 }
             }

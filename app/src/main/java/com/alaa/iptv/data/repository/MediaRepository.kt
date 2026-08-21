@@ -121,6 +121,9 @@ class MediaRepository(
     private suspend fun request(url: String): String =
         withContext(Dispatchers.IO) {
             ensureContentAccess().getOrThrow()
+            if (!SecureNetworkUrlPolicy.isAllowedRemoteUrl(url)) {
+                throw IOException("التطبيق يدعم اتصالات IPTV عبر HTTPS فقط لحماية بيانات الاشتراك")
+            }
             responseOverride?.invoke(url)?.let { return@withContext it }
             Log.d(TAG, "Requesting IPTV endpoint")
             val request = Request.Builder()
@@ -150,13 +153,9 @@ class MediaRepository(
             }
         }
 
-    private fun normalizeHost(host: String): String {
-        var h = host.trim().substringBefore("?").removeSuffix("/")
-        if (!h.startsWith("http://") && !h.startsWith("https://")) {
-            h = "http://$h"
-        }
-        return h.removeSuffix("/player_api.php").removeSuffix("/")
-    }
+    private fun normalizeHost(host: String): String =
+        SecureNetworkUrlPolicy.normalizeServerUrlOrNull(host)
+            ?: throw IllegalArgumentException("أدخل رابط خادم HTTPS صالحًا")
 
     fun isM3U(url: String = prefs.serverUrl): Boolean {
         return (url == prefs.serverUrl && prefs.useM3U) || IptvSourceClassifier.isM3U(url)
@@ -308,7 +307,7 @@ class MediaRepository(
                     if (id.isBlank()) continue
                     val providerSource = obj.stringValue("direct_source")
                         .trim()
-                        .takeIf { it.startsWith("http://", true) || it.startsWith("https://", true) }
+                        .takeIf { it.startsWith("https://", true) }
                     // نفضّل رابط المزود إن وجد، وإلا MPEG-TS المباشر. بعض المزودين يعيدون
                     // توجيه .m3u8 إلى TS مستمر، ما يسبب فشل محلل HLS في Media3.
                     val direct = providerSource ?: StreamUrlFactory.live(
@@ -743,7 +742,7 @@ class MediaRepository(
                         group = Regex("group-title=\"([^\"]*?)\"").find(l)?.groupValues?.get(1)
                     }
 
-                    if (l.startsWith("http://") || l.startsWith("https://") || l.startsWith("rtmp")) {
+                    if (l.startsWith("https://", ignoreCase = true)) {
                         channels.add(
                             Channel(
                                 streamId = l.hashCode().toString(),

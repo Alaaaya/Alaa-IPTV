@@ -176,7 +176,7 @@ class SeriesDetailsActivity : AppCompatActivity() {
     }
 
     private fun playEpisode(episode: Episode, episodeIndex: Int) {
-        val streamUrl = PlaybackUrlPolicy.normalizedHttpUrlOrNull(
+        val streamUrl = PlaybackUrlPolicy.normalizedHttpsUrlOrNull(
             episode.getStreamUrl(prefs.serverUrl, prefs.username, prefs.password)
         )
         if (streamUrl == null) {

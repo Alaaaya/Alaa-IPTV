@@ -14,6 +14,7 @@ import com.alaa.iptv.data.preferences.FeatureCatalog
 import com.alaa.iptv.data.remote.TvProvisioningClient
 import com.alaa.iptv.data.remote.TvConnectionFailureReporter
 import com.alaa.iptv.data.repository.MediaRepository
+import com.alaa.iptv.data.repository.SecureNetworkUrlPolicy
 import com.alaa.iptv.databinding.ActivityLoginBinding
 import com.alaa.iptv.ui.dashboard.DashboardActivity
 import kotlinx.coroutines.Dispatchers
@@ -118,6 +119,16 @@ class LoginActivity : AppCompatActivity() {
                 tvId,
                 notifyOwner = prefs.isFeatureEnabled(FeatureCatalog.OWNER_ALERTS)
             ).onSuccess { subscription ->
+                val secureSource = if (subscription.sourceType == SOURCE_M3U) {
+                    SecureNetworkUrlPolicy.isAllowedPlaylistUrl(subscription.serverUrl)
+                } else {
+                    SecureNetworkUrlPolicy.isAllowedRemoteUrl(subscription.serverUrl)
+                }
+                if (!secureSource) {
+                    showLoginError("تعذر قبول الاشتراك: يجب أن يستخدم الخادم اتصال HTTPS آمنًا")
+                    setLoading(false)
+                    return@onSuccess
+                }
                 prefs.tvId = subscription.tvId
                 prefs.isControlPlaneEnrolled = true
                 refreshDevicePairingCode()
@@ -176,11 +187,19 @@ class LoginActivity : AppCompatActivity() {
                 binding.serverUrlInput.error = "يرجى إدخال رابط M3U الكامل"
                 return false
             }
+            if (!SecureNetworkUrlPolicy.isAllowedPlaylistUrl(serverUrl)) {
+                binding.serverUrlInput.error = "استخدم رابط M3U عبر HTTPS أو استورد ملفًا محليًا"
+                return false
+            }
             return true
         }
         when {
             serverUrl.isEmpty() -> {
                 binding.serverUrlInput.error = "يرجى إدخال رابط الاشتراك"
+                return false
+            }
+            !SecureNetworkUrlPolicy.isAllowedRemoteUrl(serverUrl) -> {
+                binding.serverUrlInput.error = "استخدم رابط خادم HTTPS لحماية بيانات الاشتراك"
                 return false
             }
             repository.isM3U(serverUrl) -> {

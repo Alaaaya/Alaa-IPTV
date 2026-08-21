@@ -11,7 +11,8 @@ android {
 
     defaultConfig {
         applicationId = "com.alaa.iptv"
-        minSdk = 21
+        // Android 6.0+ is required so all persisted credentials use Android Keystore-backed AES-GCM.
+        minSdk = 23
         targetSdk = 34
         versionCode = 81
         versionName = "2.7.44"
