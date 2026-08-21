@@ -88,6 +88,7 @@ object DisplayTheme {
     private fun palette(theme: String): Palette? = when (theme) {
         AppPreferences.THEME_ALAA_NEON_IPTV -> Palette("#050711", "#0A1020", "#1A243BCC", "#FF3345", "#FFFFFF", "#B7C3E8", 18f, "#431624", "#FF6A78", "#596CFF")
         AppPreferences.THEME_ALAA_FIGMA -> Palette("#05070D", "#0A101D", "#121B2C", "#FF2545", "#FFFFFF", "#9EB3D6", 14f, "#37121D", "#FF5B70", "#2C4D7D")
+        AppPreferences.THEME_ASINAT -> Palette("#06111B", "#0B1B2B", "#132940", "#E7B45B", "#07111B", "#B9CCDE", 14f, "#203A54", "#F2CC7D", "#284967")
         AppPreferences.THEME_MIDNIGHT_GOLD -> Palette("#0A1426", "#101D31", "#1B2A40", "#D8CA28", "#0A1426", "#2497DE", 7f)
         AppPreferences.THEME_CRIMSON_CLASSIC -> Palette("#111319", "#191D25", "#242A35", "#E53935", "#FFFFFF", "#5EB5F7", 10f)
         AppPreferences.THEME_MODERN_GRID -> Palette("#110D22", "#1B1433", "#282047", "#8B5CF6", "#FFFFFF", "#22D3EE", 18f)
@@ -111,9 +112,11 @@ object DisplayTheme {
         val palette = palette(prefs.displayTheme) ?: return
         val isNeonIptv = isNeonIptv(prefs.displayTheme)
         val isFigmaAlaa = prefs.displayTheme == AppPreferences.THEME_ALAA_FIGMA
+        val isAsinat = isAsinat(prefs.displayTheme)
+        val usesCinematicShell = isNeonIptv || isFigmaAlaa || isAsinat
         val density = binding.root.resources.displayMetrics.density
         binding.root.setBackgroundColor(Color.parseColor(palette.background))
-        binding.sidebarContainer.background = if (isNeonIptv) {
+        binding.sidebarContainer.background = if (isNeonIptv || isAsinat) {
             rounded(palette.sidebar, 20f, palette.panelStroke, 1)
         } else {
             GradientDrawable().apply { setColor(Color.parseColor(palette.sidebar)) }
@@ -121,17 +124,21 @@ object DisplayTheme {
         binding.heroWatchNow.background = rounded(
             palette.accent,
             if (isNeonIptv) 28f else palette.radius,
-            if (isNeonIptv) "#FF8994" else null,
-            if (isNeonIptv) 1 else 0
+            if (isNeonIptv) "#FF8994" else if (isAsinat) palette.focusStroke else null,
+            if (isNeonIptv || isAsinat) 1 else 0
         )
         binding.heroWatchNow.setTextColor(Color.parseColor(palette.accentText))
-        binding.heroWatchNow.elevation = if (isNeonIptv) 14f else binding.heroWatchNow.elevation
+        binding.heroWatchNow.elevation = when {
+            isNeonIptv -> 14f
+            isAsinat -> 6f
+            else -> binding.heroWatchNow.elevation
+        }
         binding.categoriesViewAll.setTextColor(Color.parseColor(palette.accent))
         binding.continueWatchingViewAll.setTextColor(Color.parseColor(palette.accent))
-        binding.heroIndicators.visibility = if (isNeonIptv || isFigmaAlaa) View.VISIBLE else View.GONE
-        binding.notificationDot.visibility = if (isNeonIptv || isFigmaAlaa) View.VISIBLE else View.GONE
-        binding.heroLiveBadge.visibility = if (isNeonIptv || isFigmaAlaa) View.VISIBLE else View.GONE
-        if (isNeonIptv || isFigmaAlaa) {
+        binding.heroIndicators.visibility = if (usesCinematicShell) View.VISIBLE else View.GONE
+        binding.notificationDot.visibility = if (usesCinematicShell) View.VISIBLE else View.GONE
+        binding.heroLiveBadge.visibility = if (usesCinematicShell) View.VISIBLE else View.GONE
+        if (usesCinematicShell) {
             binding.topSearchLabel.visibility = View.VISIBLE
             binding.topSearchLabel.text = binding.root.context.getString(R.string.search_placeholder)
             binding.topSearchGroup.background = rounded(palette.panel, 28f, palette.panelStroke, 1)
@@ -141,19 +148,31 @@ object DisplayTheme {
                 params.removeRule(RelativeLayout.START_OF)
                 params.addRule(RelativeLayout.LEFT_OF, R.id.topStatusGroup)
                 params.addRule(RelativeLayout.START_OF, R.id.topStatusGroup)
-                params.width = (290 * density).toInt()
+                params.width = ((if (isAsinat) 310 else 290) * density).toInt()
                 binding.topSearchGroup.layoutParams = params
             }
             binding.topClockGroup.visibility = View.GONE
             binding.sidebarContainer.layoutParams = binding.sidebarContainer.layoutParams.apply {
-                width = ((if (isFigmaAlaa) 260 else 300) * density).toInt()
+                width = (when {
+                    isAsinat -> AsinatLayoutPolicy.DASHBOARD_SIDEBAR_WIDTH_DP
+                    isFigmaAlaa -> 260
+                    else -> 300
+                } * density).toInt()
             }
             binding.heroCard.layoutParams = binding.heroCard.layoutParams.apply {
-                height = ((if (isFigmaAlaa) 278 else 292) * density).toInt()
+                height = (when {
+                    isAsinat -> AsinatLayoutPolicy.DASHBOARD_HERO_HEIGHT_DP
+                    isFigmaAlaa -> 278
+                    else -> 292
+                } * density).toInt()
             }
-            binding.heroCard.radius = 22f * density
-            binding.heroCard.cardElevation = 10f
-            binding.heroTitle.textSize = if (isFigmaAlaa) 40f else 46f
+            binding.heroCard.radius = (if (isAsinat) 14f else 22f) * density
+            binding.heroCard.cardElevation = if (isAsinat) 6f else 10f
+            binding.heroTitle.textSize = when {
+                isAsinat -> 42f
+                isFigmaAlaa -> 40f
+                else -> 46f
+            }
             binding.heroSubtitle.textSize = 18f
             binding.sidebarFooter.background = rounded(palette.panel, 14f, palette.panelStroke, 1)
             for (index in 0 until binding.bottomInfoGrid.childCount) {
@@ -170,6 +189,7 @@ object DisplayTheme {
         binding.heroImage.alpha = when (prefs.displayTheme) {
             AppPreferences.THEME_ALAA_NEON_IPTV -> 0.96f
             AppPreferences.THEME_ALAA_FIGMA -> 0.90f
+            AppPreferences.THEME_ASINAT -> 0.88f
             AppPreferences.THEME_CINEMA_SPOTLIGHT -> 0.92f
             AppPreferences.THEME_MONO_STUDIO -> 0.66f
             AppPreferences.THEME_NEON_ARCADE -> 0.78f
@@ -200,18 +220,27 @@ object DisplayTheme {
         val palette = palette(prefs.displayTheme) ?: return
         binding.root.setBackgroundColor(Color.parseColor(palette.background))
         val simpleLive = SimpleLiveLayoutPolicy.isEnabled(prefs.displayTheme)
-        binding.channelPanel.setBackgroundColor(Color.parseColor(if (simpleLive) "#050505" else palette.panel))
-        binding.previewPanel.setBackgroundColor(Color.parseColor(if (simpleLive) "#050505" else palette.panel))
+        val isAsinat = isAsinat(prefs.displayTheme)
+        val quietLiveSurfaces = simpleLive || isAsinat
+        binding.channelPanel.setBackgroundColor(Color.parseColor(if (quietLiveSurfaces) palette.background else palette.panel))
+        binding.previewPanel.setBackgroundColor(Color.parseColor(if (quietLiveSurfaces) palette.background else palette.panel))
         binding.filterAll.background = rounded(palette.accent, palette.radius)
         binding.filterAll.setTextColor(Color.parseColor(palette.accentText))
         binding.channelCounterFooter.setTextColor(Color.parseColor(palette.accent))
         binding.liveCategoriesTitle.setTextColor(Color.parseColor(palette.accent))
-        binding.liveCategoryPanel.setBackgroundColor(Color.parseColor(if (simpleLive) "#050505" else palette.panel))
-        binding.filterLive.visibility = if (simpleLive) View.GONE else View.VISIBLE
-        binding.filterFav.visibility = if (simpleLive) View.GONE else View.VISIBLE
+        binding.liveCategoryPanel.setBackgroundColor(Color.parseColor(if (quietLiveSurfaces) palette.background else palette.panel))
+        binding.filterLive.visibility = if (quietLiveSurfaces) View.GONE else View.VISIBLE
+        binding.filterFav.visibility = if (quietLiveSurfaces) View.GONE else View.VISIBLE
         binding.epgLayout.visibility = View.GONE
         binding.actionButtons.visibility = View.GONE
-        applyLiveColumnProportions(binding, if (simpleLive) SimpleLiveLayoutPolicy.CONTENT_PANEL_WIDTH else 0.51f)
+        applyLiveColumnProportions(
+            binding,
+            when {
+                simpleLive -> SimpleLiveLayoutPolicy.CONTENT_PANEL_WIDTH
+                isAsinat -> AsinatLayoutPolicy.LIVE_CONTENT_PANEL_WIDTH
+                else -> 0.51f
+            }
+        )
         applyLiveStructure(binding, liveCategorySpec(prefs.displayTheme))
         binding.previewImage.alpha = when (prefs.displayTheme) {
             AppPreferences.THEME_CINEMA_SPOTLIGHT -> 0.95f
@@ -294,18 +323,42 @@ object DisplayTheme {
 
     fun applyMovies(binding: ActivityMoviesBinding, prefs: AppPreferences) {
         val palette = palette(prefs.displayTheme) ?: return
+        val density = binding.root.resources.displayMetrics.density
         binding.root.setBackgroundColor(Color.parseColor(palette.background))
         binding.sidebarContainer.setBackgroundColor(Color.parseColor(palette.sidebar))
         binding.movieCategoryPanel.background = rounded(palette.sidebar, palette.radius, palette.panelStroke, 1)
         binding.movieCategoriesTitle.setTextColor(Color.parseColor(palette.accent))
+        if (isAsinat(prefs.displayTheme)) {
+            binding.sidebarContainer.layoutParams = binding.sidebarContainer.layoutParams.apply {
+                width = (AsinatLayoutPolicy.DASHBOARD_SIDEBAR_WIDTH_DP * density).toInt()
+            }
+            binding.movieCategoryPanel.layoutParams = binding.movieCategoryPanel.layoutParams.apply {
+                width = (280 * density).toInt()
+            }
+            binding.movieCategoryPanel.setPadding((14 * density).toInt(), (14 * density).toInt(), (14 * density).toInt(), (14 * density).toInt())
+            binding.moviesTitle.setTextColor(Color.parseColor("#F5F7FA"))
+            binding.moviesCount.setTextColor(Color.parseColor(palette.metadata))
+        }
     }
 
     fun applySeries(binding: ActivitySeriesBinding, prefs: AppPreferences) {
         val palette = palette(prefs.displayTheme) ?: return
+        val density = binding.root.resources.displayMetrics.density
         binding.root.setBackgroundColor(Color.parseColor(palette.background))
         binding.sidebarContainer.setBackgroundColor(Color.parseColor(palette.sidebar))
         binding.seriesCategoryPanel.background = rounded(palette.sidebar, palette.radius, palette.panelStroke, 1)
         binding.seriesCategoriesTitle.setTextColor(Color.parseColor(palette.accent))
+        if (isAsinat(prefs.displayTheme)) {
+            binding.sidebarContainer.layoutParams = binding.sidebarContainer.layoutParams.apply {
+                width = (AsinatLayoutPolicy.DASHBOARD_SIDEBAR_WIDTH_DP * density).toInt()
+            }
+            binding.seriesCategoryPanel.layoutParams = binding.seriesCategoryPanel.layoutParams.apply {
+                width = (280 * density).toInt()
+            }
+            binding.seriesCategoryPanel.setPadding((14 * density).toInt(), (14 * density).toInt(), (14 * density).toInt(), (14 * density).toInt())
+            binding.seriesTitle.setTextColor(Color.parseColor("#F5F7FA"))
+            binding.seriesCount.setTextColor(Color.parseColor(palette.metadata))
+        }
     }
 
     fun applySeriesDetails(binding: ActivitySeriesDetailsBinding, prefs: AppPreferences) {
@@ -316,6 +369,9 @@ object DisplayTheme {
         binding.seriesMeta.setTextColor(Color.parseColor(palette.metadata))
         binding.seriesDescription.setTextColor(Color.parseColor(palette.metadata))
         binding.episodesTitle.setTextColor(Color.parseColor(palette.accent))
+        if (isAsinat(prefs.displayTheme)) {
+            binding.backButton.background = rounded(palette.panel, 14f, palette.focusStroke, 1)
+        }
     }
 
     fun applyPlayer(binding: ActivityPlayerBinding, prefs: AppPreferences) {
@@ -323,6 +379,12 @@ object DisplayTheme {
         binding.root.setBackgroundColor(Color.parseColor(palette.background))
         binding.loadingProgress.setTextColor(Color.parseColor(palette.accent))
         binding.trackSelectionButton.background = rounded(palette.panel, palette.radius, palette.focusStroke ?: palette.accent, 1)
+        if (isAsinat(prefs.displayTheme)) {
+            binding.channelNameText.background = rounded(palette.sidebar, 14f, palette.panelStroke, 1)
+            binding.playerStatusOverlay.background = rounded(palette.sidebar, 16f, palette.panelStroke, 1)
+            binding.trackSelectionButton.background = rounded(palette.accent, 14f, palette.focusStroke, 1)
+            binding.trackSelectionButton.setTextColor(Color.parseColor(palette.accentText))
+        }
     }
 
     @UnstableApi
@@ -349,17 +411,21 @@ object DisplayTheme {
 
     fun isNeonIptv(theme: String): Boolean = theme == AppPreferences.THEME_ALAA_NEON_IPTV
 
+    fun isAsinat(theme: String): Boolean = AsinatLayoutPolicy.isEnabled(theme)
+
     fun playbackAccentColor(theme: String): Int = Color.parseColor(requireNotNull(palette(theme)).accent)
 
     fun cardSurfaceColor(theme: String): Int = Color.parseColor(requireNotNull(palette(theme)).panel)
 
     fun playbackOverlayColor(theme: String): Int = when (theme) {
         AppPreferences.THEME_ALAA_NEON_IPTV -> Color.parseColor("#B5060915")
+        AppPreferences.THEME_ASINAT -> Color.parseColor("#D906111B")
         else -> Color.parseColor("#CC000000")
     }
 
     fun categoryCardStyle(theme: String): CategoryCardStyle = when (theme) {
         AppPreferences.THEME_ALAA_NEON_IPTV -> CategoryCardStyle(1.08f, 1.15f, 24f, 1.45f, 0.80f)
+        AppPreferences.THEME_ASINAT -> CategoryCardStyle(1.04f, 1.06f, 10f, 0.65f, 0.92f)
         AppPreferences.THEME_ALAA_FIGMA -> CategoryCardStyle(1.045f, 1.08f, 15f, 0.92f, 0.88f)
         AppPreferences.THEME_NEON_ARCADE -> CategoryCardStyle(1.10f, 1.16f, 20f, 1.35f, 0.75f)
         AppPreferences.THEME_CINEMA_SPOTLIGHT -> CategoryCardStyle(1.025f, 1.02f, 14f, 0.55f, 1.0f)
@@ -376,6 +442,7 @@ object DisplayTheme {
 
     fun dashboardCategoryGrid(theme: String): CategoryGridStyle = when (theme) {
         AppPreferences.THEME_ALAA_NEON_IPTV -> CategoryGridStyle(1, RecyclerView.HORIZONTAL)
+        AppPreferences.THEME_ASINAT -> CategoryGridStyle(1, RecyclerView.HORIZONTAL)
         AppPreferences.THEME_ALAA_FIGMA -> CategoryGridStyle(1, RecyclerView.HORIZONTAL)
         AppPreferences.THEME_NEON_ARCADE -> CategoryGridStyle(2, RecyclerView.HORIZONTAL)
         AppPreferences.THEME_CINEMA_SPOTLIGHT -> CategoryGridStyle(1, RecyclerView.HORIZONTAL)
@@ -393,6 +460,7 @@ object DisplayTheme {
     /** أبعاد ومعلومات البطاقة متغيرة، لذلك لا تشترك التصاميم في مظهر فئات واحد. */
     fun dashboardCardSpec(theme: String): DashboardCardSpec = when (theme) {
         AppPreferences.THEME_ALAA_NEON_IPTV -> DashboardCardSpec(194, 118, 14f, 18f, true, 1.10f)
+        AppPreferences.THEME_ASINAT -> DashboardCardSpec(190, 120, 14f, 14f, true, 1.03f)
         AppPreferences.THEME_ALAA_FIGMA -> DashboardCardSpec(172, 96, 13f, 12f, true, 1.0f)
         AppPreferences.THEME_NEON_ARCADE -> DashboardCardSpec(214, 108, 13f, 22f, false, 1.18f)
         AppPreferences.THEME_CINEMA_SPOTLIGHT -> DashboardCardSpec(292, 152, 17f, 28f, false, 0.92f)
@@ -422,6 +490,7 @@ object DisplayTheme {
     /** صف القناة نفسه يتبدل من مسار عريض إلى بطاقات كثيفة أو صف كونسول مدمج. */
     fun channelRowSpec(theme: String): ChannelRowSpec = when (theme) {
         AppPreferences.THEME_ALAA_NEON_IPTV -> ChannelRowSpec(SimpleLiveLayoutPolicy.CHANNEL_ROW_HEIGHT_DP, 10, 14f, 12f, true, true, 38, 24)
+        AppPreferences.THEME_ASINAT -> ChannelRowSpec(AsinatLayoutPolicy.LIVE_CHANNEL_ROW_HEIGHT_DP, 12, 15f, 12f, true, true, 42, 26)
         AppPreferences.THEME_ALAA_FIGMA -> ChannelRowSpec(50, 12, 14f, 12f, true, true, 42, 27)
         AppPreferences.THEME_NEON_ARCADE -> ChannelRowSpec(72, 14, 16f, 13f, true, true, 54, 34)
         AppPreferences.THEME_CINEMA_SPOTLIGHT -> ChannelRowSpec(84, 18, 18f, 13f, false, false, 70, 42)
@@ -439,6 +508,7 @@ object DisplayTheme {
     /** الفئات إما قائمة جانبية أو مصفوفة جانبية أو مسار أعلى مستقل. */
     fun liveCategorySpec(theme: String): LiveCategorySpec = when (theme) {
         AppPreferences.THEME_ALAA_NEON_IPTV -> LiveCategorySpec(LiveCategoryPlacement.SIDE_LIST, SimpleLiveLayoutPolicy.CATEGORY_SIDE_WIDTH, 1, SimpleLiveLayoutPolicy.CATEGORY_ROW_HEIGHT_DP, 14f, "", true)
+        AppPreferences.THEME_ASINAT -> LiveCategorySpec(LiveCategoryPlacement.SIDE_LIST, AsinatLayoutPolicy.LIVE_CATEGORY_WIDTH, 1, AsinatLayoutPolicy.LIVE_CATEGORY_ROW_HEIGHT_DP, 15f, "", true)
         AppPreferences.THEME_ALAA_FIGMA -> LiveCategorySpec(LiveCategoryPlacement.SIDE_LIST, 0.32f, 1, 52, 14f, "", true)
         AppPreferences.THEME_NEON_ARCADE -> LiveCategorySpec(LiveCategoryPlacement.TOP_RAIL, 0.34f, 1, 72, 15f, "", false)
         AppPreferences.THEME_CINEMA_SPOTLIGHT -> LiveCategorySpec(LiveCategoryPlacement.SIDE_LIST, 0.25f, 1, 72, 17f, "", true)
