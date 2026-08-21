@@ -146,7 +146,7 @@
                         android:id="@+id/tvIdValue"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:contentDescription="معرّف هذا التلفزيون"
+                        android:contentDescription="رمز اقتران هذا التلفزيون"
                         android:gravity="right|center_vertical"
                         android:paddingLeft="48dp"
                         android:paddingRight="12dp"
@@ -165,7 +165,7 @@
                     android:layout_marginStart="10dp"
                     android:background="@drawable/bg_login_secondary_button"
                     android:nextFocusDown="@id/serverUrlInput"
-                    android:text="جلب اشتراكي"
+                        android:text="جلب اشتراكي"
                     android:textAllCaps="false"
                     android:textColor="@color/white"
                     android:textSize="13sp" />
@@ -176,7 +176,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
                 android:gravity="center"
-                android:text="هذا هو معرّف تلفزيونك — أضفه مرة واحدة إلى لوحة التحكم"
+                android:text="انسخ رمز ALAA الظاهر وأدخله مرة واحدة في لوحة التحكم"
                 android:textColor="@color/text_gray_light"
                 android:textSize="11sp" />
 

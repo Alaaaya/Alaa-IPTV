@@ -30,6 +30,12 @@ data class QrPairingStatus(
     val expiresAt: String? = null
 )
 
+data class DevicePairingCode(
+    val code: String,
+    val expiresAt: String? = null,
+    val alreadyRegistered: Boolean = false
+)
+
 object TvProvisioningClient {
     private val client = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
@@ -123,6 +129,20 @@ object TvProvisioningClient {
             client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) throw IOException("تعذر تأكيد الخروج البعيد")
             }
+        }
+    }
+
+    suspend fun issueDevicePairingCode(tvId: String): Result<DevicePairingCode> = withContext(Dispatchers.IO) {
+        runCatching {
+            require(tvId.length >= 16) { "تعذر تجهيز رمز الاقتران" }
+            val data = postJson("devices.issuePairingCode", JSONObject().put("tvId", tvId))
+            val code = data.optString("code").trim().uppercase()
+            require(code.matches(Regex("ALAA-[0-9]{8}"))) { "استجابة رمز الاقتران غير صالحة" }
+            DevicePairingCode(
+                code = code,
+                expiresAt = data.optString("expiresAt").ifBlank { null },
+                alreadyRegistered = data.optBoolean("alreadyRegistered", false)
+            )
         }
     }
 

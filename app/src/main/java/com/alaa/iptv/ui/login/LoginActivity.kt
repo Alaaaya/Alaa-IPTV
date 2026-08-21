@@ -74,8 +74,22 @@ class LoginActivity : AppCompatActivity() {
         }
         binding.passwordVisibilityButton.setOnClickListener { togglePasswordVisibility() }
         binding.fetchTvIdButton.setOnClickListener { fetchTvSubscription() }
-        binding.tvIdValue.text = prefs.getOrCreateTvId()
+        refreshDevicePairingCode()
         setSourceType(SOURCE_XTREAM)
+    }
+
+    private fun refreshDevicePairingCode() {
+        binding.tvIdValue.text = "جارٍ تجهيز رمز الاقتران…"
+        lifecycleScope.launch {
+            TvProvisioningClient.issueDevicePairingCode(prefs.getOrCreateTvId())
+                .onSuccess { pairing ->
+                    binding.tvIdValue.text = pairing.code
+                }
+                .onFailure {
+                    binding.tvIdValue.text = "ALAA-غير متاح"
+                    Log.w(TAG, "Could not issue device pairing code", it)
+                }
+        }
     }
 
     private fun submitLogin() {
@@ -99,7 +113,7 @@ class LoginActivity : AppCompatActivity() {
             ).onSuccess { subscription ->
                 prefs.tvId = subscription.tvId
                 prefs.isControlPlaneEnrolled = true
-                binding.tvIdValue.text = subscription.tvId
+                refreshDevicePairingCode()
                 setSourceType(subscription.sourceType)
                 binding.serverUrlInput.setText(subscription.serverUrl)
                 binding.usernameInput.setText(subscription.username)
