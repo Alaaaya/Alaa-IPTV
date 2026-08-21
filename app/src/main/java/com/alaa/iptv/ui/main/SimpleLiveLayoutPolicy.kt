@@ -4,7 +4,9 @@ import com.alaa.iptv.data.preferences.AppPreferences
 
 /** قواعد التخطيط الهادئ لواجهة البث في أحدث تصميم Alaa. */
 object SimpleLiveLayoutPolicy {
-    const val CATEGORY_SIDE_WIDTH = 0.32f
+    /** يسار 25.2%، وسط 37.8%، ومعاينة 37% من شاشة البث كما في المرجع. */
+    const val CONTENT_PANEL_WIDTH = 0.63f
+    const val CATEGORY_SIDE_WIDTH = 0.40f
     const val CATEGORY_ROW_HEIGHT_DP = 48
     const val CHANNEL_ROW_HEIGHT_DP = 48
 

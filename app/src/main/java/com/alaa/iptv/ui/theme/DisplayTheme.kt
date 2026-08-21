@@ -211,11 +211,24 @@ object DisplayTheme {
         binding.filterFav.visibility = if (simpleLive) View.GONE else View.VISIBLE
         binding.epgLayout.visibility = View.GONE
         binding.actionButtons.visibility = View.GONE
+        applyLiveColumnProportions(binding, if (simpleLive) SimpleLiveLayoutPolicy.CONTENT_PANEL_WIDTH else 0.51f)
         applyLiveStructure(binding, liveCategorySpec(prefs.displayTheme))
         binding.previewImage.alpha = when (prefs.displayTheme) {
             AppPreferences.THEME_CINEMA_SPOTLIGHT -> 0.95f
             AppPreferences.THEME_MONO_STUDIO -> 0.72f
             else -> 1f
+        }
+    }
+
+    /**
+     * يضبط الأعمدة الثلاثة للتصميم الحديث: فئات واضحة، قائمة أوسع، ثم معاينة كبيرة.
+     * لا يغيّر اتجاه LTR أو مسارات التنقل بين الفئات والقنوات.
+     */
+    private fun applyLiveColumnProportions(binding: ActivityMainBinding, contentPanelWidth: Float) {
+        ConstraintSet().apply {
+            clone(binding.root)
+            constrainPercentWidth(R.id.channelPanel, contentPanelWidth)
+            applyTo(binding.root)
         }
     }
 
