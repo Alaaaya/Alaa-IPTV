@@ -91,6 +91,7 @@ object DisplayTheme {
         AppPreferences.THEME_ASINAT -> Palette("#06111B", "#0B1B2B", "#132940", "#E7B45B", "#07111B", "#B9CCDE", 14f, "#203A54", "#F2CC7D", "#284967")
         AppPreferences.THEME_ASINAT_2 -> Palette("#0B0E12", "#14181E", "#1D242B", "#75D1C8", "#061313", "#A7B1BC", 10f, "#263943", "#E9F3F1", "#33414B")
         AppPreferences.THEME_AYA -> Palette("#151117", "#201827", "#2A2133", "#FF9AB7", "#210B14", "#C9B7C5", 16f, "#3C2B46", "#FFF0F5", "#5B405E")
+        AppPreferences.THEME_AYA_2 -> Palette("#0D0A12", "#1A1425", "#2D1F3DCC", "#FF6B9D", "#FFFFFF", "#D4A5C7", 18f, "#3D1F4A", "#FF8FB3", "#FF6B9D44")
         AppPreferences.THEME_MIDNIGHT_GOLD -> Palette("#0A1426", "#101D31", "#1B2A40", "#D8CA28", "#0A1426", "#2497DE", 7f)
         AppPreferences.THEME_CRIMSON_CLASSIC -> Palette("#111319", "#191D25", "#242A35", "#E53935", "#FFFFFF", "#5EB5F7", 10f)
         AppPreferences.THEME_MODERN_GRID -> Palette("#110D22", "#1B1433", "#282047", "#8B5CF6", "#FFFFFF", "#22D3EE", 18f)
@@ -117,10 +118,11 @@ object DisplayTheme {
         val isAsinat = isAsinat(prefs.displayTheme)
         val isAsinat2 = isAsinat2(prefs.displayTheme)
         val isAya = isAya(prefs.displayTheme)
-        val usesCinematicShell = isNeonIptv || isFigmaAlaa || isAsinat || isAsinat2 || isAya
+        val isAya2 = isAya2(prefs.displayTheme)
+        val usesCinematicShell = isNeonIptv || isFigmaAlaa || isAsinat || isAsinat2 || isAya || isAya2
         val density = binding.root.resources.displayMetrics.density
         binding.root.setBackgroundColor(Color.parseColor(palette.background))
-        binding.sidebarContainer.background = if (isNeonIptv || isAsinat || isAsinat2 || isAya) {
+        binding.sidebarContainer.background = if (isNeonIptv || isAsinat || isAsinat2 || isAya || isAya2) {
             rounded(palette.sidebar, 20f, palette.panelStroke, 1)
         } else {
             GradientDrawable().apply { setColor(Color.parseColor(palette.sidebar)) }
@@ -128,8 +130,8 @@ object DisplayTheme {
         binding.heroWatchNow.background = rounded(
             palette.accent,
             if (isNeonIptv) 28f else palette.radius,
-            if (isNeonIptv) "#FF8994" else if (isAsinat || isAsinat2 || isAya) palette.focusStroke else null,
-            if (isNeonIptv || isAsinat || isAsinat2 || isAya) 1 else 0
+            if (isNeonIptv) "#FF8994" else if (isAsinat || isAsinat2 || isAya || isAya2) palette.focusStroke else null,
+            if (isNeonIptv || isAsinat || isAsinat2 || isAya || isAya2) 1 else 0
         )
         binding.heroWatchNow.setTextColor(Color.parseColor(palette.accentText))
         binding.heroWatchNow.elevation = when {
@@ -137,6 +139,7 @@ object DisplayTheme {
             isAsinat -> 6f
             isAsinat2 -> 4f
             isAya -> 5f
+            isAya2 -> 8f
             else -> binding.heroWatchNow.elevation
         }
         binding.categoriesViewAll.setTextColor(Color.parseColor(palette.accent))
@@ -154,7 +157,7 @@ object DisplayTheme {
                 params.removeRule(RelativeLayout.START_OF)
                 params.addRule(RelativeLayout.LEFT_OF, R.id.topStatusGroup)
                 params.addRule(RelativeLayout.START_OF, R.id.topStatusGroup)
-                params.width = ((if (isAya) 274 else if (isAsinat2) 324 else if (isAsinat) 310 else 290) * density).toInt()
+                params.width = ((if (isAya2) 296 else if (isAya) 274 else if (isAsinat2) 324 else if (isAsinat) 310 else 290) * density).toInt()
                 binding.topSearchGroup.layoutParams = params
             }
             binding.topClockGroup.visibility = View.GONE
@@ -163,6 +166,7 @@ object DisplayTheme {
                     isAsinat -> AsinatLayoutPolicy.DASHBOARD_SIDEBAR_WIDTH_DP
                     isAsinat2 -> Asinat2LayoutPolicy.DASHBOARD_SIDEBAR_WIDTH_DP
                     isAya -> AyaLayoutPolicy.DASHBOARD_SIDEBAR_WIDTH_DP
+                    isAya2 -> Aya2LayoutPolicy.DASHBOARD_SIDEBAR_WIDTH_DP
                     isFigmaAlaa -> 260
                     else -> 300
                 } * density).toInt()
@@ -172,13 +176,15 @@ object DisplayTheme {
                     isAsinat -> AsinatLayoutPolicy.DASHBOARD_HERO_HEIGHT_DP
                     isAsinat2 -> Asinat2LayoutPolicy.DASHBOARD_HERO_HEIGHT_DP
                     isAya -> AyaLayoutPolicy.DASHBOARD_HERO_HEIGHT_DP
+                    isAya2 -> Aya2LayoutPolicy.DASHBOARD_HERO_HEIGHT_DP
                     isFigmaAlaa -> 278
                     else -> 292
                 } * density).toInt()
             }
-            binding.heroCard.radius = (if (isAya) 16f else if (isAsinat2) 10f else if (isAsinat) 14f else 22f) * density
-            binding.heroCard.cardElevation = if (isAya) 5f else if (isAsinat2) 4f else if (isAsinat) 6f else 10f
+            binding.heroCard.radius = (if (isAya2) 18f else if (isAya) 16f else if (isAsinat2) 10f else if (isAsinat) 14f else 22f) * density
+            binding.heroCard.cardElevation = if (isAya2) 8f else if (isAya) 5f else if (isAsinat2) 4f else if (isAsinat) 6f else 10f
             binding.heroTitle.textSize = when {
+                isAya2 -> 44f
                 isAsinat -> 42f
                 isAsinat2 -> 38f
                 isAya -> 36f
@@ -204,6 +210,7 @@ object DisplayTheme {
             AppPreferences.THEME_ASINAT -> 0.88f
             AppPreferences.THEME_ASINAT_2 -> 0.84f
             AppPreferences.THEME_AYA -> 0.82f
+            AppPreferences.THEME_AYA_2 -> 0.80f
             AppPreferences.THEME_CINEMA_SPOTLIGHT -> 0.92f
             AppPreferences.THEME_MONO_STUDIO -> 0.66f
             AppPreferences.THEME_NEON_ARCADE -> 0.78f
@@ -237,7 +244,8 @@ object DisplayTheme {
         val isAsinat = isAsinat(prefs.displayTheme)
         val isAsinat2 = isAsinat2(prefs.displayTheme)
         val isAya = isAya(prefs.displayTheme)
-        val quietLiveSurfaces = simpleLive || isAsinat || isAsinat2 || isAya
+        val isAya2 = isAya2(prefs.displayTheme)
+        val quietLiveSurfaces = simpleLive || isAsinat || isAsinat2 || isAya || isAya2
         binding.channelPanel.setBackgroundColor(Color.parseColor(if (quietLiveSurfaces) palette.background else palette.panel))
         binding.previewPanel.setBackgroundColor(Color.parseColor(if (quietLiveSurfaces) palette.background else palette.panel))
         binding.filterAll.background = rounded(palette.accent, palette.radius)
@@ -256,6 +264,7 @@ object DisplayTheme {
                 isAsinat -> AsinatLayoutPolicy.LIVE_CONTENT_PANEL_WIDTH
                 isAsinat2 -> Asinat2LayoutPolicy.LIVE_CONTENT_PANEL_WIDTH
                 isAya -> AyaLayoutPolicy.LIVE_CONTENT_PANEL_WIDTH
+                isAya2 -> Aya2LayoutPolicy.LIVE_CONTENT_PANEL_WIDTH
                 else -> 0.51f
             }
         )
@@ -346,19 +355,21 @@ object DisplayTheme {
         binding.sidebarContainer.setBackgroundColor(Color.parseColor(palette.sidebar))
         binding.movieCategoryPanel.background = rounded(palette.sidebar, palette.radius, palette.panelStroke, 1)
         binding.movieCategoriesTitle.setTextColor(Color.parseColor(palette.accent))
-        if (isAsinat(prefs.displayTheme) || isAsinat2(prefs.displayTheme) || isAya(prefs.displayTheme)) {
+        if (isAsinat(prefs.displayTheme) || isAsinat2(prefs.displayTheme) || isAya(prefs.displayTheme) || isAya2(prefs.displayTheme)) {
             binding.sidebarContainer.layoutParams = binding.sidebarContainer.layoutParams.apply {
                 width = ((when {
+                    isAya2(prefs.displayTheme) -> Aya2LayoutPolicy.DASHBOARD_SIDEBAR_WIDTH_DP
                     isAya(prefs.displayTheme) -> AyaLayoutPolicy.DASHBOARD_SIDEBAR_WIDTH_DP
                     isAsinat2(prefs.displayTheme) -> Asinat2LayoutPolicy.DASHBOARD_SIDEBAR_WIDTH_DP
                     else -> AsinatLayoutPolicy.DASHBOARD_SIDEBAR_WIDTH_DP
                 }) * density).toInt()
             }
             binding.movieCategoryPanel.layoutParams = binding.movieCategoryPanel.layoutParams.apply {
-                width = ((if (isAya(prefs.displayTheme)) AyaLayoutPolicy.MOVIE_CATEGORY_WIDTH_DP else if (isAsinat2(prefs.displayTheme)) 260 else 280) * density).toInt()
+                width = ((if (isAya2(prefs.displayTheme)) Aya2LayoutPolicy.MOVIE_CATEGORY_WIDTH_DP else if (isAya(prefs.displayTheme)) AyaLayoutPolicy.MOVIE_CATEGORY_WIDTH_DP else if (isAsinat2(prefs.displayTheme)) 260 else 280) * density).toInt()
             }
-            binding.movieCategoryPanel.setPadding((14 * density).toInt(), (14 * density).toInt(), (14 * density).toInt(), (14 * density).toInt())
-            binding.moviesTitle.setTextColor(Color.parseColor("#F5F7FA"))
+            val categoryPadding = if (isAya2(prefs.displayTheme)) 16 else 14
+            binding.movieCategoryPanel.setPadding((categoryPadding * density).toInt(), (categoryPadding * density).toInt(), (categoryPadding * density).toInt(), (categoryPadding * density).toInt())
+            binding.moviesTitle.setTextColor(Color.parseColor(if (isAya2(prefs.displayTheme)) "#FFF0F5" else "#F5F7FA"))
             binding.moviesCount.setTextColor(Color.parseColor(palette.metadata))
         }
     }
@@ -370,19 +381,21 @@ object DisplayTheme {
         binding.sidebarContainer.setBackgroundColor(Color.parseColor(palette.sidebar))
         binding.seriesCategoryPanel.background = rounded(palette.sidebar, palette.radius, palette.panelStroke, 1)
         binding.seriesCategoriesTitle.setTextColor(Color.parseColor(palette.accent))
-        if (isAsinat(prefs.displayTheme) || isAsinat2(prefs.displayTheme) || isAya(prefs.displayTheme)) {
+        if (isAsinat(prefs.displayTheme) || isAsinat2(prefs.displayTheme) || isAya(prefs.displayTheme) || isAya2(prefs.displayTheme)) {
             binding.sidebarContainer.layoutParams = binding.sidebarContainer.layoutParams.apply {
                 width = ((when {
+                    isAya2(prefs.displayTheme) -> Aya2LayoutPolicy.DASHBOARD_SIDEBAR_WIDTH_DP
                     isAya(prefs.displayTheme) -> AyaLayoutPolicy.DASHBOARD_SIDEBAR_WIDTH_DP
                     isAsinat2(prefs.displayTheme) -> Asinat2LayoutPolicy.DASHBOARD_SIDEBAR_WIDTH_DP
                     else -> AsinatLayoutPolicy.DASHBOARD_SIDEBAR_WIDTH_DP
                 }) * density).toInt()
             }
             binding.seriesCategoryPanel.layoutParams = binding.seriesCategoryPanel.layoutParams.apply {
-                width = ((if (isAya(prefs.displayTheme)) AyaLayoutPolicy.MOVIE_CATEGORY_WIDTH_DP else if (isAsinat2(prefs.displayTheme)) 260 else 280) * density).toInt()
+                width = ((if (isAya2(prefs.displayTheme)) Aya2LayoutPolicy.MOVIE_CATEGORY_WIDTH_DP else if (isAya(prefs.displayTheme)) AyaLayoutPolicy.MOVIE_CATEGORY_WIDTH_DP else if (isAsinat2(prefs.displayTheme)) 260 else 280) * density).toInt()
             }
-            binding.seriesCategoryPanel.setPadding((14 * density).toInt(), (14 * density).toInt(), (14 * density).toInt(), (14 * density).toInt())
-            binding.seriesTitle.setTextColor(Color.parseColor("#F5F7FA"))
+            val categoryPadding = if (isAya2(prefs.displayTheme)) 16 else 14
+            binding.seriesCategoryPanel.setPadding((categoryPadding * density).toInt(), (categoryPadding * density).toInt(), (categoryPadding * density).toInt(), (categoryPadding * density).toInt())
+            binding.seriesTitle.setTextColor(Color.parseColor(if (isAya2(prefs.displayTheme)) "#FFF0F5" else "#F5F7FA"))
             binding.seriesCount.setTextColor(Color.parseColor(palette.metadata))
         }
     }
@@ -395,8 +408,8 @@ object DisplayTheme {
         binding.seriesMeta.setTextColor(Color.parseColor(palette.metadata))
         binding.seriesDescription.setTextColor(Color.parseColor(palette.metadata))
         binding.episodesTitle.setTextColor(Color.parseColor(palette.accent))
-        if (isAsinat(prefs.displayTheme) || isAsinat2(prefs.displayTheme) || isAya(prefs.displayTheme)) {
-            binding.backButton.background = rounded(palette.panel, 14f, palette.focusStroke, 1)
+        if (isAsinat(prefs.displayTheme) || isAsinat2(prefs.displayTheme) || isAya(prefs.displayTheme) || isAya2(prefs.displayTheme)) {
+            binding.backButton.background = rounded(palette.panel, if (isAya2(prefs.displayTheme)) 16f else 14f, palette.focusStroke, 1)
         }
     }
 
@@ -405,10 +418,10 @@ object DisplayTheme {
         binding.root.setBackgroundColor(Color.parseColor(palette.background))
         binding.loadingProgress.setTextColor(Color.parseColor(palette.accent))
         binding.trackSelectionButton.background = rounded(palette.panel, palette.radius, palette.focusStroke ?: palette.accent, 1)
-        if (isAsinat(prefs.displayTheme) || isAsinat2(prefs.displayTheme) || isAya(prefs.displayTheme)) {
-            binding.channelNameText.background = rounded(palette.sidebar, 14f, palette.panelStroke, 1)
-            binding.playerStatusOverlay.background = rounded(palette.sidebar, 16f, palette.panelStroke, 1)
-            binding.trackSelectionButton.background = rounded(palette.accent, 14f, palette.focusStroke, 1)
+        if (isAsinat(prefs.displayTheme) || isAsinat2(prefs.displayTheme) || isAya(prefs.displayTheme) || isAya2(prefs.displayTheme)) {
+            binding.channelNameText.background = rounded(palette.sidebar, if (isAya2(prefs.displayTheme)) 16f else 14f, palette.panelStroke, 1)
+            binding.playerStatusOverlay.background = rounded(palette.sidebar, if (isAya2(prefs.displayTheme)) 18f else 16f, palette.panelStroke, 1)
+            binding.trackSelectionButton.background = rounded(palette.accent, if (isAya2(prefs.displayTheme)) 16f else 14f, palette.focusStroke, 1)
             binding.trackSelectionButton.setTextColor(Color.parseColor(palette.accentText))
         }
     }
@@ -443,6 +456,8 @@ object DisplayTheme {
 
     fun isAya(theme: String): Boolean = AyaLayoutPolicy.isEnabled(theme)
 
+    fun isAya2(theme: String): Boolean = Aya2LayoutPolicy.isEnabled(theme)
+
     fun playbackAccentColor(theme: String): Int = Color.parseColor(requireNotNull(palette(theme)).accent)
 
     fun cardSurfaceColor(theme: String): Int = Color.parseColor(requireNotNull(palette(theme)).panel)
@@ -452,6 +467,7 @@ object DisplayTheme {
         AppPreferences.THEME_ASINAT -> Color.parseColor("#D906111B")
         AppPreferences.THEME_ASINAT_2 -> Color.parseColor("#D90B0E12")
         AppPreferences.THEME_AYA -> Color.parseColor("#D9151117")
+        AppPreferences.THEME_AYA_2 -> Color.parseColor("#D90D0A12")
         else -> Color.parseColor("#CC000000")
     }
 
@@ -460,6 +476,7 @@ object DisplayTheme {
         AppPreferences.THEME_ASINAT -> CategoryCardStyle(1.04f, 1.06f, 10f, 0.65f, 0.92f)
         AppPreferences.THEME_ASINAT_2 -> CategoryCardStyle(1.025f, 1.035f, 8f, 0.35f, 0.94f)
         AppPreferences.THEME_AYA -> CategoryCardStyle(1.03f, 1.04f, 14f, 0.42f, 0.90f)
+        AppPreferences.THEME_AYA_2 -> CategoryCardStyle(1.06f, 1.08f, 16f, 0.9f, 0.88f)
         AppPreferences.THEME_ALAA_FIGMA -> CategoryCardStyle(1.045f, 1.08f, 15f, 0.92f, 0.88f)
         AppPreferences.THEME_NEON_ARCADE -> CategoryCardStyle(1.10f, 1.16f, 20f, 1.35f, 0.75f)
         AppPreferences.THEME_CINEMA_SPOTLIGHT -> CategoryCardStyle(1.025f, 1.02f, 14f, 0.55f, 1.0f)
@@ -479,6 +496,7 @@ object DisplayTheme {
         AppPreferences.THEME_ASINAT -> CategoryGridStyle(1, RecyclerView.HORIZONTAL)
         AppPreferences.THEME_ASINAT_2 -> CategoryGridStyle(2, RecyclerView.HORIZONTAL)
         AppPreferences.THEME_AYA -> CategoryGridStyle(3, RecyclerView.HORIZONTAL)
+        AppPreferences.THEME_AYA_2 -> CategoryGridStyle(2, RecyclerView.HORIZONTAL)
         AppPreferences.THEME_ALAA_FIGMA -> CategoryGridStyle(1, RecyclerView.HORIZONTAL)
         AppPreferences.THEME_NEON_ARCADE -> CategoryGridStyle(2, RecyclerView.HORIZONTAL)
         AppPreferences.THEME_CINEMA_SPOTLIGHT -> CategoryGridStyle(1, RecyclerView.HORIZONTAL)
@@ -499,6 +517,7 @@ object DisplayTheme {
         AppPreferences.THEME_ASINAT -> DashboardCardSpec(190, 120, 14f, 14f, true, 1.03f)
         AppPreferences.THEME_ASINAT_2 -> DashboardCardSpec(166, 144, 10f, 10f, true, 1.025f)
         AppPreferences.THEME_AYA -> DashboardCardSpec(214, 132, 16f, 16f, true, 1.03f)
+        AppPreferences.THEME_AYA_2 -> DashboardCardSpec(210, 136, 15f, 18f, true, 1.08f)
         AppPreferences.THEME_ALAA_FIGMA -> DashboardCardSpec(172, 96, 13f, 12f, true, 1.0f)
         AppPreferences.THEME_NEON_ARCADE -> DashboardCardSpec(214, 108, 13f, 22f, false, 1.18f)
         AppPreferences.THEME_CINEMA_SPOTLIGHT -> DashboardCardSpec(292, 152, 17f, 28f, false, 0.92f)
@@ -531,6 +550,7 @@ object DisplayTheme {
         AppPreferences.THEME_ASINAT -> ChannelRowSpec(AsinatLayoutPolicy.LIVE_CHANNEL_ROW_HEIGHT_DP, 12, 15f, 12f, true, true, 42, 26)
         AppPreferences.THEME_ASINAT_2 -> ChannelRowSpec(Asinat2LayoutPolicy.LIVE_CHANNEL_ROW_HEIGHT_DP, 14, 15f, 12f, true, true, 44, 28)
         AppPreferences.THEME_AYA -> ChannelRowSpec(AyaLayoutPolicy.LIVE_CHANNEL_ROW_HEIGHT_DP, 16, 16f, 13f, true, true, 48, 30)
+        AppPreferences.THEME_AYA_2 -> ChannelRowSpec(Aya2LayoutPolicy.LIVE_CHANNEL_ROW_HEIGHT_DP, 14, 16f, 13f, true, true, 48, 30)
         AppPreferences.THEME_ALAA_FIGMA -> ChannelRowSpec(50, 12, 14f, 12f, true, true, 42, 27)
         AppPreferences.THEME_NEON_ARCADE -> ChannelRowSpec(72, 14, 16f, 13f, true, true, 54, 34)
         AppPreferences.THEME_CINEMA_SPOTLIGHT -> ChannelRowSpec(84, 18, 18f, 13f, false, false, 70, 42)
@@ -551,6 +571,7 @@ object DisplayTheme {
         AppPreferences.THEME_ASINAT -> LiveCategorySpec(LiveCategoryPlacement.SIDE_LIST, AsinatLayoutPolicy.LIVE_CATEGORY_WIDTH, 1, AsinatLayoutPolicy.LIVE_CATEGORY_ROW_HEIGHT_DP, 15f, "", true)
         AppPreferences.THEME_ASINAT_2 -> LiveCategorySpec(LiveCategoryPlacement.SIDE_LIST, Asinat2LayoutPolicy.LIVE_CATEGORY_WIDTH, 1, Asinat2LayoutPolicy.LIVE_CATEGORY_ROW_HEIGHT_DP, 12f, "", true)
         AppPreferences.THEME_AYA -> LiveCategorySpec(LiveCategoryPlacement.SIDE_LIST, AyaLayoutPolicy.LIVE_CATEGORY_WIDTH, 1, AyaLayoutPolicy.LIVE_CATEGORY_ROW_HEIGHT_DP, 16f, "", true)
+        AppPreferences.THEME_AYA_2 -> LiveCategorySpec(LiveCategoryPlacement.SIDE_LIST, Aya2LayoutPolicy.LIVE_CATEGORY_WIDTH, 1, Aya2LayoutPolicy.LIVE_CATEGORY_ROW_HEIGHT_DP, 15f, "", true)
         AppPreferences.THEME_ALAA_FIGMA -> LiveCategorySpec(LiveCategoryPlacement.SIDE_LIST, 0.32f, 1, 52, 14f, "", true)
         AppPreferences.THEME_NEON_ARCADE -> LiveCategorySpec(LiveCategoryPlacement.TOP_RAIL, 0.34f, 1, 72, 15f, "", false)
         AppPreferences.THEME_CINEMA_SPOTLIGHT -> LiveCategorySpec(LiveCategoryPlacement.SIDE_LIST, 0.25f, 1, 72, 17f, "", true)
@@ -575,6 +596,7 @@ object DisplayTheme {
         AppPreferences.THEME_ALAA_NEON_IPTV -> 5
         AppPreferences.THEME_ASINAT_2 -> 6
         AppPreferences.THEME_AYA -> 4
+        AppPreferences.THEME_AYA_2 -> 4
         AppPreferences.THEME_ALAA_FIGMA -> 5
         AppPreferences.THEME_NEON_ARCADE -> 6
         AppPreferences.THEME_CINEMA_SPOTLIGHT -> 3
