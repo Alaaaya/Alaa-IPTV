@@ -8,8 +8,8 @@ import org.junit.Test
 class ThemeCatalogTest {
     @Test
     fun `catalog exposes all existing designs plus the Alaa Neon IPTV choice`() {
-        assertEquals(25, ThemeCatalog.options.size)
-        assertEquals(25, ThemeCatalog.options.map { it.id }.toSet().size)
+        assertEquals(26, ThemeCatalog.options.size)
+        assertEquals(26, ThemeCatalog.options.map { it.id }.toSet().size)
         assertTrue(ThemeCatalog.options.any { it.id == "alaa_neon_iptv" && it.title == "Alaa Player – Neon IPTV" })
         assertTrue(ThemeCatalog.options.any { it.id == "alaa_figma" && it.title == "Alaa — Figma TV" })
         assertTrue(ThemeCatalog.options.any { it.id == "asinat" && it.title == "Asinat" })
@@ -18,6 +18,7 @@ class ThemeCatalogTest {
         assertTrue(ThemeCatalog.options.any { it.id == "aya_2" && it.title == "أية 2" })
         assertTrue(ThemeCatalog.options.any { it.id == "aya_3" && it.title == "أية 3" })
         assertTrue(ThemeCatalog.options.any { it.id == "aya_5" && it.title == "Aya 5" })
+        assertTrue(ThemeCatalog.options.any { it.id == AppPreferences.THEME_QWEN && it.title == "Qwen" })
         assertTrue(ThemeCatalog.options.any { it.title == "Neon Arcade" })
         assertTrue(ThemeCatalog.options.any { it.title == "Royal Velvet" })
     }
@@ -48,6 +49,7 @@ class ThemeCatalogTest {
             AppPreferences.THEME_AYA_2,
             AppPreferences.THEME_AYA_3,
             AppPreferences.THEME_AYA_5,
+            AppPreferences.THEME_QWEN,
             AppPreferences.THEME_NEON_ARCADE,
             AppPreferences.THEME_CINEMA_SPOTLIGHT,
             AppPreferences.THEME_SAPPHIRE_HORIZON,
@@ -59,7 +61,7 @@ class ThemeCatalogTest {
             AppPreferences.THEME_OCEAN_WAVE,
             AppPreferences.THEME_ROYAL_VELVET
         )
-        assertEquals(14, newThemeIds.size)
+        assertEquals(15, newThemeIds.size)
 
         val signatures = newThemeIds.map { id ->
             val live = DisplayTheme.liveCategorySpec(id)
@@ -77,7 +79,7 @@ class ThemeCatalogTest {
             ).joinToString("|")
         }
 
-        assertEquals(14, signatures.toSet().size)
+        assertEquals(15, signatures.toSet().size)
         assertTrue(newThemeIds.any { DisplayTheme.liveCategorySpec(it).placement == DisplayTheme.LiveCategoryPlacement.TOP_RAIL })
         assertTrue(newThemeIds.any { DisplayTheme.liveCategorySpec(it).placement == DisplayTheme.LiveCategoryPlacement.SIDE_GRID })
         assertTrue(newThemeIds.any { DisplayTheme.liveCategorySpec(it).placement == DisplayTheme.LiveCategoryPlacement.SIDE_LIST })
