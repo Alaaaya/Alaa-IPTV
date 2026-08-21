@@ -106,8 +106,8 @@ class ChannelAdapter(
             renderFavorite(channel.isFavorite)
 
             if (DisplayTheme.hasCustomTheme(displayTheme)) {
-                binding.root.background = if (SimpleLiveLayoutPolicy.isEnabled(displayTheme)) ColorDrawable(Color.TRANSPARENT) else DisplayTheme.panelBackground(displayTheme)
-                binding.channelNumber.background = if (SimpleLiveLayoutPolicy.isEnabled(displayTheme)) ColorDrawable(Color.TRANSPARENT) else DisplayTheme.focusBackground(displayTheme)
+                binding.root.background = if (SimpleLiveLayoutPolicy.usesQuietRows(displayTheme)) ColorDrawable(Color.TRANSPARENT) else DisplayTheme.panelBackground(displayTheme)
+                binding.channelNumber.background = if (SimpleLiveLayoutPolicy.usesQuietRows(displayTheme)) ColorDrawable(Color.TRANSPARENT) else DisplayTheme.focusBackground(displayTheme)
                 binding.channelNumber.setTextColor(DisplayTheme.focusTextColor(displayTheme))
                 binding.qualityTag.background = DisplayTheme.panelBackground(displayTheme)
                 binding.qualityTag.setTextColor(DisplayTheme.metadataColor(displayTheme))

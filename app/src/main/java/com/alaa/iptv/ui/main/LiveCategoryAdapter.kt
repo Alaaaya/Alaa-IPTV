@@ -75,7 +75,7 @@ class LiveCategoryAdapter(
             binding.categoryName.text = "${spec.labelPrefix}${category.categoryName}$suffix"
             binding.categoryName.textSize = LiveCategoryLayoutPolicy.compactNameSizeSp(spec.textSizeSp)
             binding.categoryNumber.text = (bindingAdapterPosition + 1).toString()
-            binding.categoryCount.text = if (SimpleLiveLayoutPolicy.isEnabled(displayTheme)) {
+            binding.categoryCount.text = if (SimpleLiveLayoutPolicy.usesQuietRows(displayTheme)) {
                 SimpleLiveLayoutPolicy.categoryMeta(category.channelCount)
             } else if (category.channelCount > 0) {
                 "${category.channelCount} عنصر في هذه الفئة"
@@ -93,8 +93,8 @@ class LiveCategoryAdapter(
             val highlighted = binding.root.hasFocus() || category.categoryId == selectedCategoryId
             if (DisplayTheme.hasCustomTheme(displayTheme)) {
                 binding.root.background = when {
-                    SimpleLiveLayoutPolicy.isEnabled(displayTheme) && highlighted -> DisplayTheme.focusOutlineBackground(displayTheme)
-                    SimpleLiveLayoutPolicy.isEnabled(displayTheme) -> ColorDrawable(Color.TRANSPARENT)
+                    SimpleLiveLayoutPolicy.usesQuietRows(displayTheme) && highlighted -> DisplayTheme.focusOutlineBackground(displayTheme)
+                    SimpleLiveLayoutPolicy.usesQuietRows(displayTheme) -> ColorDrawable(Color.TRANSPARENT)
                     highlighted -> DisplayTheme.focusBackground(displayTheme)
                     else -> DisplayTheme.panelBackground(displayTheme)
                 }
@@ -104,7 +104,7 @@ class LiveCategoryAdapter(
                 binding.categoryCount.setTextColor(
                     if (highlighted) DisplayTheme.focusTextColor(displayTheme) else DisplayTheme.metadataColor(displayTheme)
                 )
-                binding.categoryNumber.background = if (SimpleLiveLayoutPolicy.isEnabled(displayTheme)) {
+                binding.categoryNumber.background = if (SimpleLiveLayoutPolicy.usesQuietRows(displayTheme)) {
                     ColorDrawable(Color.TRANSPARENT)
                 } else {
                     binding.root.context.getDrawable(
