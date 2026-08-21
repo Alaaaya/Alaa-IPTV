@@ -134,7 +134,7 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun initializePlayer(url: String) {
-        val playableUrl = PlaybackUrlPolicy.normalizedHttpUrlOrNull(url)
+        val playableUrl = PlaybackUrlPolicy.normalizedHttpsUrlOrNull(url)
         if (playableUrl == null) {
             Log.w(TAG, "Rejected invalid or empty playback URL")
             showLoading(false)
@@ -196,9 +196,9 @@ class PlayerActivity : AppCompatActivity() {
                 binding.channelNameText.visibility = View.VISIBLE
             }
 
-            // Configure HTTP data source to allow cleartext and custom headers
+            // Configure the HTTPS data source without allowing protocol downgrades.
             val httpDataSourceFactory = DefaultHttpDataSource.Factory()
-                .setAllowCrossProtocolRedirects(true)
+                .setAllowCrossProtocolRedirects(false)
                 .setUserAgent("Mozilla/5.0 (Linux; Android 11; Android TV) AppleWebKit/537.36 Chrome/120.0 Mobile Safari/537.36")
                 .setConnectTimeoutMs(15_000)
                 .setReadTimeoutMs(30_000)

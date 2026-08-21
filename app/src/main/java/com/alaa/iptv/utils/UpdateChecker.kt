@@ -196,6 +196,10 @@ class UpdateChecker(private val activity: AppCompatActivity) {
     }
 
     private fun openReleasePage(url: String) {
+        if (!UpdateArtifactPolicy.isTrustedReleasePageUrl(url)) {
+            Toast.makeText(activity, "رابط صفحة الإصدار غير موثوق", Toast.LENGTH_SHORT).show()
+            return
+        }
         runCatching { activity.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
             .onFailure { Toast.makeText(activity, "تعذر فتح صفحة الإصدار", Toast.LENGTH_SHORT).show() }
     }

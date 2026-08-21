@@ -2,7 +2,6 @@ package com.alaa.iptv.data.preferences
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.os.Build
 import com.alaa.iptv.data.models.Channel
 import com.alaa.iptv.data.models.FavoriteChannelCodec
 import com.alaa.iptv.data.remote.DeviceControlPlaneSnapshot
@@ -10,9 +9,13 @@ import com.alaa.iptv.data.remote.RemoteConfigValue
 import com.alaa.iptv.data.remote.RemoteFeatureFlag
 import com.alaa.iptv.data.remote.RemoteSmartFavoriteGroup
 import org.json.JSONArray
+import android.util.Base64
 import org.json.JSONObject
 import java.security.MessageDigest
+import java.security.SecureRandom
 import java.util.UUID
+import javax.crypto.SecretKeyFactory
+import javax.crypto.spec.PBEKeySpec
 
 data class SmartFavoriteGroup(
     val id: String,
@@ -64,6 +67,12 @@ class AppPreferences(context: Context) {
         private const val KEY_CATEGORY_ORDER_PREFIX = "category_order_profile_"
         private const val KEY_HOME_CATEGORIES_PREFIX = "home_categories_"
         private const val KEY_CONNECTION_FAILURE_COUNT = "connection_failure_count"
+        private const val KEY_PIN_FAILURE_COUNT_PREFIX = "pin_failure_count_"
+        private const val KEY_PIN_LOCKED_UNTIL_PREFIX = "pin_locked_until_"
+        private const val PIN_HASH_PREFIX = "pbkdf2-v1"
+        private const val PIN_ITERATIONS = 120_000
+        private const val PIN_KEY_LENGTH_BITS = 256
+        private const val PIN_MAX_FAILURES_BEFORE_DELAY = 5
         private const val KEY_WATCHLIST_PREFIX = "watchlist_"
         private const val KEY_HISTORY_PREFIX = "history_"
         private const val KEY_RECENT_CHANNELS_PREFIX = "recent_channels_"
@@ -106,9 +115,7 @@ class AppPreferences(context: Context) {
     }
 
     private fun migrateCredentialsIfNeeded() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M ||
-            prefs.getBoolean(KEY_CREDENTIAL_ENCRYPTION_COMPLETE, false)
-        ) return
+        if (prefs.getBoolean(KEY_CREDENTIAL_ENCRYPTION_COMPLETE, false)) return
 
         val editor = prefs.edit()
         listOf(KEY_SERVER_URL, KEY_USERNAME, KEY_PASSWORD, KEY_M3U_URL).forEach { key ->
@@ -362,9 +369,20 @@ class AppPreferences(context: Context) {
         prefs.edit().putString(KEY_PROFILES, raw).apply()
     }
 
+    @Synchronized
     fun switchProfile(profileId: String, pin: String? = null): Boolean {
         val profile = getProfiles().firstOrNull { it.id == profileId } ?: return false
-        if (profile.pinHash.isNotBlank() && profile.pinHash != hashPin(pin.orEmpty())) return false
+        if (profile.pinHash.isNotBlank()) {
+            if (isProfilePinTemporarilyLocked(profile.id)) return false
+            if (!verifyPin(profile.pinHash, pin.orEmpty())) {
+                registerProfilePinFailure(profile.id)
+                return false
+            }
+            clearProfilePinFailures(profile.id)
+            if (!profile.pinHash.startsWith("$PIN_HASH_PREFIX:")) {
+                saveProfile(profile.copy(pinHash = hashPin(pin.orEmpty())))
+            }
+        }
         activeProfileId = profile.id
         return true
     }
@@ -647,9 +665,66 @@ class AppPreferences(context: Context) {
         prefs.edit().putString("$prefix$activeProfileId", credentialCrypto.encrypt(raw)).apply()
     }
 
-    private fun hashPin(pin: String): String = MessageDigest.getInstance("SHA-256")
+    private fun hashPin(pin: String): String {
+        val salt = ByteArray(16).also { SecureRandom().nextBytes(it) }
+        val derived = derivePinKey(pin, salt, PIN_ITERATIONS)
+        return listOf(
+            PIN_HASH_PREFIX,
+            PIN_ITERATIONS.toString(),
+            Base64.encodeToString(salt, Base64.NO_WRAP),
+            Base64.encodeToString(derived, Base64.NO_WRAP)
+        ).joinToString(":")
+    }
+
+    private fun verifyPin(storedHash: String, pin: String): Boolean = runCatching {
+        val parts = storedHash.split(":")
+        if (parts.size == 4 && parts[0] == PIN_HASH_PREFIX) {
+            val iterations = parts[1].toIntOrNull() ?: return@runCatching false
+            if (iterations < PIN_ITERATIONS) return@runCatching false
+            val salt = Base64.decode(parts[2], Base64.NO_WRAP)
+            val expected = Base64.decode(parts[3], Base64.NO_WRAP)
+            return@runCatching MessageDigest.isEqual(expected, derivePinKey(pin, salt, iterations))
+        }
+        MessageDigest.isEqual(
+            storedHash.toByteArray(Charsets.UTF_8),
+            legacyHashPin(pin).toByteArray(Charsets.UTF_8)
+        )
+    }.getOrDefault(false)
+
+    private fun derivePinKey(pin: String, salt: ByteArray, iterations: Int): ByteArray {
+        val spec = PBEKeySpec(pin.toCharArray(), salt, iterations, PIN_KEY_LENGTH_BITS)
+        return try {
+            SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1").generateSecret(spec).encoded
+        } finally {
+            spec.clearPassword()
+        }
+    }
+
+    private fun legacyHashPin(pin: String): String = MessageDigest.getInstance("SHA-256")
         .digest(pin.toByteArray(Charsets.UTF_8))
         .joinToString("") { "%02x".format(it) }
+
+    private fun isProfilePinTemporarilyLocked(profileId: String, nowMs: Long = System.currentTimeMillis()): Boolean =
+        prefs.getLong("$KEY_PIN_LOCKED_UNTIL_PREFIX$profileId", 0L) > nowMs
+
+    private fun registerProfilePinFailure(profileId: String) {
+        val countKey = "$KEY_PIN_FAILURE_COUNT_PREFIX$profileId"
+        val failures = prefs.getInt(countKey, 0).coerceAtMost(9) + 1
+        val editor = prefs.edit().putInt(countKey, failures)
+        if (failures >= PIN_MAX_FAILURES_BEFORE_DELAY) {
+            val additionalFailures = failures - PIN_MAX_FAILURES_BEFORE_DELAY
+            val delayMs = (30_000L shl additionalFailures.coerceAtMost(2)).coerceAtMost(120_000L)
+            editor.putLong("$KEY_PIN_LOCKED_UNTIL_PREFIX$profileId", System.currentTimeMillis() + delayMs)
+        }
+        editor.apply()
+    }
+
+    private fun clearProfilePinFailures(profileId: String) {
+        prefs.edit()
+            .remove("$KEY_PIN_FAILURE_COUNT_PREFIX$profileId")
+            .remove("$KEY_PIN_LOCKED_UNTIL_PREFIX$profileId")
+            .apply()
+    }
 
     @Synchronized
     fun getOrCreateTvId(): String {

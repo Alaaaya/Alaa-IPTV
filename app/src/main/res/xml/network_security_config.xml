@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <!-- Allow cleartext traffic for ALL domains (required for IPTV HTTP streams) -->
-    <base-config cleartextTrafficPermitted="true">
+    <!-- All remote IPTV, provisioning, and update traffic must use HTTPS. -->
+    <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
             <certificates src="system"/>
         </trust-anchors>

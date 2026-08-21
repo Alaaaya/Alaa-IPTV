@@ -24,4 +24,13 @@ class UpdateArtifactPolicyTest {
         assertFalse(UpdateArtifactPolicy.isTrustedDownloadUrl("https://example.com/AlaaPlayer-2.7.8.apk"))
         assertFalse(UpdateArtifactPolicy.isTrustedDownloadUrl("https://github.com/Alaaaya/Alaa-IPTV/releases/download/v2.7.8/other.apk"))
     }
+
+    @Test
+    fun `accepts only official GitHub release pages`() {
+        assertTrue(UpdateArtifactPolicy.isTrustedReleasePageUrl("https://github.com/Alaaaya/Alaa-IPTV/releases"))
+        assertTrue(UpdateArtifactPolicy.isTrustedReleasePageUrl("https://github.com/Alaaaya/Alaa-IPTV/releases/tag/v2.7.44"))
+        assertFalse(UpdateArtifactPolicy.isTrustedReleasePageUrl("http://github.com/Alaaaya/Alaa-IPTV/releases/tag/v2.7.44"))
+        assertFalse(UpdateArtifactPolicy.isTrustedReleasePageUrl("https://github.com/Alaaaya/Alaa-IPTV/issues/1"))
+        assertFalse(UpdateArtifactPolicy.isTrustedReleasePageUrl("https://example.test/Alaaaya/Alaa-IPTV/releases"))
+    }
 }

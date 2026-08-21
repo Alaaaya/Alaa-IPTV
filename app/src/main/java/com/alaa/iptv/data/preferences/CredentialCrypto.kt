@@ -1,10 +1,8 @@
 package com.alaa.iptv.data.preferences
 
-import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
-import androidx.annotation.RequiresApi
 import java.security.KeyStore
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
@@ -12,8 +10,8 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
 /**
- * تشفير متوافق مع minSdk 21. على Android 6.0+ تُشفّر بيانات الاشتراك بمفتاح AES
- * محفوظ داخل Android Keystore. على Android 5.0 يبقى السلوك السابق حفاظاً على التوافق.
+ * تشفير بيانات الاشتراك بمفتاح AES-GCM محفوظ داخل Android Keystore.
+ * يتطلب التطبيق Android 6.0+ لضمان عدم وجود مسار تخزين غير مشفّر.
  */
 class CredentialCrypto {
     companion object {
@@ -25,7 +23,7 @@ class CredentialCrypto {
     fun isEncrypted(value: String): Boolean = value.startsWith(PREFIX)
 
     fun encrypt(value: String): String {
-        if (value.isBlank() || Build.VERSION.SDK_INT < Build.VERSION_CODES.M || isEncrypted(value)) return value
+        if (value.isBlank() || isEncrypted(value)) return value
         return runCatching {
             val cipher = Cipher.getInstance(TRANSFORMATION).apply {
                 init(Cipher.ENCRYPT_MODE, getOrCreateKey())
@@ -37,7 +35,6 @@ class CredentialCrypto {
 
     fun decrypt(value: String): String {
         if (!isEncrypted(value)) return value
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return ""
         return runCatching {
             val parts = value.removePrefix(PREFIX).split(":", limit = 2)
             require(parts.size == 2)
@@ -52,9 +49,7 @@ class CredentialCrypto {
         }.getOrDefault("")
     }
 
-    @RequiresApi(Build.VERSION_CODES.M)
     private fun getOrCreateKey(): SecretKey {
-        check(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
         val keyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
         (keyStore.getKey(KEY_ALIAS, null) as? SecretKey)?.let { return it }
         val keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore")
