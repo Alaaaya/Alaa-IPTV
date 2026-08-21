@@ -14,6 +14,7 @@ object ThemeCatalog {
         ThemeOption(AppPreferences.THEME_ALAA_NEON_IPTV, "Alaa Player – Neon IPTV", "واجهة IPTV سينمائية زجاجية بتوهج أحمر نيون"),
         ThemeOption(AppPreferences.THEME_ALAA_FIGMA, "Alaa — Figma TV", "طبقات منتصف الليل وبانر أزرق–قرمزي وبطاقات قرمزية مستوحاة من المرجع"),
         ThemeOption(AppPreferences.THEME_ASINAT, "Asinat", "واجهة تلفزيون أصلية بطبقات حبرية ولمسات كهرمانية هادئة"),
+        ThemeOption(AppPreferences.THEME_ASINAT_2, "Asinat 2", "واجهة فحمية بطبقات هادئة ولمسة نعناعية ثابتة للريموت"),
         ThemeOption(AppPreferences.THEME_MIDNIGHT_GOLD, "Midnight Gold", "كحلي داكن ولمسات ذهبية"),
         ThemeOption(AppPreferences.THEME_CRIMSON_CLASSIC, "Crimson Classic", "قوائم داكنة بتمييز أحمر"),
         ThemeOption(AppPreferences.THEME_MODERN_GRID, "Modern Grid", "شبكة حديثة بلون بنفسجي"),

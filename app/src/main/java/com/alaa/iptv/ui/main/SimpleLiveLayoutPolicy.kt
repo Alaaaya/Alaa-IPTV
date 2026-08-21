@@ -13,7 +13,8 @@ object SimpleLiveLayoutPolicy {
     fun isEnabled(theme: String): Boolean = theme == AppPreferences.THEME_ALAA_NEON_IPTV
 
     fun usesQuietRows(theme: String): Boolean = isEnabled(theme) ||
-        com.alaa.iptv.ui.theme.AsinatLayoutPolicy.isEnabled(theme)
+        com.alaa.iptv.ui.theme.AsinatLayoutPolicy.isEnabled(theme) ||
+        com.alaa.iptv.ui.theme.Asinat2LayoutPolicy.isEnabled(theme)
 
     fun categoryMeta(count: Int): String = if (count > 0) "$count" else ""
 }
