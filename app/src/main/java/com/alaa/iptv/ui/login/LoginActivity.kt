@@ -34,6 +34,7 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var repository: MediaRepository
     private var passwordVisible = false
     private var selectedSourceType = SOURCE_XTREAM
+    private var isRefreshingPairingCode = false
 
     private val playlistPicker = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri ?: return@registerForActivityResult
@@ -74,11 +75,15 @@ class LoginActivity : AppCompatActivity() {
         }
         binding.passwordVisibilityButton.setOnClickListener { togglePasswordVisibility() }
         binding.fetchTvIdButton.setOnClickListener { fetchTvSubscription() }
+        binding.refreshPairingCodeButton.setOnClickListener { refreshDevicePairingCode() }
         refreshDevicePairingCode()
         setSourceType(SOURCE_XTREAM)
     }
 
     private fun refreshDevicePairingCode() {
+        if (isRefreshingPairingCode) return
+        isRefreshingPairingCode = true
+        binding.refreshPairingCodeButton.isEnabled = false
         binding.tvIdValue.text = "جارٍ تجهيز رمز الاقتران…"
         lifecycleScope.launch {
             TvProvisioningClient.issueDevicePairingCode(prefs.getOrCreateTvId())
@@ -89,6 +94,8 @@ class LoginActivity : AppCompatActivity() {
                     binding.tvIdValue.text = "ALAA-غير متاح"
                     Log.w(TAG, "Could not issue device pairing code", it)
                 }
+            isRefreshingPairingCode = false
+            binding.refreshPairingCodeButton.isEnabled = true
         }
     }
 
