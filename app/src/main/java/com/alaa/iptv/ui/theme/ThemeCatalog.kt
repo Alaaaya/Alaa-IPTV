@@ -17,6 +17,7 @@ object ThemeCatalog {
         ThemeOption(AppPreferences.THEME_ASINAT_2, "Asinat 2", "واجهة فحمية بطبقات هادئة ولمسة نعناعية ثابتة للريموت"),
         ThemeOption(AppPreferences.THEME_AYA, "Aya", "واجهة حجرية داكنة ببلاطات كبيرة ولمسة وردية ثابتة للريموت"),
         ThemeOption(AppPreferences.THEME_AYA_2, "أية 2", "تصميم وردي بنفسجي فاخر بلمسات عالية التباين ثابتة للريموت"),
+        ThemeOption(AppPreferences.THEME_AYA_3, "أية 3", "واجهة داكنة أصلية بألواح فحمية وحدود قرمزية ثابتة للريموت"),
         ThemeOption(AppPreferences.THEME_MIDNIGHT_GOLD, "Midnight Gold", "كحلي داكن ولمسات ذهبية"),
         ThemeOption(AppPreferences.THEME_CRIMSON_CLASSIC, "Crimson Classic", "قوائم داكنة بتمييز أحمر"),
         ThemeOption(AppPreferences.THEME_MODERN_GRID, "Modern Grid", "شبكة حديثة بلون بنفسجي"),
