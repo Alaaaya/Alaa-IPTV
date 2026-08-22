@@ -36,6 +36,7 @@ class LoginActivity : AppCompatActivity() {
     private var passwordVisible = false
     private var selectedSourceType = SOURCE_XTREAM
     private var isRefreshingPairingCode = false
+    private var isFetchingSubscription = false
 
     private val playlistPicker = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri ?: return@registerForActivityResult
@@ -110,8 +111,11 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun fetchTvSubscription() {
+        if (isFetchingSubscription) return
+        isFetchingSubscription = true
         val tvId = prefs.getOrCreateTvId()
-        binding.errorText.visibility = android.view.View.GONE
+        binding.errorText.text = "جارٍ جلب الاشتراك من لوحة التحكم…"
+        binding.errorText.visibility = android.view.View.VISIBLE
 
         setLoading(true)
         lifecycleScope.launch {
@@ -138,7 +142,14 @@ class LoginActivity : AppCompatActivity() {
                 binding.passwordInput.setText(subscription.password)
                 performLogin(subscription.serverUrl, subscription.username, subscription.password)
             }.onFailure { error ->
-                showLoginError(error.message ?: "تعذر جلب بيانات الجهاز")
+                val message = error.message.orEmpty()
+                showLoginError(
+                    if (message.contains("Device unavailable", ignoreCase = true) || message.contains("TV ID", ignoreCase = true)) {
+                        "هذا التلفزيون غير مرتبط بعد. أدخل رمز ALAA في لوحة التحكم ثم أعد المحاولة."
+                    } else {
+                        message.ifBlank { "تعذر جلب بيانات الجهاز من لوحة التحكم" }
+                    }
+                )
                 setLoading(false)
             }
         }
@@ -260,12 +271,14 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun setLoading(loading: Boolean) {
+        isFetchingSubscription = loading
         binding.loginButton.isEnabled = !loading
         binding.importPlaylistButton.isEnabled = !loading
         binding.serverUrlInput.isEnabled = !loading
         binding.usernameInput.isEnabled = !loading
         binding.passwordInput.isEnabled = !loading
         binding.fetchTvIdButton.isEnabled = !loading
+        binding.fetchTvIdButton.text = if (loading) "جارٍ الجلب…" else "جلب اشتراكي"
         binding.passwordVisibilityButton.isEnabled = !loading
         binding.sourceXtreamButton.isEnabled = !loading
         binding.sourceM3uButton.isEnabled = !loading
