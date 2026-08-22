@@ -13,6 +13,7 @@ import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.databinding.ItemLiveCategoryBinding
 import com.alaa.iptv.ui.common.CategoryDisplayPolicy
 import com.alaa.iptv.ui.common.OnePressActivationPolicy
+import com.alaa.iptv.ui.common.SeniorFriendlyListPolicy
 import com.alaa.iptv.ui.navigation.FocusBoundaryPolicy
 import com.alaa.iptv.ui.theme.DisplayTheme
 
@@ -75,6 +76,11 @@ class LiveCategoryAdapter(
             val suffix = if (spec.labelPrefix == "[ ") " ]" else ""
             binding.categoryName.text = "${spec.labelPrefix}${CategoryDisplayPolicy.name(category)}$suffix"
             binding.categoryName.textSize = LiveCategoryLayoutPolicy.compactNameSizeSp(spec.textSizeSp)
+            binding.categoryNumber.textSize = SeniorFriendlyListPolicy.rowNumberSizeSp(14f)
+            binding.categoryNumber.layoutParams = binding.categoryNumber.layoutParams.apply {
+                width = (36 * binding.root.resources.displayMetrics.density).toInt()
+                height = (36 * binding.root.resources.displayMetrics.density).toInt()
+            }
             binding.categoryNumber.text = (bindingAdapterPosition + 1).toString()
             binding.categoryCount.text = if (SimpleLiveLayoutPolicy.usesQuietRows(displayTheme)) {
                 SimpleLiveLayoutPolicy.categoryMeta(category.channelCount)
@@ -103,13 +109,9 @@ class LiveCategoryAdapter(
                 binding.categoryCount.setTextColor(
                     if (highlighted) DisplayTheme.focusTextColor(displayTheme) else DisplayTheme.metadataColor(displayTheme)
                 )
-                binding.categoryNumber.background = if (SimpleLiveLayoutPolicy.usesQuietRows(displayTheme)) {
-                    ColorDrawable(Color.TRANSPARENT)
-                } else {
-                    binding.root.context.getDrawable(
-                        if (highlighted) R.drawable.bg_category_number_selected else R.drawable.bg_category_number_default
-                    )
-                }
+                binding.categoryNumber.background = binding.root.context.getDrawable(
+                    if (highlighted) R.drawable.bg_category_number_selected else R.drawable.bg_category_number_default
+                )
             } else {
                 binding.root.setBackgroundResource(
                     if (highlighted) R.drawable.bg_live_category_selected else R.drawable.bg_live_category_default

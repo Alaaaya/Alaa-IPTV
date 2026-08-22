@@ -11,6 +11,7 @@ import com.alaa.iptv.R
 import com.alaa.iptv.data.models.Channel
 import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.databinding.ItemChannelBinding
+import com.alaa.iptv.ui.common.SeniorFriendlyListPolicy
 import com.alaa.iptv.ui.theme.DisplayTheme
 import com.bumptech.glide.Glide
 
@@ -84,15 +85,19 @@ class ChannelAdapter(
             val rowSpec = DisplayTheme.channelRowSpec(displayTheme)
             val density = binding.root.resources.displayMetrics.density
             binding.root.layoutParams = binding.root.layoutParams.apply {
-                height = (rowSpec.heightDp * density).toInt()
+                height = (SeniorFriendlyListPolicy.channelRowHeightDp(rowSpec.heightDp) * density).toInt()
             }
             binding.root.setPadding((rowSpec.horizontalPaddingDp * density).toInt(), 0, (rowSpec.horizontalPaddingDp * density).toInt(), 0)
             binding.channelLogoCard.layoutParams = binding.channelLogoCard.layoutParams.apply {
                 width = (rowSpec.logoWidthDp * density).toInt()
                 height = (rowSpec.logoHeightDp * density).toInt()
             }
-            binding.channelName.textSize = rowSpec.nameSizeSp
-            binding.channelNumber.textSize = rowSpec.numberSizeSp
+            binding.channelName.textSize = SeniorFriendlyListPolicy.channelNameSizeSp(rowSpec.nameSizeSp)
+            binding.channelNumber.textSize = SeniorFriendlyListPolicy.rowNumberSizeSp(rowSpec.numberSizeSp)
+            binding.channelNumber.layoutParams = binding.channelNumber.layoutParams.apply {
+                width = (36 * density).toInt()
+                height = (36 * density).toInt()
+            }
             binding.channelNumber.visibility = if (rowSpec.showNumber) View.VISIBLE else View.GONE
             binding.qualityTag.visibility = if (rowSpec.showQuality) View.VISIBLE else View.GONE
             binding.channelName.text = channel.name
@@ -107,7 +112,7 @@ class ChannelAdapter(
 
             if (DisplayTheme.hasCustomTheme(displayTheme)) {
                 binding.root.background = if (SimpleLiveLayoutPolicy.usesQuietRows(displayTheme)) ColorDrawable(Color.TRANSPARENT) else DisplayTheme.panelBackground(displayTheme)
-                binding.channelNumber.background = if (SimpleLiveLayoutPolicy.usesQuietRows(displayTheme)) ColorDrawable(Color.TRANSPARENT) else DisplayTheme.focusBackground(displayTheme)
+                binding.channelNumber.background = binding.root.context.getDrawable(R.drawable.bg_category_number_default)
                 binding.channelNumber.setTextColor(DisplayTheme.focusTextColor(displayTheme))
                 binding.qualityTag.background = DisplayTheme.panelBackground(displayTheme)
                 binding.qualityTag.setTextColor(DisplayTheme.metadataColor(displayTheme))
@@ -147,6 +152,7 @@ class ChannelAdapter(
                     binding.qualityTag.setTextColor(DisplayTheme.focusTextColor(displayTheme))
                 } else {
                     binding.root.setBackgroundResource(R.drawable.bg_sidebar_selected)
+                    binding.channelNumber.setBackgroundResource(R.drawable.bg_category_number_selected)
                     binding.channelName.setTextColor(Color.WHITE)
                     binding.channelNumber.setTextColor(Color.WHITE)
                     binding.qualityTag.setTextColor(Color.WHITE)
@@ -162,6 +168,7 @@ class ChannelAdapter(
                     binding.qualityTag.setTextColor(DisplayTheme.metadataColor(displayTheme))
                 } else {
                     binding.root.setBackgroundColor(Color.TRANSPARENT)
+                    binding.channelNumber.setBackgroundResource(R.drawable.bg_category_number_default)
                 }
                 binding.channelName.setTextColor(Color.WHITE)
                 if (!DisplayTheme.hasCustomTheme(displayTheme)) {
