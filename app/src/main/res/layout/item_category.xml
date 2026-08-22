@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/rootLayout"
     android:layout_width="match_parent"
-    android:layout_height="45dp"
+    android:layout_height="58dp"
     android:background="@android:color/transparent"
     android:focusable="true"
     android:clickable="true">
@@ -20,12 +20,13 @@
         <!-- Category Number -->
         <TextView
             android:id="@+id/categoryPosition"
-            android:layout_width="30dp"
-            android:layout_height="wrap_content"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="@drawable/bg_category_number_default"
             android:textColor="@color/white"
-            android:textSize="14sp"
+            android:textSize="17sp"
             android:textStyle="bold"
-            android:gravity="start" />
+            android:gravity="center" />
 
         <!-- Category Name -->
         <TextView
@@ -34,7 +35,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:textColor="@color/white"
-            android:textSize="14sp"
+            android:textSize="16sp"
             android:paddingStart="10dp"
             android:paddingEnd="10dp"
             android:singleLine="true"

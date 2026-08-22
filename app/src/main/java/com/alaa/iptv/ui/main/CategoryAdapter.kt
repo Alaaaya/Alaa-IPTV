@@ -8,6 +8,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.alaa.iptv.data.models.Category
 import com.alaa.iptv.databinding.ItemCategoryBinding
 import com.alaa.iptv.ui.common.CategoryDisplayPolicy
+import com.alaa.iptv.ui.common.SeniorFriendlyListPolicy
 
 class CategoryAdapter(
     private var categories: List<Category>,
@@ -42,6 +43,12 @@ class CategoryAdapter(
 
         fun bind(category: Category, isSelected: Boolean, position: Int) {
             binding.categoryName.text = CategoryDisplayPolicy.name(category)
+            binding.categoryName.textSize = SeniorFriendlyListPolicy.categoryNameSizeSp(14f)
+            binding.categoryPosition.textSize = SeniorFriendlyListPolicy.rowNumberSizeSp(14f)
+            binding.categoryPosition.layoutParams = binding.categoryPosition.layoutParams.apply {
+                width = (36 * binding.root.resources.displayMetrics.density).toInt()
+                height = (36 * binding.root.resources.displayMetrics.density).toInt()
+            }
             binding.categoryPosition.text = (position + 1).toString()
             binding.categoryCount.text = CategoryDisplayPolicy.countLabel(category.channelCount)
             
@@ -57,12 +64,14 @@ class CategoryAdapter(
                 binding.categoryName.setTextColor(Color.WHITE)
                 binding.categoryPosition.setTextColor(Color.WHITE)
                 binding.categoryCount.setTextColor(Color.WHITE)
+                binding.categoryPosition.setBackgroundResource(com.alaa.iptv.R.drawable.bg_category_number_selected)
             } else {
                 binding.rootLayout.setBackgroundColor(Color.TRANSPARENT)
                 binding.pointerImageView.visibility = View.INVISIBLE
                 binding.categoryName.setTextColor(Color.WHITE)
                 binding.categoryPosition.setTextColor(Color.WHITE)
                 binding.categoryCount.setTextColor(Color.WHITE)
+                binding.categoryPosition.setBackgroundResource(com.alaa.iptv.R.drawable.bg_category_number_default)
             }
         }
     }
