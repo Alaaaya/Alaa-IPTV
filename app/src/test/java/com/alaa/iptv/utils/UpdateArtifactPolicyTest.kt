@@ -9,6 +9,7 @@ class UpdateArtifactPolicyTest {
     fun `recognizes newer semantic version`() {
         assertTrue(UpdateArtifactPolicy.isNewerVersion("2.7.8", "2.7.7"))
         assertTrue(UpdateArtifactPolicy.isNewerVersion("v2.8.0", "2.7.9"))
+        assertTrue(UpdateArtifactPolicy.isNewerVersion("2.8", "2.7.46"))
         assertFalse(UpdateArtifactPolicy.isNewerVersion("2.7.7", "2.7.7"))
         assertFalse(UpdateArtifactPolicy.isNewerVersion("invalid", "2.7.7"))
     }
