@@ -14,8 +14,8 @@ android {
         // Android 6.0+ is required so all persisted credentials use Android Keystore-backed AES-GCM.
         minSdk = 23
         targetSdk = 34
-        versionCode = 82
-        versionName = "2.7.45"
+        versionCode = 83
+        versionName = "2.7.46"
         buildConfigField(
             "String",
             "PROVISIONING_API_URL",

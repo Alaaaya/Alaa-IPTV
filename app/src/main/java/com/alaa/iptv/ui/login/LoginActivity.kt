@@ -125,7 +125,7 @@ class LoginActivity : AppCompatActivity() {
                     SecureNetworkUrlPolicy.isAllowedRemoteUrl(subscription.serverUrl)
                 }
                 if (!secureSource) {
-                    showLoginError("تعذر قبول الاشتراك: يجب أن يستخدم الخادم اتصال HTTPS آمنًا")
+                    showLoginError("تعذر قبول الاشتراك: أدخل رابط خادم IPTV صالحاً")
                     setLoading(false)
                     return@onSuccess
                 }
@@ -188,7 +188,7 @@ class LoginActivity : AppCompatActivity() {
                 return false
             }
             if (!SecureNetworkUrlPolicy.isAllowedPlaylistUrl(serverUrl)) {
-                binding.serverUrlInput.error = "استخدم رابط M3U عبر HTTPS أو استورد ملفًا محليًا"
+                binding.serverUrlInput.error = "أدخل رابط M3U صالحاً عبر HTTP أو HTTPS أو استورد ملفاً محلياً"
                 return false
             }
             return true
@@ -199,7 +199,7 @@ class LoginActivity : AppCompatActivity() {
                 return false
             }
             !SecureNetworkUrlPolicy.isAllowedRemoteUrl(serverUrl) -> {
-                binding.serverUrlInput.error = "استخدم رابط خادم HTTPS لحماية بيانات الاشتراك"
+                binding.serverUrlInput.error = "أدخل رابط خادم IPTV صالحاً عبر HTTP أو HTTPS"
                 return false
             }
             repository.isM3U(serverUrl) -> {
