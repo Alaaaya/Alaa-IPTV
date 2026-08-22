@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.alaa.iptv.data.models.Category
 import com.alaa.iptv.databinding.ItemCategoryBinding
+import com.alaa.iptv.ui.common.CategoryDisplayPolicy
 
 class CategoryAdapter(
     private var categories: List<Category>,
@@ -40,9 +41,9 @@ class CategoryAdapter(
         }
 
         fun bind(category: Category, isSelected: Boolean, position: Int) {
-            binding.categoryName.text = category.categoryName
+            binding.categoryName.text = CategoryDisplayPolicy.name(category)
             binding.categoryPosition.text = (position + 1).toString()
-            binding.categoryCount.text = category.channelCount.toString()
+            binding.categoryCount.text = CategoryDisplayPolicy.countLabel(category.channelCount)
             
             // Initial state based on selection
             updateUI(isSelected)

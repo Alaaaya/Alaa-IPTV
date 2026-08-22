@@ -11,6 +11,7 @@ import com.alaa.iptv.R
 import com.alaa.iptv.data.models.Category
 import com.alaa.iptv.data.preferences.AppPreferences
 import com.alaa.iptv.databinding.ItemLiveCategoryBinding
+import com.alaa.iptv.ui.common.CategoryDisplayPolicy
 import com.alaa.iptv.ui.common.OnePressActivationPolicy
 import com.alaa.iptv.ui.navigation.FocusBoundaryPolicy
 import com.alaa.iptv.ui.theme.DisplayTheme
@@ -72,15 +73,13 @@ class LiveCategoryAdapter(
         fun bind(category: Category) {
             val spec = DisplayTheme.liveCategorySpec(displayTheme)
             val suffix = if (spec.labelPrefix == "[ ") " ]" else ""
-            binding.categoryName.text = "${spec.labelPrefix}${category.categoryName}$suffix"
+            binding.categoryName.text = "${spec.labelPrefix}${CategoryDisplayPolicy.name(category)}$suffix"
             binding.categoryName.textSize = LiveCategoryLayoutPolicy.compactNameSizeSp(spec.textSizeSp)
             binding.categoryNumber.text = (bindingAdapterPosition + 1).toString()
             binding.categoryCount.text = if (SimpleLiveLayoutPolicy.usesQuietRows(displayTheme)) {
                 SimpleLiveLayoutPolicy.categoryMeta(category.channelCount)
-            } else if (category.channelCount > 0) {
-                "${category.channelCount} عنصر في هذه الفئة"
             } else {
-                "اضغط لعرض محتوى الفئة"
+                CategoryDisplayPolicy.countLabel(category.channelCount)
             }
             val density = binding.root.resources.displayMetrics.density
             binding.root.layoutParams = binding.root.layoutParams.apply {
