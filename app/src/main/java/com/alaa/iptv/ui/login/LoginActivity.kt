@@ -36,6 +36,7 @@ class LoginActivity : AppCompatActivity() {
     private var passwordVisible = false
     private var selectedSourceType = SOURCE_XTREAM
     private var isRefreshingPairingCode = false
+    private var isFetchingSubscription = false
 
     private val playlistPicker = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri ?: return@registerForActivityResult
@@ -110,8 +111,11 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun fetchTvSubscription() {
+        if (isFetchingSubscription) return
+        isFetchingSubscription = true
         val tvId = prefs.getOrCreateTvId()
-        binding.errorText.visibility = android.view.View.GONE
+        binding.errorText.text = "جارٍ جلب الاشتراك من لوحة التحكم…"
+        binding.errorText.visibility = android.view.View.VISIBLE
 
         setLoading(true)
         lifecycleScope.launch {
@@ -125,7 +129,7 @@ class LoginActivity : AppCompatActivity() {
                     SecureNetworkUrlPolicy.isAllowedRemoteUrl(subscription.serverUrl)
                 }
                 if (!secureSource) {
-                    showLoginError("تعذر قبول الاشتراك: يجب أن يستخدم الخادم اتصال HTTPS آمنًا")
+                    showLoginError("تعذر قبول الاشتراك: أدخل رابط خادم IPTV صالحاً")
                     setLoading(false)
                     return@onSuccess
                 }
@@ -138,7 +142,14 @@ class LoginActivity : AppCompatActivity() {
                 binding.passwordInput.setText(subscription.password)
                 performLogin(subscription.serverUrl, subscription.username, subscription.password)
             }.onFailure { error ->
-                showLoginError(error.message ?: "تعذر جلب بيانات الجهاز")
+                val message = error.message.orEmpty()
+                showLoginError(
+                    if (message.contains("Device unavailable", ignoreCase = true) || message.contains("TV ID", ignoreCase = true)) {
+                        "هذا التلفزيون غير مرتبط بعد. أدخل رمز ALAA في لوحة التحكم ثم أعد المحاولة."
+                    } else {
+                        message.ifBlank { "تعذر جلب بيانات الجهاز من لوحة التحكم" }
+                    }
+                )
                 setLoading(false)
             }
         }
@@ -188,7 +199,7 @@ class LoginActivity : AppCompatActivity() {
                 return false
             }
             if (!SecureNetworkUrlPolicy.isAllowedPlaylistUrl(serverUrl)) {
-                binding.serverUrlInput.error = "استخدم رابط M3U عبر HTTPS أو استورد ملفًا محليًا"
+                binding.serverUrlInput.error = "أدخل رابط M3U صالحاً عبر HTTP أو HTTPS أو استورد ملفاً محلياً"
                 return false
             }
             return true
@@ -199,7 +210,7 @@ class LoginActivity : AppCompatActivity() {
                 return false
             }
             !SecureNetworkUrlPolicy.isAllowedRemoteUrl(serverUrl) -> {
-                binding.serverUrlInput.error = "استخدم رابط خادم HTTPS لحماية بيانات الاشتراك"
+                binding.serverUrlInput.error = "أدخل رابط خادم IPTV صالحاً عبر HTTP أو HTTPS"
                 return false
             }
             repository.isM3U(serverUrl) -> {
@@ -260,12 +271,14 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun setLoading(loading: Boolean) {
+        isFetchingSubscription = loading
         binding.loginButton.isEnabled = !loading
         binding.importPlaylistButton.isEnabled = !loading
         binding.serverUrlInput.isEnabled = !loading
         binding.usernameInput.isEnabled = !loading
         binding.passwordInput.isEnabled = !loading
         binding.fetchTvIdButton.isEnabled = !loading
+        binding.fetchTvIdButton.text = if (loading) "جارٍ الجلب…" else "جلب اشتراكي"
         binding.passwordVisibilityButton.isEnabled = !loading
         binding.sourceXtreamButton.isEnabled = !loading
         binding.sourceM3uButton.isEnabled = !loading
